@@ -1,0 +1,17 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Desplegar en Render
+        if: ${{ secrets.RENDER_DEPLOY_HOOK != '' }}
+        run: curl --fail --silent --show-error -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+      - name: Avisar si falta configurar el despliegue
+        if: ${{ secrets.RENDER_DEPLOY_HOOK == '' }}
+        run: echo "Configura el secreto RENDER_DEPLOY_HOOK para activar el despliegue."
