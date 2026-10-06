@@ -54,26 +54,32 @@ Durante el Sprint 1 se implementarán:
 
 | Tecnología | Uso | Justificación |
 |---|---|---|
-| Pendiente | Backend | Pendiente |
-| Pendiente | Frontend | Pendiente |
-| Pendiente | Base de datos | Pendiente |
+| Node.js + Express | Backend y API REST | Ligero y suficiente para el esqueleto inicial |
+| HTML | Frontend mínimo | Permite validar el despliegue desde el primer día |
+| Memoria del proceso | Datos de usuarios | Persistencia en memoria solicitada para el Hito 1 |
 | GitHub | Control de versiones | Gestión del repositorio, ramas y Pull Requests |
-| Pendiente | CI/CD | Ejecución automática de pruebas y despliegue |
+| GitHub Actions + Render | CI/CD | Pruebas en cada cambio y despliegue en `main` |
 
 ## Ejecución en local
 
 > Esta sección se completará cuando esté disponible la primera versión ejecutable del proyecto.
 
 ```bash
-# Pendiente
+cd servidor
+npm install
+npm start
 ```
+
+La aplicación estará disponible en `http://localhost:3000`. La página mínima se sirve
+desde `cliente/index.html`.
 
 ## Pruebas
 
 Las pruebas del proyecto serán automatizadas y podrán ejecutarse mediante un único comando.
 
 ```bash
-# Pendiente
+cd servidor
+npm test
 ```
 
 ## Variables de entorno
@@ -82,15 +88,29 @@ Las claves y secretos necesarios para ejecutar la aplicación no se almacenarán
 
 El proyecto incluirá un archivo `.env.example` con las variables necesarias sin sus valores reales.
 
-```env
-# Pendiente
-```
+No se necesitan variables de entorno para ejecutar el esqueleto localmente. El puerto
+de producción se toma de `PORT` y, si no existe, se usa el 3000.
 
 ## Despliegue
 
 La aplicación se desplegará automáticamente en un proveedor cloud mediante el pipeline de CI/CD.
 
-**URL de producción:** Pendiente
+**URL de producción:** la URL asignada por Render al crear el servicio a partir de
+`render.yaml`.
+
+Para activar el despliegue automático, crea un servicio web en Render usando este
+repositorio, genera un Deploy Hook y guárdalo en GitHub como secreto
+`RENDER_DEPLOY_HOOK`. El workflow `.github/workflows/cd.yml` lo invocará en cada push
+a `main`; hasta entonces el workflow deja constancia de que falta esa configuración.
+
+### API del Hito 1
+
+- `POST /api/registro` con `{ "email": "...", "clave": "..." }`
+- `POST /api/login` con `{ "email": "...", "clave": "..." }`
+- `GET /api/usuarios`
+- `GET /api/usuarios/:id/activo`
+- `DELETE /api/usuarios/:id`
+- `GET /api/salud`
 
 ## Flujo de trabajo
 

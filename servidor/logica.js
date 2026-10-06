@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 
 const usuarios = [];
+let siguienteId = 1;
 
 async function registrarUsuario(email, clave) {
     if (!email || !clave) {
@@ -18,16 +19,18 @@ async function registrarUsuario(email, clave) {
     const claveHash = await bcrypt.hash(clave, 10);
 
     const usuario = {
-        id: usuarios.length + 1,
+        id: siguienteId++,
         email: email,
-        clave: claveHash
+        clave: claveHash,
+        activo: true
     };
 
     usuarios.push(usuario);
 
     return {
         id: usuario.id,
-        email: usuario.email
+        email: usuario.email,
+        activo: usuario.activo
     };
 }
 
@@ -40,7 +43,7 @@ async function iniciarSesion(email, clave) {
         usuario => usuario.email === email
     );
 
-    if (!usuario) {
+    if (!usuario || !usuario.activo) {
         throw new Error("Credenciales incorrectas");
     }
 
@@ -55,11 +58,55 @@ async function iniciarSesion(email, clave) {
 
     return {
         id: usuario.id,
-        email: usuario.email
+        email: usuario.email,
+        activo: usuario.activo
     };
+}
+
+function listarUsuarios() {
+    return usuarios.map(usuario => ({
+        id: usuario.id,
+        email: usuario.email,
+        activo: usuario.activo
+    }));
+}
+
+function comprobarUsuarioActivo(id) {
+    const usuario = usuarios.find(usuario => usuario.id === Number(id));
+
+    if (!usuario) {
+        throw new Error("Usuario no encontrado");
+    }
+
+    return usuario.activo;
+}
+
+function eliminarUsuario(id) {
+    const usuario = usuarios.find(usuario => usuario.id === Number(id));
+
+    if (!usuario) {
+        throw new Error("Usuario no encontrado");
+    }
+
+    usuario.activo = false;
+
+    return {
+        id: usuario.id,
+        email: usuario.email,
+        activo: usuario.activo
+    };
+}
+
+function limpiarUsuarios() {
+    usuarios.length = 0;
+    siguienteId = 1;
 }
 
 module.exports = {
     registrarUsuario,
-    iniciarSesion
+    iniciarSesion,
+    listarUsuarios,
+    comprobarUsuarioActivo,
+    eliminarUsuario,
+    limpiarUsuarios
 };
