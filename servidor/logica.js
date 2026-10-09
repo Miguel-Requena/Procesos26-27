@@ -71,6 +71,12 @@ function listarUsuarios() {
     }));
 }
 
+function obtenerUsuarioSesion(id) {
+    const usuario = usuarios.find(usuario => usuario.id === Number(id) && usuario.activo);
+    if (!usuario) throw new Error("Sesión no válida");
+    return { id: usuario.id, email: usuario.email, activo: usuario.activo };
+}
+
 function comprobarUsuarioActivo(id) {
     const usuario = usuarios.find(usuario => usuario.id === Number(id));
 
@@ -105,6 +111,7 @@ function limpiarUsuarios() {
 module.exports = {
     registrarUsuario,
     iniciarSesion,
+    obtenerUsuarioSesion,
     listarUsuarios,
     comprobarUsuarioActivo,
     eliminarUsuario,

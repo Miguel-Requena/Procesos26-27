@@ -55,6 +55,17 @@ app.post("/api/logout", (req, res) => {
     res.status(200).json({ mensaje: "Sesión cerrada correctamente" });
 });
 
+app.get("/api/sesion", (req, res) => {
+    res.set("Cache-Control", "no-store");
+    try {
+        const usuario = logica.obtenerUsuarioSesion(sesiones.obtenerUsuarioId(req));
+        res.status(200).json({ usuario });
+    } catch (error) {
+        sesiones.cerrarSesion(req, res);
+        res.status(401).json({ error: "Sesión no válida" });
+    }
+});
+
 app.get("/api/usuarios", (req, res) => {
     res.status(200).json({ usuarios: logica.listarUsuarios() });
 });
