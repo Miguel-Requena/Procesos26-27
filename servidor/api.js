@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 
 const logica = require("./logica");
+const sesiones = require("./sesiones");
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.post("/api/login", async (req, res) => {
         const { email, clave } = req.body;
 
         const usuario = await logica.iniciarSesion(email, clave);
+        sesiones.crearSesion(req, res, usuario.id);
 
         res.status(200).json({
             mensaje: "Inicio de sesión correcto",
@@ -46,6 +48,11 @@ app.post("/api/login", async (req, res) => {
             error: error.message
         });
     }
+});
+
+app.post("/api/logout", (req, res) => {
+    sesiones.cerrarSesion(req, res);
+    res.status(200).json({ mensaje: "Sesión cerrada correctamente" });
 });
 
 app.get("/api/usuarios", (req, res) => {
