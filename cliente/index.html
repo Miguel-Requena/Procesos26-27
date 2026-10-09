@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestión de usuarios</title>
+    <link rel="stylesheet" href="estilos.css">
     <script src="rest.js" defer></script>
     <script src="presentacion.js" defer></script>
 </head>
@@ -11,6 +12,36 @@
     <main>
         <h1>Gestión de usuarios</h1>
         <p id="estado" role="status">Comprobando sesión…</p>
+        <p id="mensaje" role="alert" aria-live="polite"></p>
+        <div id="formularios" hidden>
+            <section aria-labelledby="titulo-registro">
+                <h2 id="titulo-registro">Crear una cuenta</h2>
+                <form id="registro">
+                    <label for="registro-email">Email</label>
+                    <input id="registro-email" name="email" type="email" autocomplete="email" required>
+                    <label for="registro-clave">Contraseña</label>
+                    <input id="registro-clave" name="clave" type="password" autocomplete="new-password" minlength="6" required aria-describedby="ayuda-clave">
+                    <p id="ayuda-clave" class="ayuda">Al menos 6 caracteres y como máximo 72 bytes.</p>
+                    <button type="submit">Crear cuenta</button>
+                </form>
+            </section>
+            <section aria-labelledby="titulo-login">
+                <h2 id="titulo-login">Iniciar sesión</h2>
+                <form id="login">
+                    <label for="login-email">Email</label>
+                    <input id="login-email" name="email" type="email" autocomplete="username" required>
+                    <label for="login-clave">Contraseña</label>
+                    <input id="login-clave" name="clave" type="password" autocomplete="current-password" required>
+                    <button type="submit">Entrar</button>
+                </form>
+            </section>
+        </div>
+        <section id="panel-sesion" hidden>
+            <h2>Tu cuenta</h2>
+            <p>Puedes recargar la página y conservarás tu sesión mientras sea válida.</p>
+            <button id="cerrar-sesion" type="button">Cerrar sesión</button>
+        </section>
+        <noscript>Activa JavaScript para utilizar los formularios de esta aplicación.</noscript>
     </main>
 </body>
 </html>

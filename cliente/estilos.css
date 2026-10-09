@@ -1,0 +1,17 @@
+:root { font-family: system-ui, sans-serif; color: #17243a; background: #f1f5f9; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 920px; margin: 48px auto; padding: 0 24px; }
+h1 { font-size: 2rem; margin-bottom: 12px; }
+h2 { margin-top: 0; font-size: 1.35rem; }
+#formularios { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+[hidden] { display: none !important; }
+section { padding: 28px; background: white; border: 1px solid #d4dce6; border-radius: 12px; }
+form { display: grid; gap: 12px; }
+input { width: 100%; padding: 12px; border: 1px solid #8997aa; border-radius: 6px; font: inherit; }
+button { padding: 12px 20px; border: 0; border-radius: 6px; background: #1756a6; color: white; font: inherit; cursor: pointer; }
+button:disabled { opacity: .65; cursor: wait; }
+input:focus-visible, button:focus-visible { outline: 3px solid #67a9ff; outline-offset: 3px; }
+.ayuda { font-size: .85rem; margin: 0 0 8px; color: #506079; }
+#mensaje { min-height: 24px; font-weight: 600; }
+@media (max-width: 640px) { main { margin: 24px auto; } #formularios { grid-template-columns: 1fr; } }
