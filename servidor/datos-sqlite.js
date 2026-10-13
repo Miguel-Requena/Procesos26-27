@@ -31,7 +31,7 @@ function buscarPorId(id) { return convertir(db.prepare("SELECT * FROM usuarios W
 function listar() { return db.prepare("SELECT * FROM usuarios ORDER BY id").all().map(convertir); }
 function crear(email, claveHash) {
     try {
-        const resultado = db.prepare("INSERT INTO usuarios (email, clave, activo) VALUES (?, ?, 0)").run(email, claveHash);
+        const resultado = db.prepare("INSERT INTO usuarios (email, clave, activo, confirmado) VALUES (?, ?, 1, 1)").run(email, claveHash);
         return buscarPorId(resultado.lastInsertRowid);
     } catch (error) {
         if (error.errcode === 2067) throw new Error("Ya existe un usuario con ese email");

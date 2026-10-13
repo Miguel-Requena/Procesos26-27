@@ -88,15 +88,15 @@ test("registro público y login fallido devuelven JSON sin claves ni cookies de 
     assert.equal(res.status, 201);
     const usuario = (await res.json()).usuario;
     assert.equal(Object.hasOwn(usuario, "clave"), false);
-    assert.equal(usuario.activo, false);
+    assert.equal(usuario.activo, true);
     assert.equal(usuario.rol, "usuario");
     const pendiente = await fetch(`${base}/api/login`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: "ana@example.com", clave: "secreto" })
     });
-    assert.equal(pendiente.status, 401);
-    assert.equal(pendiente.headers.get("set-cookie"), null);
-    assert.equal((await pendiente.json()).error, "Cuenta pendiente de confirmación");
+    assert.equal(pendiente.status, 200);
+    assert.ok(pendiente.headers.get("set-cookie"));
+    assert.equal((await pendiente.json()).usuario.rol, "usuario");
     const loginIncorrecto = await fetch(`${base}/api/login`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: "ana@example.com", clave: "incorrecta" })

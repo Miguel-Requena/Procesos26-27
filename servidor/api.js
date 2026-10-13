@@ -41,7 +41,7 @@ app.post("/api/registro", async (req, res) => {
         req.usuarioActividad = usuario.id;
 
         res.status(201).json({
-            mensaje: "Cuenta registrada, pendiente de confirmación",
+            mensaje: "Usuario registrado correctamente",
             usuario: usuario
         });
 

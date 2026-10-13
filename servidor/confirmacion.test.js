@@ -4,11 +4,11 @@ const logica = require("./logica");
 const datos = require("./datos");
 test.beforeEach(() => logica.limpiarUsuarios());
 
-test("registrar deja la cuenta pendiente; ni siquiera un administrador sin confirmar puede entrar", async () => {
+test("el registro permite entrar directamente; una cuenta desactivada manualmente no puede entrar", async () => {
     const cuenta = await logica.registrarUsuario("admin@example.com", "clave-prueba");
-    assert.equal(cuenta.activo, false);
+    assert.equal(cuenta.activo, true);
     assert.equal(cuenta.rol, "usuario");
-    await assert.rejects(logica.iniciarSesion(cuenta.email, "clave-prueba"), { message: "Cuenta pendiente de confirmación" });
+    assert.equal((await logica.iniciarSesion(cuenta.email, "clave-prueba")).id, cuenta.id);
     await datos.configurarCuentaPrueba(cuenta.id, false, "administrador");
     await assert.rejects(logica.iniciarSesion(cuenta.email, "clave-prueba"), { message: "Cuenta pendiente de confirmación" });
     await assert.rejects(logica.listarUsuarios(cuenta), { estado: 401 });
