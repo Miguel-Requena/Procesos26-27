@@ -1,3 +1,4 @@
+const configuracion = require("./configuracion");
 const express = require("express");
 const path = require("path");
 
@@ -116,7 +117,7 @@ app.delete("/api/usuarios/:id", (req, res) => {
 });
 
 if (require.main === module) {
-    const PORT = process.env.PORT || 3000;
+    const PORT = configuracion.puerto;
     app.listen(PORT, () => {
         console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
     });

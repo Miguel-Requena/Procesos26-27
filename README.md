@@ -179,6 +179,22 @@ Las credenciales de prueba no se publicarán en el repositorio.
 
 ## Autor
 
+## Configuración del Hito 3
+
+Requiere Node.js 24. Copia `.env.example` a `.env` en la raíz para la configuración
+local. El archivo no se sube a Git; las variables del entorno tienen prioridad.
+Variables: `PORT`, `NODE_ENV`, `DATABASE_PATH`, `ADMIN_EMAIL`, `ADMIN_CLAVE`.
+En cloud se introducen en el panel del proveedor, nunca en el código ni en YAML.
+No publiques valores reales, bases de datos o logs.
+
+SQLite necesita un directorio persistente. Render gratuito no conserva archivos
+al reiniciar: esta configuración no debe usarse allí sin disco persistente.
+En Render configura `DATABASE_PATH` dentro de `RENDER_DISK_PATH`; el servidor
+rechaza arrancar si no puede garantizar ese almacenamiento. Para un despliegue
+gratuito habrá que elegir almacenamiento externo persistente antes de publicarlo.
+
+## Autor
+
 Miguel
 
 ## Asignatura

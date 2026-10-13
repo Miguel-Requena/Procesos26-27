@@ -1,1 +1,9 @@
 servidor/node_modules/
+.env
+.env.*
+!.env.example
+servidor/almacenamiento/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.log
