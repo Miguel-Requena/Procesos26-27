@@ -8,6 +8,20 @@ const app = express();
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "cliente")));
+app.use("/api", (req, res, next) => {
+    res.set("Cache-Control", "no-store");
+    next();
+});
+
+function exigirSesion(req, res, next) {
+    try {
+        req.usuario = logica.obtenerUsuarioSesion(sesiones.obtenerUsuarioId(req));
+        next();
+    } catch {
+        sesiones.cerrarSesion(req, res);
+        res.status(401).json({ error: "Debes iniciar sesión" });
+    }
+}
 
 app.get("/api/salud", (req, res) => {
     res.status(200).json({ estado: "ok" });
@@ -55,8 +69,29 @@ app.post("/api/logout", (req, res) => {
     res.status(200).json({ mensaje: "Sesión cerrada correctamente" });
 });
 
+app.get("/api/sesion", (req, res) => {
+    res.set("Cache-Control", "no-store");
+    try {
+        const usuario = logica.obtenerUsuarioSesion(sesiones.obtenerUsuarioId(req));
+        res.status(200).json({ usuario });
+    } catch (error) {
+        sesiones.cerrarSesion(req, res);
+        res.status(401).json({ error: "Sesión no válida" });
+    }
+});
+
+app.use("/api/usuarios", exigirSesion);
+
 app.get("/api/usuarios", (req, res) => {
     res.status(200).json({ usuarios: logica.listarUsuarios() });
+});
+
+app.use((error, req, res, next) => {
+    if (error.type === "entity.parse.failed") {
+        return res.status(400).json({ error: "El cuerpo de la petición debe ser JSON válido" });
+    }
+    console.error("Error no controlado:", error.message);
+    res.status(500).json({ error: "No se pudo completar la operación" });
 });
 
 app.get("/api/usuarios/:id/activo", (req, res) => {
