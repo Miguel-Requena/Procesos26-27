@@ -23,6 +23,36 @@ El máximo de una instancia mantiene las sesiones en memoria en un único proces
 Al escalar a cero o desplegar otra revisión las sesiones terminan, pero las cuentas
 persisten en Neon. Si se necesitan varias instancias hay que externalizar sesiones.
 
+## Primer administrador
+
+`npm start` ejecuta `servidor/arrancar.js`. Si recibe `ADMIN_EMAIL` y
+`ADMIN_CLAVE`, crea el primer administrador en la base indicada por `DATABASE_URL`.
+Configura `ADMIN_EMAIL` en el entorno y `ADMIN_CLAVE` como referencia a un secreto
+de Secret Manager. Elige un correo que no pertenezca a una cuenta normal existente;
+el inicializador no promociona cuentas normales ni cambia contraseñas existentes.
+
+Tras comprobar que puedes iniciar sesión y listar usuarios, retira ambas variables
+de inicialización del servicio: el administrador y su hash ya están en PostgreSQL.
+Entrega las credenciales de revisión por separado, nunca en el repositorio.
+El acceso público de Cloud Run permite abrir la interfaz, mientras el servidor
+comprueba la sesión y el rol para cada operación protegida.
+
+## Comprobación antes de entregar
+
+- `/api/salud` responde 200 y la raíz muestra la interfaz.
+- Registro, login, recarga y logout funcionan en HTTPS.
+- Sin sesión, `/api/usuarios` devuelve 401; con usuario normal, devuelve 403.
+- El administrador puede listar y comprobar estados; un usuario solo puede
+  eliminarse a sí mismo. Una cuenta eliminada no puede iniciar sesión.
+- Después de desplegar una nueva revisión, las cuentas persisten en Neon y
+  puedes volver a iniciar sesión. Las sesiones anteriores pueden terminar.
+- Los logs de Cloud Run muestran actividad sin contraseñas ni tokens.
+- Un cambio integrado en `main` dispara la compilación y despliega otra revisión.
+
+Esta versión cubre el registro local de los hitos 1 a 3. La confirmación por correo
+y OAuth del Hito 4 todavía no están implementados: las cuentas locales se activan
+al registrarse. El estado final definido en 4.2 requiere completar esa confirmación.
+
 ## Despliegue continuo
 
 En Cloud Run configura el despliegue desde GitHub con Cloud Build, selecciona
