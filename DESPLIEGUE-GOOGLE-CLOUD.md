@@ -2,7 +2,8 @@
 
 Proyecto Google: `procesos26-27` (743300312263). Servicio: `procesos26-27`.
 Región del servicio ya creado: `europe-southwest1` (Madrid).
-El despliegue anterior no se sustituye hasta comprobar la nueva revisión.
+URL verificada: https://procesos26-27-gseerr4ika-no.a.run.app
+Cloud Build global despliega main; las imágenes y el servicio están en Madrid.
 
 ## Atlas
 
