@@ -12,6 +12,9 @@ if (urlBaseDatos) {
         if (!["postgres:", "postgresql:"].includes(new URL(urlBaseDatos).protocol)) throw new Error();
     } catch { throw new Error("DATABASE_URL debe ser una conexión PostgreSQL válida"); }
 }
+if (process.env.K_SERVICE && !urlBaseDatos) {
+    throw new Error("Cloud Run requiere DATABASE_URL para conservar los datos en PostgreSQL");
+}
 if (rutaBaseDatos === ":memory:") throw new Error("DATABASE_PATH debe apuntar a un archivo persistente");
 if (!urlBaseDatos && process.env.RENDER && !process.env.RENDER_DISK_PATH) {
     throw new Error("SQLite en Render requiere un disco persistente; configura almacenamiento antes de desplegar");

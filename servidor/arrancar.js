@@ -11,7 +11,7 @@ async function arrancar() {
         actividad.registrar("administrador_inicializado", { usuarioId: admin.id });
     }
     const app = require("./api");
-    app.listen(configuracion.puerto, () => {
+    app.listen(configuracion.puerto, "0.0.0.0", () => {
         actividad.registrar("servidor_iniciado", { puerto: configuracion.puerto });
         console.log(`Servidor ejecutándose en el puerto ${configuracion.puerto}`);
     });

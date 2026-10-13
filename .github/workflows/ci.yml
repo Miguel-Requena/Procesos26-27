@@ -39,3 +39,17 @@ jobs:
         run: npm ci
       - name: Ejecutar pruebas
         run: npm test
+      - name: Construir y comprobar la imagen de Cloud Run
+        run: |
+          docker build -t procesos26-27-ci ..
+          docker run --detach --name procesos26-27-ci --env PORT=8080 --env NODE_ENV=test --publish 127.0.0.1:8080:8080 procesos26-27-ci
+          for intento in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8080/api/salud; then
+              curl --fail --silent http://127.0.0.1:8080/ > /tmp/prototipo.html
+              node -e "require('node:assert/strict').ok(require('node:fs').readFileSync('/tmp/prototipo.html', 'utf8').includes('Gestión de usuarios'))"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs procesos26-27-ci
+          exit 1

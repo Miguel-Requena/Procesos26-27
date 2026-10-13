@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { spawnSync } = require("node:child_process");
 function cargar(extra) {
     return spawnSync(process.execPath, ["-e", "require('./configuracion')"], {
-        cwd: __dirname, env: { ...process.env, NODE_ENV: "test", RENDER: "", RENDER_DISK_PATH: "", ...extra }, encoding: "utf8"
+        cwd: __dirname, env: { ...process.env, NODE_ENV: "test", RENDER: "", RENDER_DISK_PATH: "", K_SERVICE: "", ...extra }, encoding: "utf8"
     });
 }
 test("rechaza puertos inválidos y almacenamiento en memoria", () => {
@@ -21,4 +21,8 @@ test("Render admite PostgreSQL externo y rechaza cadenas inválidas sin mostrar 
     const resultado = cargar({ DATABASE_URL: "https://secreto-invalido" });
     assert.notEqual(resultado.status, 0);
     assert.equal(resultado.stderr.includes("secreto-invalido"), false);
+});
+test("Cloud Run exige una base externa persistente", () => {
+    assert.notEqual(cargar({ K_SERVICE: "prototipo", DATABASE_URL: "" }).status, 0);
+    assert.equal(cargar({ K_SERVICE: "prototipo", DATABASE_URL: "postgresql://pruebas:pruebas@localhost/pruebas" }).status, 0);
 });
