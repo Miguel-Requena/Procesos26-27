@@ -14,10 +14,10 @@ test("los usuarios, hashes y eliminaciones sobreviven a procesos independientes 
         return resultado.stdout.trim();
     }
     try {
-        ejecutar("require('./logica').registrarUsuario('persistencia@example.com', 'clave-prueba').then(() => console.log('ok'))");
+        ejecutar("require('./logica').inicializarAdministrador('persistencia@example.com', 'clave-prueba').then(() => console.log('ok'))");
         assert.equal(ejecutar("require('./logica').iniciarSesion('persistencia@example.com', 'clave-prueba').then(u => console.log(u.email))"), "persistencia@example.com");
-        ejecutar("require('./logica').eliminarUsuario(1)");
-        assert.equal(ejecutar("console.log(require('./logica').comprobarUsuarioActivo(1))"), "false");
+        ejecutar("require('./logica').eliminarUsuario(1, { id: 1 })");
+        assert.equal(ejecutar("console.log(require('./datos').buscarPorId(1).activo)"), "false");
         ejecutar("require('./logica').iniciarSesion('persistencia@example.com', 'clave-prueba').then(() => process.exit(1)).catch(() => console.log('rechazado'))");
     } finally { fs.rmSync(directorio, { recursive: true, force: true }); }
 });

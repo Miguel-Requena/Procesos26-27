@@ -5,6 +5,7 @@
   "main": "api.js",
   "scripts": {
     "start": "node api.js",
+    "admin": "node inicializar-admin.js",
     "test": "node --require ./entorno-pruebas.cjs --test"
   },
   "keywords": [],

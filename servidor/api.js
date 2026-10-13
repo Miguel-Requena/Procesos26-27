@@ -84,7 +84,9 @@ app.get("/api/sesion", (req, res) => {
 app.use("/api/usuarios", exigirSesion);
 
 app.get("/api/usuarios", (req, res) => {
-    res.status(200).json({ usuarios: logica.listarUsuarios() });
+    try {
+        res.status(200).json({ usuarios: logica.listarUsuarios(req.usuario) });
+    } catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo completar la operación" }); }
 });
 
 app.use((error, req, res, next) => {
@@ -97,22 +99,22 @@ app.use((error, req, res, next) => {
 
 app.get("/api/usuarios/:id/activo", (req, res) => {
     try {
-        const activo = logica.comprobarUsuarioActivo(req.params.id);
+        const activo = logica.comprobarUsuarioActivo(req.params.id, req.usuario);
         res.status(200).json({ activo: activo });
     } catch (error) {
-        res.status(404).json({ error: error.message });
+        res.status(error.estado || 404).json({ error: error.message });
     }
 });
 
 app.delete("/api/usuarios/:id", (req, res) => {
     try {
-        const usuario = logica.eliminarUsuario(req.params.id);
+        const usuario = logica.eliminarUsuario(req.params.id, req.usuario);
         res.status(200).json({
             mensaje: "Usuario eliminado correctamente",
             usuario: usuario
         });
     } catch (error) {
-        res.status(404).json({ error: error.message });
+        res.status(error.estado || 404).json({ error: error.message });
     }
 });
 
