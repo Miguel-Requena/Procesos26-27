@@ -101,13 +101,15 @@ carga automáticamente al copiarlo como `.env` en la raíz.
 
 La aplicación se desplegará automáticamente en un proveedor cloud mediante el pipeline de CI/CD.
 
-**URL de producción:** la URL asignada por Render al crear el servicio a partir de
-`render.yaml`.
+**URL del prototipo:** https://procesos26-27.onrender.com
 
-Para activar el despliegue automático, crea un servicio web en Render usando este
-repositorio, genera un Deploy Hook y guárdalo en GitHub como secreto
-`RENDER_DEPLOY_HOOK`. El workflow `.github/workflows/cd.yml` lo invocará en cada push
-a `main`; hasta entonces el workflow deja constancia de que falta esa configuración.
+Render Free ejecuta el servidor y Neon Free conserva las cuentas en PostgreSQL.
+El servicio despliega actualmente `tarea-14-despliegue-neon`; después de integrar
+las PR del Hito 3 y la PR #12, cambia la rama de Render a `main` en Settings.
+Así los siguientes cambios integrados se desplegarán automáticamente.
+
+El despliegue automático está activado mediante la integración GitHub de Render.
+No hace falta configurar `RENDER_DEPLOY_HOOK` para esta integración nativa.
 
 ### API del Hito 1
 
