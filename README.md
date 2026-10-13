@@ -124,7 +124,7 @@ a `main`; hasta entonces el workflow deja constancia de que falta esa configurac
 La página incluye registro, login y cierre de sesión. `cliente/rest.js` realiza
 las peticiones HTTP; `cliente/presentacion.js` gestiona los formularios y el DOM.
 El backend sirve ambos desde el mismo origen. `servidor/datos.js` almacena los
-usuarios en memoria y `servidor/logica.js` aplica las reglas y el hash bcrypt.
+usuarios en SQLite desde el Hito 3 y `servidor/logica.js` aplica las reglas y el hash bcrypt.
 
 El registro normaliza el email y exige una contraseña de al menos 6 caracteres y
 como máximo 72 bytes UTF-8, el límite de bcrypt. El login crea un token aleatorio
@@ -133,9 +133,9 @@ el usuario asociado se validan en el servidor. Recargar conserva la sesión;
 cerrarla invalida el token aunque se vuelva a enviar la cookie anterior.
 
 Las rutas de `/api/usuarios` requieren una sesión válida y devuelven 401 sin ella.
-El registro, login y salud son públicos. Los permisos por rol se implementarán
-en P5 (hito 3): en esta versión las rutas de usuarios son accesibles a cualquier
-usuario autenticado. La confirmación por correo corresponde a P8 (hito 4).
+El registro, login y salud son públicos. Desde el Hito 3 el listado y la consulta
+del estado requieren rol administrador; la eliminación admite administrador o
+la propia cuenta. La confirmación por correo corresponde a P8 (hito 4).
 Por ahora las cuentas locales se activan al registrarse.
 
 En el Hito 2 los usuarios y sesiones estaban en memoria. El Hito 3 conserva
