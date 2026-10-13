@@ -1,3 +1,4 @@
+const ayudas = require("./ayudas-pruebas.cjs");
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { once } = require("node:events");
@@ -14,8 +15,9 @@ test.before(async () => {
 test.after(() => new Promise(resolve => servidor.close(resolve)));
 test.beforeEach(() => logica.limpiarUsuarios());
 
-async function login(email = "ana@example.com") {
-    await logica.registrarUsuario(email, "clave-prueba");
+async function login(email = "ana@example.com", administrador = false) {
+    if (administrador) await ayudas.administrador(email, "clave-prueba");
+    else await ayudas.registrarConfirmado(email, "clave-prueba");
     const res = await fetch(`${base}/api/login`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, clave: "clave-prueba" })
@@ -46,7 +48,7 @@ test("rechaza consultas de sesión anónimas, falsificadas y de usuarios elimina
     assert.equal((await fetch(`${base}/api/sesion`)).status, 401);
     assert.equal((await fetch(`${base}/api/sesion`, { headers: { cookie: "sesion=falsa" } })).status, 401);
     const cookie = await login();
-    logica.eliminarUsuario(1);
+    await logica.eliminarUsuario(1, { id: 1 });
     assert.equal((await fetch(`${base}/api/sesion`, { headers: { cookie } })).status, 401);
 });
 
@@ -59,8 +61,8 @@ test("las tres rutas de usuarios rechazan peticiones sin sesión o con token fal
     }
 });
 
-test("permite peticiones autenticadas y rechaza el acceso tras logout", async () => {
-    const cookie = await login();
+test("permite peticiones de administrador y rechaza el acceso tras logout", async () => {
+    const cookie = await login("admin@example.com", true);
     const usuarios = await fetch(`${base}/api/usuarios`, { headers: { cookie } });
     assert.equal(usuarios.status, 200);
     assert.equal((await usuarios.json()).usuarios.length, 1);
@@ -81,10 +83,20 @@ test("eliminar una cuenta invalida su acceso a las rutas protegidas", async () =
 test("registro público y login fallido devuelven JSON sin claves ni cookies de sesión", async () => {
     const res = await fetch(`${base}/api/registro`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "ana@example.com", clave: "secreto" })
+        body: JSON.stringify({ email: "ana@example.com", clave: "secreto", confirmado: true, activo: true, rol: "administrador" })
     });
     assert.equal(res.status, 201);
-    assert.equal(Object.hasOwn((await res.json()).usuario, "clave"), false);
+    const usuario = (await res.json()).usuario;
+    assert.equal(Object.hasOwn(usuario, "clave"), false);
+    assert.equal(usuario.activo, false);
+    assert.equal(usuario.rol, "usuario");
+    const pendiente = await fetch(`${base}/api/login`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "ana@example.com", clave: "secreto" })
+    });
+    assert.equal(pendiente.status, 401);
+    assert.equal(pendiente.headers.get("set-cookie"), null);
+    assert.equal((await pendiente.json()).error, "Cuenta pendiente de confirmación");
     const loginIncorrecto = await fetch(`${base}/api/login`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: "ana@example.com", clave: "incorrecta" })
@@ -92,4 +104,25 @@ test("registro público y login fallido devuelven JSON sin claves ni cookies de 
     assert.equal(loginIncorrecto.status, 401);
     assert.equal(loginIncorrecto.headers.get("set-cookie"), null);
     assert.equal((await fetch(`${base}/api/salud`)).status, 200);
+});
+
+test("el servidor impide escalar roles y aplicar operaciones administrativas a usuarios normales", async () => {
+    const registro = await fetch(`${base}/api/registro`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "ana@example.com", clave: "clave-prueba", rol: "administrador" })
+    });
+    assert.equal((await registro.json()).usuario.rol, "usuario");
+    await require("./datos").configurarCuentaPrueba(1);
+    const entrada = await fetch(`${base}/api/login`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "ana@example.com", clave: "clave-prueba" })
+    });
+    const cookie = entrada.headers.get("set-cookie").split(";")[0];
+    const otro = await ayudas.registrarConfirmado("otro@example.com", "clave-prueba");
+    for (const [ruta, method] of [["/usuarios", "GET"], ["/usuarios/1/activo", "GET"], [`/usuarios/${otro.id}`, "DELETE"]]) {
+        assert.equal((await fetch(`${base}/api${ruta}`, { method, headers: { cookie } })).status, 403);
+    }
+    const adminCookie = await login("admin@example.com", true);
+    assert.equal((await fetch(`${base}/api/usuarios`, { headers: { cookie: adminCookie } })).status, 200);
+    assert.equal((await fetch(`${base}/api/usuarios/${otro.id}`, { method: "DELETE", headers: { cookie: adminCookie } })).status, 200);
 });
