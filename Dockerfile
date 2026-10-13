@@ -4,6 +4,7 @@ COPY --chown=node:node servidor/package.json servidor/package-lock.json ./servid
 RUN npm ci --prefix servidor --omit=dev
 COPY --chown=node:node servidor ./servidor
 COPY --chown=node:node cliente ./cliente
+RUN chown node:node /app/servidor
 ENV NODE_ENV=production
 USER node
 EXPOSE 8080
