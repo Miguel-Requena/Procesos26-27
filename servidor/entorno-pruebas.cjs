@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 process.env.NODE_ENV = "test";
+process.env.DATABASE_URL = "";
 process.env.RENDER = "";
 process.env.RENDER_DISK_PATH = "";
 // Cada proceso usa su propio archivo; las pruebas nunca borran cuentas reales.

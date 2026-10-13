@@ -8,10 +8,12 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
     steps:
       - name: Desplegar en Render
-        if: ${{ secrets.RENDER_DEPLOY_HOOK != '' }}
-        run: curl --fail --silent --show-error -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+        if: ${{ env.RENDER_DEPLOY_HOOK != '' }}
+        run: curl --fail --silent --show-error -X POST "$RENDER_DEPLOY_HOOK"
       - name: Avisar si falta configurar el despliegue
-        if: ${{ secrets.RENDER_DEPLOY_HOOK == '' }}
-        run: echo "Configura el secreto RENDER_DEPLOY_HOOK para activar el despliegue."
+        if: ${{ env.RENDER_DEPLOY_HOOK == '' }}
+        run: echo "El despliegue se gestiona con la integración GitHub de Render."

@@ -47,7 +47,7 @@ test("rechaza consultas de sesión anónimas, falsificadas y de usuarios elimina
     assert.equal((await fetch(`${base}/api/sesion`)).status, 401);
     assert.equal((await fetch(`${base}/api/sesion`, { headers: { cookie: "sesion=falsa" } })).status, 401);
     const cookie = await login();
-    logica.eliminarUsuario(1, { id: 1 });
+    await logica.eliminarUsuario(1, { id: 1 });
     assert.equal((await fetch(`${base}/api/sesion`, { headers: { cookie } })).status, 401);
 });
 
