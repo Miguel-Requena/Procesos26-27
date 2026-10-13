@@ -12,6 +12,10 @@ db.exec(`PRAGMA journal_mode=WAL;
         clave TEXT NOT NULL,
         activo INTEGER NOT NULL DEFAULT 1 CHECK(activo IN (0, 1))
     );`);
+// Migración compatible con las bases creadas antes de introducir roles.
+if (!db.prepare("PRAGMA table_info(usuarios)").all().some(columna => columna.name === "rol")) {
+    db.exec("ALTER TABLE usuarios ADD COLUMN rol TEXT NOT NULL DEFAULT 'usuario' CHECK(rol IN ('usuario', 'administrador'))");
+}
 function convertir(fila) { return fila ? { ...fila, activo: Boolean(fila.activo) } : undefined; }
 function buscarPorEmail(email) { return convertir(db.prepare("SELECT * FROM usuarios WHERE email = ?").get(email)); }
 function buscarPorId(id) { return convertir(db.prepare("SELECT * FROM usuarios WHERE id = ?").get(Number(id))); }
@@ -34,4 +38,9 @@ function limpiar() {
     if (process.env.NODE_ENV !== "test") throw new Error("Solo se puede limpiar la base de datos durante las pruebas");
     db.exec("DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
 }
-module.exports = { buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar };
+function promoverAdministrador(id) {
+    if (!buscarPorId(id)?.activo) throw new Error("Usuario no encontrado o eliminado");
+    db.prepare("UPDATE usuarios SET rol = 'administrador' WHERE id = ?").run(Number(id));
+    return buscarPorId(id);
+}
+module.exports = { buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, promoverAdministrador };

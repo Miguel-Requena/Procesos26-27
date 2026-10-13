@@ -9,7 +9,8 @@ const {
     listarUsuarios,
     comprobarUsuarioActivo,
     eliminarUsuario,
-    limpiarUsuarios
+    limpiarUsuarios,
+    inicializarAdministrador
 } = require("./logica");
 
 test.beforeEach(() => {
@@ -33,7 +34,7 @@ test("rechaza datos inválidos, clave incorrecta y login de cuentas eliminadas",
     await assert.rejects(registrarUsuario({}, "secreto"));
     await registrarUsuario("ana@example.com", "secreto");
     await assert.rejects(iniciarSesion("ana@example.com", "incorrecta"));
-    eliminarUsuario(1);
+    eliminarUsuario(1, { id: 1 });
     await assert.rejects(iniciarSesion("ana@example.com", "secreto"));
 });
 
@@ -43,43 +44,47 @@ test("dos registros concurrentes del mismo email solo crean una cuenta", async (
         registrarUsuario("ANA@example.com", "secreto")
     ]);
     assert.equal(resultados.filter(r => r.status === "fulfilled").length, 1);
-    assert.equal(listarUsuarios().length, 1);
+    assert.equal(datos.listar().length, 1);
 });
 
 test("registra y lista usuarios sin exponer la clave", async () => {
     const usuario = await registrarUsuario("ana@example.com", "secreto");
+    const admin = await inicializarAdministrador("admin@example.com", "clave-admin");
 
     assert.deepEqual(usuario, {
         id: 1,
         email: "ana@example.com",
-        activo: true
+        activo: true,
+        rol: "usuario"
     });
-    assert.deepEqual(listarUsuarios(), [usuario]);
+    assert.deepEqual(listarUsuarios(admin), [usuario, admin]);
     assert.equal(Object.hasOwn(usuario, "clave"), false);
 });
 
 test("comprueba el estado activo y lo cambia al eliminar", async () => {
     const usuario = await registrarUsuario("bruno@example.com", "secreto");
+    const admin = await inicializarAdministrador("admin@example.com", "clave-admin");
 
-    assert.equal(comprobarUsuarioActivo(usuario.id), true);
-    const eliminado = eliminarUsuario(usuario.id);
+    assert.equal(comprobarUsuarioActivo(usuario.id, admin), true);
+    const eliminado = eliminarUsuario(usuario.id, admin);
     assert.equal(eliminado.activo, false);
-    assert.equal(comprobarUsuarioActivo(usuario.id), false);
+    assert.equal(comprobarUsuarioActivo(usuario.id, admin), false);
 });
 
 test("rechaza usuarios duplicados y usuarios inexistentes", async () => {
     await registrarUsuario("carmen@example.com", "secreto");
+    const admin = await inicializarAdministrador("admin@example.com", "clave-admin");
 
     await assert.rejects(
         registrarUsuario("carmen@example.com", "otra-clave"),
         { message: "Ya existe un usuario con ese email" }
     );
     assert.throws(
-        () => comprobarUsuarioActivo(999),
+        () => comprobarUsuarioActivo(999, admin),
         { message: "Usuario no encontrado" }
     );
     assert.throws(
-        () => eliminarUsuario(999),
+        () => eliminarUsuario(999, admin),
         { message: "Usuario no encontrado" }
     );
 });

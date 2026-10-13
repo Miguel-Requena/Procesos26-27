@@ -2,6 +2,23 @@ const bcrypt = require("bcrypt");
 
 const datos = require("./datos");
 
+function publico(usuario) {
+    return { id: usuario.id, email: usuario.email, activo: usuario.activo, rol: usuario.rol };
+}
+function errorAcceso(mensaje, estado) {
+    const error = new Error(mensaje);
+    error.estado = estado;
+    return error;
+}
+function usuarioAutorizado(actor) {
+    const usuario = actor && datos.buscarPorId(actor.id);
+    if (!usuario?.activo) throw errorAcceso("Debes iniciar sesión", 401);
+    return usuario;
+}
+function exigirAdministrador(actor) {
+    if (usuarioAutorizado(actor).rol !== "administrador") throw errorAcceso("Esta operación requiere un administrador", 403);
+}
+
 function normalizarEmail(email) {
     if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
         throw new Error("Introduce un email válido");
@@ -32,11 +49,7 @@ async function registrarUsuario(email, clave) {
 
     const usuario = datos.crear(email, claveHash);
 
-    return {
-        id: usuario.id,
-        email: usuario.email,
-        activo: usuario.activo
-    };
+    return publico(usuario);
 }
 
 async function iniciarSesion(email, clave) {
@@ -61,28 +74,22 @@ async function iniciarSesion(email, clave) {
         throw new Error("Credenciales incorrectas");
     }
 
-    return {
-        id: usuario.id,
-        email: usuario.email,
-        activo: usuario.activo
-    };
+    return publico(usuario);
 }
 
-function listarUsuarios() {
-    return datos.listar().map(usuario => ({
-        id: usuario.id,
-        email: usuario.email,
-        activo: usuario.activo
-    }));
+function listarUsuarios(actor) {
+    exigirAdministrador(actor);
+    return datos.listar().map(publico);
 }
 
 function obtenerUsuarioSesion(id) {
     const usuario = datos.buscarPorId(id);
     if (!usuario || !usuario.activo) throw new Error("Sesión no válida");
-    return { id: usuario.id, email: usuario.email, activo: usuario.activo };
+    return publico(usuario);
 }
 
-function comprobarUsuarioActivo(id) {
+function comprobarUsuarioActivo(id, actor) {
+    exigirAdministrador(actor);
     const usuario = datos.buscarPorId(id);
 
     if (!usuario) {
@@ -92,14 +99,25 @@ function comprobarUsuarioActivo(id) {
     return usuario.activo;
 }
 
-function eliminarUsuario(id) {
+function eliminarUsuario(id, actor) {
+    const solicitante = usuarioAutorizado(actor);
+    if (solicitante.rol !== "administrador" && solicitante.id !== Number(id)) {
+        throw errorAcceso("Solo puedes eliminar tu propia cuenta", 403);
+    }
     const usuario = datos.desactivar(id);
 
-    return {
-        id: usuario.id,
-        email: usuario.email,
-        activo: usuario.activo
-    };
+    return publico(usuario);
+}
+
+async function inicializarAdministrador(email, clave) {
+    email = normalizarEmail(email);
+    const existente = datos.buscarPorEmail(email);
+    if (existente && (!existente.activo || existente.rol !== "administrador")) {
+        throw new Error("El email ya pertenece a otra cuenta; no se promociona automáticamente");
+    }
+    if (existente) return publico(existente);
+    const nuevo = await registrarUsuario(email, clave);
+    return publico(datos.promoverAdministrador(nuevo.id));
 }
 
 function limpiarUsuarios() {
@@ -113,5 +131,6 @@ module.exports = {
     listarUsuarios,
     comprobarUsuarioActivo,
     eliminarUsuario,
-    limpiarUsuarios
+    limpiarUsuarios,
+    inicializarAdministrador
 };

@@ -177,6 +177,13 @@ Las instrucciones para acceder como administrador durante la evaluación se indi
 
 Las credenciales de prueba no se publicarán en el repositorio.
 
+Para crear el primer administrador configura `ADMIN_EMAIL` y `ADMIN_CLAVE` en
+el `.env` ignorado o en el entorno, y ejecuta `npm.cmd run admin` desde `servidor`.
+Después inicia sesión en la interfaz con esas credenciales. El script guarda solo
+el hash, no muestra la contraseña y no promociona cuentas normales ya existentes.
+Si la cuenta ya es administradora, no modifica su contraseña. Elimina `ADMIN_CLAVE`
+del entorno cuando hayas terminado; envía las credenciales al profesor por separado.
+
 ## Configuración del Hito 3
 
 Requiere Node.js 24. Copia `.env.example` a `.env` en la raíz para la configuración
@@ -198,6 +205,14 @@ Por defecto la base se crea en `servidor/almacenamiento/usuarios.sqlite`; config
 son lógicas. Al reiniciar se conservan las cuentas, aunque las sesiones en memoria
 terminan y hay que iniciar sesión de nuevo. `npm test` usa bases temporales separadas,
 nunca la de desarrollo, y comprueba la persistencia entre procesos independientes.
+
+Los registros públicos siempre crean el rol `usuario`, aunque el cliente envíe
+otro. Solo `administrador` puede listar y consultar estados. El administrador
+puede eliminar cualquier cuenta y un usuario solo la propia. Las restricciones
+se verifican en la lógica y el servidor responde 403 al acceso prohibido; una
+cuenta eliminada no puede iniciar sesión ni usar sus sesiones anteriores.
+La confirmación de correo y OAuth siguen pendientes para el Hito 4: las cuentas
+locales se activan al registrarse en esta versión provisional.
 
 ## Autor
 
