@@ -51,28 +51,18 @@ Configura facturación por solicitudes, CPU 1, memoria 512 MiB, mínimo 0 y máx
 Las cuentas persisten en Atlas; las sesiones en memoria terminan al reiniciar o
 escalar a cero y requieren volver a iniciar sesión.
 
-## Confirmar al administrador desde Atlas
+## Registro y administrador
 
-Registra primero la cuenta desde la URL de la aplicación. En Atlas abre
-**Browse Collections → procesos26_27 → usuarios**, busca su email y edita:
-
-```json
-{
-  "confirmado": true,
-  "rol": "administrador"
-}
-```
-
-Edita únicamente esos dos campos del documento existente; no sustituyas el
-documento entero ni cambies `clave`, `_id`, `id` o `eliminado`. Guarda y vuelve
-a iniciar sesión. Para un usuario normal basta con `confirmado: true`.
-Por ahora esta aprobación es manual; no hay envío de correo ni OAuth.
+Las cuentas nuevas pueden iniciar sesión inmediatamente. La confirmación se deja
+para una fase posterior. Para el administrador registra su cuenta y cambia solo
+`rol` a `administrador` en Atlas, dentro de `procesos26_27.usuarios`.
+La contraseña de conexión de Atlas es independiente de las contraseñas de la web.
 
 ## Verificación y entrega
 
 - Salud 200; página principal accesible por HTTPS.
-- Registro crea cuenta pendiente; login rechaza la cuenta antes de confirmar.
-- Tras confirmar en Atlas, login y recarga funcionan; logout invalida la sesión.
+- Registro crea cuenta activa con rol usuario; login funciona inmediatamente.
+- Login y recarga funcionan; logout invalida la sesión.
 - Usuario normal no lista ni consulta estados; administrador sí puede hacerlo.
 - Usuario solo se elimina a sí mismo; administrador puede eliminar otras cuentas.
 - Un eliminado no entra aunque se modifique de nuevo `confirmado` a true.

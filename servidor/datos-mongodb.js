@@ -56,7 +56,7 @@ async function crear(email, claveHash) {
             { _id: "usuarios" }, { $inc: { valor: 1 } },
             { returnDocument: "after", includeResultMetadata: false });
         const documento = { id: contador.valor, email, clave: claveHash, rol: "usuario",
-            confirmado: false, eliminado: false };
+            confirmado: true, eliminado: false };
         await usuarios.insertOne(documento);
         return convertir(documento);
     });

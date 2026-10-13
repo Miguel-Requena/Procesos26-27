@@ -35,28 +35,23 @@ Abre http://localhost:3000. Usa `Ctrl+C` en esa terminal para detenerlo.
 `PORT` permite configurar otro puerto; `NODE_ENV=production` habilita cookies
 Secure y TLS a MongoDB. Las variables del entorno tienen prioridad sobre `.env`.
 
-## Registro, confirmación manual y administrador
+## Registro e inicio de sesión
 
-Esta versión confirma las cuentas manualmente en Atlas; la confirmación por
-correo y OAuth se implementarán más adelante.
+El registro permite iniciar sesión inmediatamente con correo y contraseña.
+La confirmación por correo y la aprobación manual se han aplazado.
+Las cuentas nuevas se guardan con `rol: "usuario"`, `confirmado: true` y
+`eliminado: false`; la contraseña se almacena como hash bcrypt.
 
-1. Registra la cuenta desde la web con correo y contraseña. Se guarda el hash,
-   `rol: "usuario"`, `confirmado: false` y `eliminado: false`.
-2. En Atlas abre **Browse Collections / Data Explorer → procesos26_27 → usuarios**.
-3. Busca el documento por su email. Para aprobar una cuenta cambia `confirmado`
-   al booleano **true**, sin comillas. Para el administrador cambia también
-   `rol` al texto **administrador**. Guarda el documento.
-4. Inicia sesión en la aplicación con ese correo y contraseña.
+Para disponer de un administrador, registra primero su cuenta y en Atlas abre
+**Browse Collections / Data Explorer → procesos26_27 → usuarios**. Busca su email
+y cambia únicamente `rol` al texto **administrador**. Guarda el documento y vuelve
+a iniciar sesión. No cambies el hash, el ID ni `eliminado`.
+No hay ruta pública de promoción: enviar un rol en el registro no concede permisos.
 
-No hay ruta pública de confirmación o promoción: enviar `rol`, `activo` o
-`confirmado` en el registro no concede permisos. No cambies el hash `clave`,
-`id`, `_id` ni `eliminado` al confirmar. La cuenta eliminada sigue sin poder entrar.
-El estado activo se calcula como `confirmado === true && eliminado === false`.
-La sesión consulta de nuevo el documento y el rol en cada operación protegida.
-
-Solo el administrador puede listar y consultar estados. Puede eliminar cualquier
-cuenta; un usuario normal solo la suya. Sin sesión se devuelve 401; sin rol, 403.
-Entrega al profesor las credenciales de revisión por separado, nunca en GitHub.
+Solo el administrador lista y consulta estados; puede eliminar cualquier cuenta.
+Un usuario normal solo elimina la suya. Un eliminado no puede iniciar sesión.
+El servidor valida sesión y rol en cada operación. Envía al profesor las
+credenciales de revisión por separado, nunca en GitHub.
 
 ## Pruebas
 
@@ -67,9 +62,9 @@ npm.cmd test
 
 Las pruebas locales usan archivos SQLite temporales y no conectan con la base
 real aunque exista `.env`. Comprueban hashes, duplicados, cuentas pendientes,
-confirmación, roles falsificados, eliminación, recuperación de sesión y logs.
+login inmediato, roles falsificados, eliminación, recuperación de sesión y logs.
 CI usa además un MongoDB 8 desechable para probar persistencia entre procesos,
-confirmación editando documentos y restricciones. La prueba MongoDB se omite en
+roles editando documentos y restricciones. La prueba MongoDB se omite en
 local si no se define `MONGODB_TEST_URL`; solo acepta un servidor local y una base
 cuyo nombre empiece por `pruebas_`, nunca Atlas.
 
@@ -77,7 +72,7 @@ cuyo nombre empiece por `pruebas_`, nunca Atlas.
 
 Nombres de la aplicación: `PORT`, `NODE_ENV`, `DATABASE_URL`.
 `DATABASE_PATH` se reserva para SQLite en pruebas; `MONGODB_TEST_URL` para CI.
-No se usan `ADMIN_EMAIL` ni `ADMIN_CLAVE`: la confirmación y el rol se editan en Atlas.
+No se usan `ADMIN_EMAIL` ni `ADMIN_CLAVE`: el rol administrador se edita en Atlas.
 No subas `.env`, credenciales, bases ni logs al repositorio.
 
 Las sesiones están en memoria: recargar la página conserva la cookie, pero
@@ -87,7 +82,7 @@ contraseñas, cookies ni cadenas de conexión.
 
 ## API
 
-- `POST /api/registro`: email y clave; crea cuenta pendiente.
+- `POST /api/registro`: email y clave; permite entrar inmediatamente.
 - `POST /api/login`: email y clave; solo cuenta confirmada y no eliminada.
 - `POST /api/logout` y `GET /api/sesion`.
 - `GET /api/usuarios` y `GET /api/usuarios/:id/activo`: administrador.

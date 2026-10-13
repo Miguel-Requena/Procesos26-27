@@ -34,7 +34,7 @@ for (const tipo of ["registro", "login"]) {
         try {
             if (tipo === "registro") {
                 await window.api.registrar(campos.get("email"), campos.get("clave"));
-                mensaje.textContent = "Cuenta creada. Está pendiente de confirmación por el responsable de la aplicación.";
+                mensaje.textContent = "Cuenta creada. Ya puedes iniciar sesión.";
                 document.getElementById("login-email").value = campos.get("email");
                 document.getElementById("login-clave").focus();
             } else {
