@@ -1,6 +1,6 @@
 FROM node:24-bookworm-slim
 WORKDIR /app
-COPY servidor/package.json servidor/package-lock.json ./servidor/
+COPY --chown=node:node servidor/package.json servidor/package-lock.json ./servidor/
 RUN npm ci --prefix servidor --omit=dev
 COPY --chown=node:node servidor ./servidor
 COPY --chown=node:node cliente ./cliente
