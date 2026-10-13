@@ -1,0 +1,13 @@
+.git
+.github
+**/node_modules
+.env
+.env.*
+**/.env
+**/.env.*
+**/almacenamiento
+**/*.sqlite*
+**/*.log
+servidor/*.test.js
+servidor/entorno-pruebas.cjs
+servidor/ayudas-pruebas.cjs
