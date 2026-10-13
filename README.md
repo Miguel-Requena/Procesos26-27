@@ -91,13 +91,20 @@ contraseñas, cookies ni cadenas de conexión.
 
 ## Despliegue y entrega
 
-Migración a Google Cloud pendiente de conectar la nueva cuenta de Atlas y
-comprobar el servicio. El prototipo anterior está en
-https://procesos26-27.onrender.com; usa la base anterior, no esta nueva versión.
-No se trasladan automáticamente las cuentas de Neon o SQLite a Atlas.
-La URL de Cloud Run y `entrega.txt` se actualizarán cuando el nuevo despliegue
-esté verificado. Configura Cloud Build para desplegar cada cambio integrado en
-`main`, con `cloudbuild.yaml` en la raíz. Consulta [la guía de despliegue](DESPLIEGUE-GOOGLE-CLOUD.md).
+**URL del prototipo:** https://procesos26-27-gseerr4ika-no.a.run.app
+
+Google Cloud Run ejecuta cliente y servidor; MongoDB Atlas conserva usuarios,
+hashes y roles. La conexión se guarda en el secreto `atlas-database-url` de Google,
+referenciado como `DATABASE_URL`. Cloud Build despliega automáticamente los commits
+de `main` con `cloudbuild.yaml`. Las cuentas antiguas de Neon y SQLite no se copian.
+
+Verificado en producción: salud, interfaz, registro y login inmediato, cookie
+segura, sesión tras recargar, logout, restricciones para usuario normal y
+eliminación propia. La confirmación se ha aplazado. El administrador se establece
+cambiando el rol en Atlas; no se publica ninguna contraseña de revisión.
+
+`entrega.txt` contiene la URL pública y el repositorio, una por línea.
+Consulta [la guía de despliegue](DESPLIEGUE-GOOGLE-CLOUD.md).
 
 Se usa GitHub Flow: rama por cambio, pruebas locales, PR, CI en verde, revisión e
 integración por el alumno. Las tareas de DoneTonic se verifican antes de marcarlas
