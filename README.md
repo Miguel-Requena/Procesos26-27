@@ -102,7 +102,7 @@ https://procesos26-27.onrender.com; usa la base anterior, no esta nueva versión
 No se trasladan automáticamente las cuentas de Neon o SQLite a Atlas.
 La URL de Cloud Run y `entrega.txt` se actualizarán cuando el nuevo despliegue
 esté verificado. Configura Cloud Build para desplegar cada cambio integrado en
-`main`, con la imagen de la raíz del repositorio.
+`main`, con `cloudbuild.yaml` en la raíz. Consulta [la guía de despliegue](DESPLIEGUE-GOOGLE-CLOUD.md).
 
 Se usa GitHub Flow: rama por cambio, pruebas locales, PR, CI en verde, revisión e
 integración por el alumno. Las tareas de DoneTonic se verifican antes de marcarlas

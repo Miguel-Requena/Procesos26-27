@@ -1,0 +1,29 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/procesos26-27/app:$COMMIT_SHA', '.']
+  - name: gcr.io/cloud-builders/docker
+    args: ['push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/procesos26-27/app:$COMMIT_SHA']
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --project=$PROJECT_ID
+      - --region=${_REGION}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/procesos26-27/app:$COMMIT_SHA
+      - --port=8080
+      - --cpu=1
+      - --memory=512Mi
+      - --min-instances=0
+      - --max-instances=1
+      - --update-env-vars=NODE_ENV=production
+      - --update-secrets=DATABASE_URL=atlas-database-url:latest
+      - --quiet
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/procesos26-27/app:$COMMIT_SHA'
+substitutions:
+  _REGION: europe-southwest1
+  _SERVICE: procesos26-27
+options:
+  logging: CLOUD_LOGGING_ONLY
