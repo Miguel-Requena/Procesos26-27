@@ -1,202 +1,109 @@
-# SaaS User Management Application
+# Gestión de usuarios — Procesos26-27
 
-Proyecto desarrollado para la asignatura **Procesos de Ingeniería del Software**, curso 2026-2027.
-
-## Descripción
-
-El objetivo del proyecto es diseñar e implementar la estructura base de una aplicación tipo SaaS (Software as a Service) con gestión de usuarios.
-
-La aplicación seguirá una arquitectura cliente-servidor organizada en capas y permitirá gestionar usuarios, autenticación, sesiones y diferentes roles.
-
-## Arquitectura
-
-El proyecto estará dividido en frontend y backend.
-
-### Backend
-
-El backend estará organizado en tres capas:
-
-- **API:** recibe las peticiones del cliente.
-- **Lógica de negocio:** contiene las reglas y operaciones de la aplicación.
-- **Acceso a datos:** gestiona la comunicación con la base de datos.
-
-### Frontend
-
-El frontend estará dividido en:
-
-- **Presentación:** interfaz gráfica de la aplicación.
-- **Cliente API:** comunicación con el backend.
-
-El frontend no accederá directamente a la base de datos. Toda comunicación se realizará mediante la API del backend.
-
-## Funcionalidades
-
-Durante el Sprint 1 se implementarán:
-
-- Registro de usuarios.
-- Confirmación de cuenta mediante correo electrónico.
-- Inicio de sesión con email y contraseña.
-- Inicio de sesión mediante OAuth.
-- Cierre de sesión.
-- Persistencia de sesión entre recargas.
-- Roles de usuario y administrador.
-- Listado de usuarios.
-- Consulta del estado de los usuarios.
-- Eliminación de usuarios.
-- Persistencia mediante base de datos.
-- Pruebas unitarias automatizadas.
-- Registro de actividad del sistema.
-- Manejo de errores.
+Aplicación por capas: `cliente/presentacion.js` gestiona formularios y DOM;
+`cliente/rest.js` realiza HTTP; `servidor/api.js` expone la API;
+`servidor/logica.js` aplica reglas y bcrypt; `servidor/datos.js` selecciona
+el adaptador de acceso a datos. El navegador nunca accede directamente a Atlas.
 
 ## Tecnologías
 
-> Esta sección se completará a medida que se seleccionen las tecnologías del proyecto.
+| Tecnología | Motivo |
+|---|---|
+| Node.js 24 + Express | API y servidor de la interfaz en un mismo origen |
+| HTML, CSS y JavaScript + Fetch | Presentación y comunicación separadas |
+| bcrypt | Hash seguro de contraseñas |
+| MongoDB + controlador oficial | Persistencia real local o en Atlas sin SQL en la lógica |
+| MongoDB Atlas | Base de datos externa para el servidor de Google Cloud |
+| SQLite | Solo pruebas locales aisladas sin credenciales ni servicios externos |
+| GitHub Actions | Pruebas en cada push y pull request, incluido MongoDB real en CI |
+| Google Cloud Run + Cloud Build | Despliegue del contenedor y automatización desde GitHub |
 
-| Tecnología | Uso | Justificación |
-|---|---|---|
-| Node.js + Express | Backend y API REST | Ligero y suficiente para el esqueleto inicial |
-| HTML | Frontend mínimo | Permite validar el despliegue desde el primer día |
-| JavaScript y Fetch | Presentación y cliente API separados | Permite formularios y recuperación de sesión sin añadir un framework |
-| bcrypt | Hash de contraseñas | Almacena contraseñas con un hash diseñado para este uso |
-| Memoria del proceso | Datos de usuarios | Persistencia en memoria solicitada para el Hito 1 |
-| GitHub | Control de versiones | Gestión del repositorio, ramas y Pull Requests |
-| GitHub Actions + Render | CI/CD | Pruebas en cada cambio y despliegue en `main` |
+## Ejecutar en local
 
-## Ejecución en local
+Requiere Node.js 24. Copia `.env.example` a `.env` en la raíz y configura
+`DATABASE_URL` con la conexión de Atlas, incluyendo el nombre de la base
+`procesos26_27` en la URL. El archivo `.env` se ignora en Git.
+También puedes usar MongoDB local con `mongodb://localhost:27017/procesos26_27`.
 
-> Esta sección se completará cuando esté disponible la primera versión ejecutable del proyecto.
-
-```bash
+```powershell
 cd servidor
-npm install
-npm start
+npm.cmd ci
+npm.cmd start
 ```
 
-La aplicación estará disponible en `http://localhost:3000`. La página mínima se sirve
-desde `cliente/index.html`.
+Abre http://localhost:3000. Usa `Ctrl+C` en esa terminal para detenerlo.
+`PORT` permite configurar otro puerto; `NODE_ENV=production` habilita cookies
+Secure y TLS a MongoDB. Las variables del entorno tienen prioridad sobre `.env`.
+
+## Registro, confirmación manual y administrador
+
+Esta versión confirma las cuentas manualmente en Atlas; la confirmación por
+correo y OAuth se implementarán más adelante.
+
+1. Registra la cuenta desde la web con correo y contraseña. Se guarda el hash,
+   `rol: "usuario"`, `confirmado: false` y `eliminado: false`.
+2. En Atlas abre **Browse Collections / Data Explorer → procesos26_27 → usuarios**.
+3. Busca el documento por su email. Para aprobar una cuenta cambia `confirmado`
+   al booleano **true**, sin comillas. Para el administrador cambia también
+   `rol` al texto **administrador**. Guarda el documento.
+4. Inicia sesión en la aplicación con ese correo y contraseña.
+
+No hay ruta pública de confirmación o promoción: enviar `rol`, `activo` o
+`confirmado` en el registro no concede permisos. No cambies el hash `clave`,
+`id`, `_id` ni `eliminado` al confirmar. La cuenta eliminada sigue sin poder entrar.
+El estado activo se calcula como `confirmado === true && eliminado === false`.
+La sesión consulta de nuevo el documento y el rol en cada operación protegida.
+
+Solo el administrador puede listar y consultar estados. Puede eliminar cualquier
+cuenta; un usuario normal solo la suya. Sin sesión se devuelve 401; sin rol, 403.
+Entrega al profesor las credenciales de revisión por separado, nunca en GitHub.
 
 ## Pruebas
 
-Las pruebas del proyecto serán automatizadas y podrán ejecutarse mediante un único comando.
-
-```bash
+```powershell
 cd servidor
-npm test
+npm.cmd test
 ```
 
-## Variables de entorno
+Las pruebas locales usan archivos SQLite temporales y no conectan con la base
+real aunque exista `.env`. Comprueban hashes, duplicados, cuentas pendientes,
+confirmación, roles falsificados, eliminación, recuperación de sesión y logs.
+CI usa además un MongoDB 8 desechable para probar persistencia entre procesos,
+confirmación editando documentos y restricciones. La prueba MongoDB se omite en
+local si no se define `MONGODB_TEST_URL`; solo acepta un servidor local y una base
+cuyo nombre empiece por `pruebas_`, nunca Atlas.
 
-Las claves y secretos necesarios para ejecutar la aplicación no se almacenarán en el repositorio.
+## Variables y secretos
 
-El proyecto incluirá un archivo `.env.example` con las variables necesarias sin sus valores reales.
+Nombres de la aplicación: `PORT`, `NODE_ENV`, `DATABASE_URL`.
+`DATABASE_PATH` se reserva para SQLite en pruebas; `MONGODB_TEST_URL` para CI.
+No se usan `ADMIN_EMAIL` ni `ADMIN_CLAVE`: la confirmación y el rol se editan en Atlas.
+No subas `.env`, credenciales, bases ni logs al repositorio.
 
-No se necesitan variables de entorno para ejecutar el esqueleto localmente. El puerto
-de producción se toma de `PORT` y, si no existe, se usa el 3000.
-En producción se configura `NODE_ENV=production` para que la cookie de sesión use
-`Secure`; la aplicación debe servirse por HTTPS. Consulta `.env.example`.
+Las sesiones están en memoria: recargar la página conserva la cookie, pero
+reiniciar o escalar a cero termina las sesiones. Los usuarios permanecen en Atlas.
+Los logs incluyen fechas, operaciones, resultados e IDs, sin correos, hashes,
+contraseñas, cookies ni cadenas de conexión.
 
-## Despliegue
+## API
 
-La aplicación se desplegará automáticamente en un proveedor cloud mediante el pipeline de CI/CD.
+- `POST /api/registro`: email y clave; crea cuenta pendiente.
+- `POST /api/login`: email y clave; solo cuenta confirmada y no eliminada.
+- `POST /api/logout` y `GET /api/sesion`.
+- `GET /api/usuarios` y `GET /api/usuarios/:id/activo`: administrador.
+- `DELETE /api/usuarios/:id`: administrador o titular de la cuenta.
+- `GET /api/salud`: comprueba conexión con la base.
 
-**URL de producción:** la URL asignada por Render al crear el servicio a partir de
-`render.yaml`.
+## Despliegue y entrega
 
-Para activar el despliegue automático, crea un servicio web en Render usando este
-repositorio, genera un Deploy Hook y guárdalo en GitHub como secreto
-`RENDER_DEPLOY_HOOK`. El workflow `.github/workflows/cd.yml` lo invocará en cada push
-a `main`; hasta entonces el workflow deja constancia de que falta esa configuración.
+Migración a Google Cloud pendiente de conectar la nueva cuenta de Atlas y
+comprobar el servicio. El prototipo anterior está en
+https://procesos26-27.onrender.com; usa la base anterior, no esta nueva versión.
+No se trasladan automáticamente las cuentas de Neon o SQLite a Atlas.
+La URL de Cloud Run y `entrega.txt` se actualizarán cuando el nuevo despliegue
+esté verificado. Configura Cloud Build para desplegar cada cambio integrado en
+`main`, con la imagen de la raíz del repositorio.
 
-### API del Hito 1
-
-- `POST /api/registro` con `{ "email": "...", "clave": "..." }`
-- `POST /api/login` con `{ "email": "...", "clave": "..." }`
-- `POST /api/logout` invalida la sesión y elimina su cookie.
-- `GET /api/sesion` recupera el usuario autenticado o devuelve 401.
-- `GET /api/usuarios`
-- `GET /api/usuarios/:id/activo`
-- `DELETE /api/usuarios/:id`
-- `GET /api/salud`
-
-### Estado del Hito 2
-
-La página incluye registro, login y cierre de sesión. `cliente/rest.js` realiza
-las peticiones HTTP; `cliente/presentacion.js` gestiona los formularios y el DOM.
-El backend sirve ambos desde el mismo origen. `servidor/datos.js` almacena los
-usuarios en memoria y `servidor/logica.js` aplica las reglas y el hash bcrypt.
-
-El registro normaliza el email y exige una contraseña de al menos 6 caracteres y
-como máximo 72 bytes UTF-8, el límite de bcrypt. El login crea un token aleatorio
-en una cookie HttpOnly y SameSite=Strict, con una duración de 8 horas. El token y
-el usuario asociado se validan en el servidor. Recargar conserva la sesión;
-cerrarla invalida el token aunque se vuelva a enviar la cookie anterior.
-
-Las rutas de `/api/usuarios` requieren una sesión válida y devuelven 401 sin ella.
-El registro, login y salud son públicos. Los permisos por rol se implementarán
-en P5 (hito 3): en esta versión las rutas de usuarios son accesibles a cualquier
-usuario autenticado. La confirmación por correo corresponde a P8 (hito 4).
-Por ahora las cuentas locales se activan al registrarse.
-
-Los usuarios y sesiones se pierden al reiniciar el servidor. La persistencia real
-corresponde a P9. Esto permite probar la sesión entre recargas sin adelantar la
-base de datos del hito 3.
-
-### Seguimiento de tareas del Hito 2
-
-Cada rama depende de la anterior. Los PR se revisan e integran en este orden;
-después de integrar el anterior, la base del siguiente PR se cambia a `main`.
-
-| PBI / tarea | Rama | Cambio |
-|---|---|---|
-| P7 / T5 | `tarea-5-cierre-sesion` | Creación e invalidación de sesiones |
-| P7 / T6 | `tarea-6-sesion-entre-recargas` | Recuperación de la sesión al cargar |
-| P6 / T10 | `tarea-10-registro-local-seguro` | Validación y almacenamiento con hash |
-| P10 / T11 | `tarea-11-interfaz-cliente-api` | Formularios y comunicación separados |
-| P7 / T12 | `tarea-12-rutas-protegidas` | Protección de rutas y pruebas HTTP |
-
-En DoneTonic las tareas pasan a Verificando mientras se revisan sus PR. Se
-marcan Hecho después de integrar con CI en verde y comprobar el resultado.
-
-## Flujo de trabajo
-
-El proyecto utiliza **GitHub Flow**.
-
-Para cada funcionalidad o corrección:
-
-1. Crear una nueva rama desde `main`.
-2. Desarrollar los cambios en dicha rama.
-3. Ejecutar las pruebas automatizadas.
-4. Crear un Pull Request.
-5. Comprobar que el CI finaliza correctamente.
-6. Integrar los cambios en `main`.
-7. Desplegar automáticamente la nueva versión.
-
-## Acceso de administrador
-
-Las instrucciones para acceder como administrador durante la evaluación se indicarán aquí.
-
-Las credenciales de prueba no se publicarán en el repositorio.
-
-## Autor
-
-## Configuración del Hito 3
-
-Requiere Node.js 24. Copia `.env.example` a `.env` en la raíz para la configuración
-local. El archivo no se sube a Git; las variables del entorno tienen prioridad.
-Variables: `PORT`, `NODE_ENV`, `DATABASE_PATH`, `ADMIN_EMAIL`, `ADMIN_CLAVE`.
-En cloud se introducen en el panel del proveedor, nunca en el código ni en YAML.
-No publiques valores reales, bases de datos o logs.
-
-SQLite necesita un directorio persistente. Render gratuito no conserva archivos
-al reiniciar: esta configuración no debe usarse allí sin disco persistente.
-En Render configura `DATABASE_PATH` dentro de `RENDER_DISK_PATH`; el servidor
-rechaza arrancar si no puede garantizar ese almacenamiento. Para un despliegue
-gratuito habrá que elegir almacenamiento externo persistente antes de publicarlo.
-
-## Autor
-
-Miguel
-
-## Asignatura
-
-**Procesos de Ingeniería del Software — Curso 2026-2027**
+Se usa GitHub Flow: rama por cambio, pruebas locales, PR, CI en verde, revisión e
+integración por el alumno. Las tareas de DoneTonic se verifican antes de marcarlas
+Hecho. La fecha de entrega usa el último commit de `main`, no las ramas pendientes.

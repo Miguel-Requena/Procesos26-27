@@ -16,3 +16,9 @@ test("no permite SQLite en Render sin almacenamiento persistente", () => {
     assert.notEqual(cargar({ RENDER_DISK_PATH: "/datos", DATABASE_PATH: "/fuera/usuarios.sqlite" }).status, 0);
     assert.equal(cargar({ RENDER_DISK_PATH: "/datos", DATABASE_PATH: "/datos/usuarios.sqlite" }).status, 0);
 });
+test("Render admite MongoDB externo y rechaza cadenas inválidas sin mostrar secretos", () => {
+    assert.equal(cargar({ RENDER: "true", DATABASE_URL: "mongodb://localhost/pruebas" }).status, 0);
+    const resultado = cargar({ DATABASE_URL: "https://secreto-invalido" });
+    assert.notEqual(resultado.status, 0);
+    assert.equal(resultado.stderr.includes("secreto-invalido"), false);
+});
