@@ -3,7 +3,8 @@ const logica = require("./logica");
 async function ejecutar() {
     const { ADMIN_EMAIL, ADMIN_CLAVE } = process.env;
     if (!ADMIN_EMAIL || !ADMIN_CLAVE) throw new Error("Configura ADMIN_EMAIL y ADMIN_CLAVE en el entorno o en .env");
-    await logica.inicializarAdministrador(ADMIN_EMAIL, ADMIN_CLAVE);
+    const admin = await logica.inicializarAdministrador(ADMIN_EMAIL, ADMIN_CLAVE);
+    require("./actividad").registrar("administrador_inicializado", { usuarioId: admin.id });
     console.log("Administrador inicializado. Las credenciales no se muestran ni se guardan en código.");
 }
 ejecutar().catch(() => {

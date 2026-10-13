@@ -58,7 +58,7 @@ Durante el Sprint 1 se implementarán:
 | HTML | Frontend mínimo | Permite validar el despliegue desde el primer día |
 | JavaScript y Fetch | Presentación y cliente API separados | Permite formularios y recuperación de sesión sin añadir un framework |
 | bcrypt | Hash de contraseñas | Almacena contraseñas con un hash diseñado para este uso |
-| Memoria del proceso | Datos de usuarios | Persistencia en memoria solicitada para el Hito 1 |
+| SQLite (node:sqlite) | Datos de usuarios | Base real que mantiene el contrato de la capa de datos y conserva cuentas entre reinicios |
 | GitHub | Control de versiones | Gestión del repositorio, ramas y Pull Requests |
 | GitHub Actions + Render | CI/CD | Pruebas en cada cambio y despliegue en `main` |
 
@@ -90,10 +90,11 @@ Las claves y secretos necesarios para ejecutar la aplicación no se almacenarán
 
 El proyecto incluirá un archivo `.env.example` con las variables necesarias sin sus valores reales.
 
-No se necesitan variables de entorno para ejecutar el esqueleto localmente. El puerto
+En local se usan valores por defecto para el puerto y la ruta de SQLite. El puerto
 de producción se toma de `PORT` y, si no existe, se usa el 3000.
 En producción se configura `NODE_ENV=production` para que la cookie de sesión use
-`Secure`; la aplicación debe servirse por HTTPS. Consulta `.env.example`.
+`Secure`; la aplicación debe servirse por HTTPS. Consulta `.env.example`, que se
+carga automáticamente al copiarlo como `.env` en la raíz.
 
 ## Despliegue
 
@@ -137,9 +138,8 @@ en P5 (hito 3): en esta versión las rutas de usuarios son accesibles a cualquie
 usuario autenticado. La confirmación por correo corresponde a P8 (hito 4).
 Por ahora las cuentas locales se activan al registrarse.
 
-Los usuarios y sesiones se pierden al reiniciar el servidor. La persistencia real
-corresponde a P9. Esto permite probar la sesión entre recargas sin adelantar la
-base de datos del hito 3.
+En el Hito 2 los usuarios y sesiones estaban en memoria. El Hito 3 conserva
+usuarios y roles en SQLite; las sesiones se siguen invalidando al reiniciar.
 
 ### Seguimiento de tareas del Hito 2
 
@@ -172,8 +172,6 @@ Para cada funcionalidad o corrección:
 7. Desplegar automáticamente la nueva versión.
 
 ## Acceso de administrador
-
-Las instrucciones para acceder como administrador durante la evaluación se indicarán aquí.
 
 Las credenciales de prueba no se publicarán en el repositorio.
 
@@ -213,6 +211,13 @@ se verifican en la lógica y el servidor responde 403 al acceso prohibido; una
 cuenta eliminada no puede iniciar sesión ni usar sus sesiones anteriores.
 La confirmación de correo y OAuth siguen pendientes para el Hito 4: las cuentas
 locales se activan al registrarse en esta versión provisional.
+
+El módulo `actividad.js` emite líneas JSON a la salida del servidor: fecha, evento,
+resultado HTTP e identificadores numéricos. Registra altas, login correcto o fallido,
+logout, consultas, eliminaciones, accesos rechazados e inicio del servidor y del
+administrador. No registra emails, contraseñas, hashes, cookies, tokens, cuerpos,
+cabeceras ni cadenas de conexión. En local los logs aparecen en la terminal; en
+cloud se consultan en el panel del proveedor. No se suben archivos de log a Git.
 
 ## Autor
 

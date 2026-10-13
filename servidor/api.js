@@ -4,9 +4,11 @@ const path = require("path");
 
 const logica = require("./logica");
 const sesiones = require("./sesiones");
+const actividad = require("./actividad");
 
 const app = express();
 
+app.use(actividad.middleware);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "cliente")));
 app.use("/api", (req, res, next) => {
@@ -33,6 +35,7 @@ app.post("/api/registro", async (req, res) => {
         const { email, clave } = req.body;
 
         const usuario = await logica.registrarUsuario(email, clave);
+        req.usuarioActividad = usuario.id;
 
         res.status(201).json({
             mensaje: "Usuario registrado correctamente",
@@ -51,6 +54,7 @@ app.post("/api/login", async (req, res) => {
         const { email, clave } = req.body;
 
         const usuario = await logica.iniciarSesion(email, clave);
+        req.usuarioActividad = usuario.id;
         sesiones.crearSesion(req, res, usuario.id);
 
         res.status(200).json({
@@ -66,6 +70,7 @@ app.post("/api/login", async (req, res) => {
 });
 
 app.post("/api/logout", (req, res) => {
+    req.usuarioActividad = sesiones.obtenerUsuarioId(req);
     sesiones.cerrarSesion(req, res);
     res.status(200).json({ mensaje: "Sesión cerrada correctamente" });
 });
@@ -74,6 +79,7 @@ app.get("/api/sesion", (req, res) => {
     res.set("Cache-Control", "no-store");
     try {
         const usuario = logica.obtenerUsuarioSesion(sesiones.obtenerUsuarioId(req));
+        req.usuarioActividad = usuario.id;
         res.status(200).json({ usuario });
     } catch (error) {
         sesiones.cerrarSesion(req, res);
@@ -87,14 +93,6 @@ app.get("/api/usuarios", (req, res) => {
     try {
         res.status(200).json({ usuarios: logica.listarUsuarios(req.usuario) });
     } catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo completar la operación" }); }
-});
-
-app.use((error, req, res, next) => {
-    if (error.type === "entity.parse.failed") {
-        return res.status(400).json({ error: "El cuerpo de la petición debe ser JSON válido" });
-    }
-    console.error("Error no controlado:", error.message);
-    res.status(500).json({ error: "No se pudo completar la operación" });
 });
 
 app.get("/api/usuarios/:id/activo", (req, res) => {
@@ -118,9 +116,15 @@ app.delete("/api/usuarios/:id", (req, res) => {
     }
 });
 
+app.use((error, req, res, next) => {
+    if (error.type === "entity.parse.failed") return res.status(400).json({ error: "El cuerpo de la petición debe ser JSON válido" });
+    res.status(500).json({ error: "No se pudo completar la operación" });
+});
+
 if (require.main === module) {
     const PORT = configuracion.puerto;
     app.listen(PORT, () => {
+        actividad.registrar("servidor_iniciado", { puerto: PORT });
         console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
     });
 }
