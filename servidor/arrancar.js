@@ -16,8 +16,9 @@ async function arrancar() {
         console.log(`Servidor ejecutándose en el puerto ${configuracion.puerto}`);
     });
 }
-arrancar().catch(async () => {
+arrancar().catch(async error => {
     console.error("No se pudo iniciar el servidor. Revisa la conexión y las variables de entorno.");
+    if (error.codigo) console.error("Diagnóstico de conexión:", error.codigo);
     await datos.cerrar();
     process.exitCode = 1;
 });

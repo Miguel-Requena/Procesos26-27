@@ -8,9 +8,11 @@ const pool = new Pool({ connectionString: conexion.toString(), max: 5,
     connectionTimeoutMillis: 15000, idleTimeoutMillis: 10000, allowExitOnIdle: true,
     enableChannelBinding: true });
 pool.on("error", () => console.error("Se perdió una conexión con la base de datos"));
-function errorBaseDatos() {
+function errorBaseDatos(causa) {
     const error = new Error("No se pudo acceder a la base de datos");
     error.estado = 503;
+    const codigos = new Set(["28P01", "28000", "3D000", "42501", "ENOTFOUND", "ETIMEDOUT", "ECONNREFUSED", "ECONNRESET", "ERR_TLS_CERT_ALTNAME_INVALID", "UNABLE_TO_VERIFY_LEAF_SIGNATURE", "SELF_SIGNED_CERT_IN_CHAIN", "CERT_HAS_EXPIRED"]);
+    error.codigo = codigos.has(causa?.code) ? causa.code : "CONEXION_NO_DISPONIBLE";
     return error;
 }
 let inicializacion;
@@ -22,7 +24,7 @@ async function inicializar() {
             clave TEXT NOT NULL,
             activo BOOLEAN NOT NULL DEFAULT TRUE,
             rol TEXT NOT NULL DEFAULT 'usuario' CHECK(rol IN ('usuario', 'administrador'))
-        )`).catch(() => { inicializacion = undefined; throw errorBaseDatos(); });
+        )`).catch(error => { inicializacion = undefined; throw errorBaseDatos(error); });
     }
     await inicializacion;
 }
@@ -31,7 +33,7 @@ async function consultar(sql, parametros = []) {
     try { return await pool.query(sql, parametros); }
     catch (error) {
         if (error.code === "23505") throw new Error("Ya existe un usuario con ese email");
-        throw errorBaseDatos();
+        throw errorBaseDatos(error);
     }
 }
 async function buscarPorEmail(email) { return (await consultar("SELECT * FROM usuarios WHERE email = $1", [email])).rows[0]; }
