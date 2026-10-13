@@ -7,6 +7,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: pruebas
+          POSTGRES_USER: pruebas
+          POSTGRES_PASSWORD: solo-pruebas-ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pruebas -d pruebas"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRES_TEST_URL: postgresql://pruebas:solo-pruebas-ci@localhost:5432/pruebas
     defaults:
       run:
         working-directory: servidor

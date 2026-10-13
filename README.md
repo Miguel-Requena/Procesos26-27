@@ -58,7 +58,8 @@ Durante el Sprint 1 se implementarán:
 | HTML | Frontend mínimo | Permite validar el despliegue desde el primer día |
 | JavaScript y Fetch | Presentación y cliente API separados | Permite formularios y recuperación de sesión sin añadir un framework |
 | bcrypt | Hash de contraseñas | Almacena contraseñas con un hash diseñado para este uso |
-| SQLite (node:sqlite) | Datos de usuarios | Base real que mantiene el contrato de la capa de datos y conserva cuentas entre reinicios |
+| SQLite (node:sqlite) | Datos locales | Conserva cuentas entre reinicios sin instalar un servidor de base de datos |
+| PostgreSQL + pg + Neon | Datos en cloud | Conserva cuentas fuera del disco efímero de Render Free |
 | GitHub | Control de versiones | Gestión del repositorio, ramas y Pull Requests |
 | GitHub Actions + Render | CI/CD | Pruebas en cada cambio y despliegue en `main` |
 
@@ -186,23 +187,36 @@ del entorno cuando hayas terminado; envía las credenciales al profesor por sepa
 
 Requiere Node.js 24. Copia `.env.example` a `.env` en la raíz para la configuración
 local. El archivo no se sube a Git; las variables del entorno tienen prioridad.
-Variables: `PORT`, `NODE_ENV`, `DATABASE_PATH`, `ADMIN_EMAIL`, `ADMIN_CLAVE`.
+Variables: `PORT`, `NODE_ENV`, `DATABASE_PATH`, `DATABASE_URL`, `ADMIN_EMAIL`, `ADMIN_CLAVE`.
 En cloud se introducen en el panel del proveedor, nunca en el código ni en YAML.
 No publiques valores reales, bases de datos o logs.
 
-SQLite necesita un directorio persistente. Render gratuito no conserva archivos
-al reiniciar: esta configuración no debe usarse allí sin disco persistente.
-En Render configura `DATABASE_PATH` dentro de `RENDER_DISK_PATH`; el servidor
-rechaza arrancar si no puede garantizar ese almacenamiento. Para un despliegue
-gratuito habrá que elegir almacenamiento externo persistente antes de publicarlo.
+Render gratuito no conserva archivos al reiniciar. En Render configura
+`DATABASE_URL` con la conexión PostgreSQL de Neon, como variable secreta.
+Si no existe `DATABASE_URL`, se usa SQLite local; SQLite en Render requiere
+un disco persistente y el servidor rechaza usar allí un archivo efímero.
 
-La capa de datos utiliza SQLite mediante `node:sqlite`. Se elige para mantener el
-contrato síncrono de `datos.js` sin cambiar la lógica al sustituir la memoria.
+La capa de datos selecciona el adaptador SQLite o PostgreSQL. Ambos exponen las
+mismas operaciones asíncronas, y la lógica espera sus resultados con `await`, sin
+conocer el motor ni incluir SQL. Las reglas de usuarios y permisos son las mismas.
+La primera sustitución de memoria por SQLite se hizo sin cambiar la lógica;
+el despliegue remoto introduce la espera asíncrona necesaria para PostgreSQL.
 Por defecto la base se crea en `servidor/almacenamiento/usuarios.sqlite`; configura
 `DATABASE_PATH` para otra ubicación. Guarda usuarios y hashes, y las eliminaciones
 son lógicas. Al reiniciar se conservan las cuentas, aunque las sesiones en memoria
 terminan y hay que iniciar sesión de nuevo. `npm test` usa bases temporales separadas,
 nunca la de desarrollo, y comprueba la persistencia entre procesos independientes.
+
+`npm start` ejecuta `arrancar.js`, comprueba la base de datos y crea el primer
+administrador si se han configurado `ADMIN_EMAIL` y `ADMIN_CLAVE`. Esto permite
+inicializarlo también en Render Free, sin necesitar una terminal remota.
+Las cuentas de SQLite local y Neon son independientes: no se copian automáticamente.
+
+El CI añade PostgreSQL 18 desechable y ejecuta la misma prueba de persistencia y
+permisos contra ese motor. En local esa prueba se omite si no hay una conexión
+`POSTGRES_TEST_URL` a una base exclusivamente de pruebas. Nunca introduzcas ahí
+la conexión de Neon real. Las pruebas locales siempre aíslan SQLite aunque el
+entorno de la aplicación tenga configurado `DATABASE_URL`.
 
 Los registros públicos siempre crean el rol `usuario`, aunque el cliente envíe
 otro. Solo `administrador` puede listar y consultar estados. El administrador

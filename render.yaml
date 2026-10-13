@@ -10,5 +10,5 @@ services:
         value: 24
       - key: NODE_ENV
         value: production
-      - key: DATABASE_PATH
+      - key: DATABASE_URL
         sync: false

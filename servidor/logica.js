@@ -10,13 +10,13 @@ function errorAcceso(mensaje, estado) {
     error.estado = estado;
     return error;
 }
-function usuarioAutorizado(actor) {
-    const usuario = actor && datos.buscarPorId(actor.id);
+async function usuarioAutorizado(actor) {
+    const usuario = actor && await datos.buscarPorId(actor.id);
     if (!usuario?.activo) throw errorAcceso("Debes iniciar sesión", 401);
     return usuario;
 }
-function exigirAdministrador(actor) {
-    if (usuarioAutorizado(actor).rol !== "administrador") throw errorAcceso("Esta operación requiere un administrador", 403);
+async function exigirAdministrador(actor) {
+    if ((await usuarioAutorizado(actor)).rol !== "administrador") throw errorAcceso("Esta operación requiere un administrador", 403);
 }
 
 function normalizarEmail(email) {
@@ -39,7 +39,7 @@ async function registrarUsuario(email, clave) {
 
     email = normalizarEmail(email);
     validarClave(clave);
-    const usuarioExistente = datos.buscarPorEmail(email);
+    const usuarioExistente = await datos.buscarPorEmail(email);
 
     if (usuarioExistente) {
         throw new Error("Ya existe un usuario con ese email");
@@ -47,7 +47,7 @@ async function registrarUsuario(email, clave) {
 
     const claveHash = await bcrypt.hash(clave, 10);
 
-    const usuario = datos.crear(email, claveHash);
+    const usuario = await datos.crear(email, claveHash);
 
     return publico(usuario);
 }
@@ -59,7 +59,7 @@ async function iniciarSesion(email, clave) {
 
     email = normalizarEmail(email);
     validarClave(clave);
-    const usuario = datos.buscarPorEmail(email);
+    const usuario = await datos.buscarPorEmail(email);
 
     if (!usuario || !usuario.activo) {
         throw new Error("Credenciales incorrectas");
@@ -77,20 +77,20 @@ async function iniciarSesion(email, clave) {
     return publico(usuario);
 }
 
-function listarUsuarios(actor) {
-    exigirAdministrador(actor);
-    return datos.listar().map(publico);
+async function listarUsuarios(actor) {
+    await exigirAdministrador(actor);
+    return (await datos.listar()).map(publico);
 }
 
-function obtenerUsuarioSesion(id) {
-    const usuario = datos.buscarPorId(id);
+async function obtenerUsuarioSesion(id) {
+    const usuario = await datos.buscarPorId(id);
     if (!usuario || !usuario.activo) throw new Error("Sesión no válida");
     return publico(usuario);
 }
 
-function comprobarUsuarioActivo(id, actor) {
-    exigirAdministrador(actor);
-    const usuario = datos.buscarPorId(id);
+async function comprobarUsuarioActivo(id, actor) {
+    await exigirAdministrador(actor);
+    const usuario = await datos.buscarPorId(id);
 
     if (!usuario) {
         throw new Error("Usuario no encontrado");
@@ -99,29 +99,29 @@ function comprobarUsuarioActivo(id, actor) {
     return usuario.activo;
 }
 
-function eliminarUsuario(id, actor) {
-    const solicitante = usuarioAutorizado(actor);
+async function eliminarUsuario(id, actor) {
+    const solicitante = await usuarioAutorizado(actor);
     if (solicitante.rol !== "administrador" && solicitante.id !== Number(id)) {
         throw errorAcceso("Solo puedes eliminar tu propia cuenta", 403);
     }
-    const usuario = datos.desactivar(id);
+    const usuario = await datos.desactivar(id);
 
     return publico(usuario);
 }
 
 async function inicializarAdministrador(email, clave) {
     email = normalizarEmail(email);
-    const existente = datos.buscarPorEmail(email);
+    const existente = await datos.buscarPorEmail(email);
     if (existente && (!existente.activo || existente.rol !== "administrador")) {
         throw new Error("El email ya pertenece a otra cuenta; no se promociona automáticamente");
     }
     if (existente) return publico(existente);
     const nuevo = await registrarUsuario(email, clave);
-    return publico(datos.promoverAdministrador(nuevo.id));
+    return publico(await datos.promoverAdministrador(nuevo.id));
 }
 
-function limpiarUsuarios() {
-    datos.limpiar();
+async function limpiarUsuarios() {
+    await datos.limpiar();
 }
 
 module.exports = {
