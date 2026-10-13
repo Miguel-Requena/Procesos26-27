@@ -2,7 +2,13 @@ services:
   - type: web
     name: procesos26-27
     runtime: node
-    rootDir: servidor
-    buildCommand: npm ci
-    startCommand: npm start
+    buildCommand: npm ci --prefix servidor
+    startCommand: npm start --prefix servidor
     healthCheckPath: /api/salud
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_PATH
+        sync: false

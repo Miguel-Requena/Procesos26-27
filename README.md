@@ -177,8 +177,6 @@ Las instrucciones para acceder como administrador durante la evaluación se indi
 
 Las credenciales de prueba no se publicarán en el repositorio.
 
-## Autor
-
 ## Configuración del Hito 3
 
 Requiere Node.js 24. Copia `.env.example` a `.env` en la raíz para la configuración
@@ -192,6 +190,14 @@ al reiniciar: esta configuración no debe usarse allí sin disco persistente.
 En Render configura `DATABASE_PATH` dentro de `RENDER_DISK_PATH`; el servidor
 rechaza arrancar si no puede garantizar ese almacenamiento. Para un despliegue
 gratuito habrá que elegir almacenamiento externo persistente antes de publicarlo.
+
+La capa de datos utiliza SQLite mediante `node:sqlite`. Se elige para mantener el
+contrato síncrono de `datos.js` sin cambiar la lógica al sustituir la memoria.
+Por defecto la base se crea en `servidor/almacenamiento/usuarios.sqlite`; configura
+`DATABASE_PATH` para otra ubicación. Guarda usuarios y hashes, y las eliminaciones
+son lógicas. Al reiniciar se conservan las cuentas, aunque las sesiones en memoria
+terminan y hay que iniciar sesión de nuevo. `npm test` usa bases temporales separadas,
+nunca la de desarrollo, y comprueba la persistencia entre procesos independientes.
 
 ## Autor
 
