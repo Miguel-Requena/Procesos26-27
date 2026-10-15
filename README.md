@@ -82,6 +82,11 @@ contraseñas, cookies ni cadenas de conexión.
 
 ## API
 
+- `POST /api/prueba/email` (público): recibe `{ "email": " Ana@X.com " }` y
+  devuelve `200 { "email": "ana@x.com" }`. Normaliza con trim y minúsculas;
+  exige una sola arroba, parte local no vacía, ausencia de espacios y un dominio
+  con punto que no empiece ni termine por punto. Los datos ausentes, de tipo
+  incorrecto o inválidos devuelven `400 { "error": "EMAIL_INVALIDO" }`.
 - `POST /api/registro`: email y clave; permite entrar inmediatamente.
 - `POST /api/login`: email y clave; solo cuenta confirmada y no eliminada.
 - `POST /api/logout` y `GET /api/sesion`.
