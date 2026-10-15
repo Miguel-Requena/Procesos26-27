@@ -20,10 +20,15 @@ async function exigirAdministrador(actor) {
 }
 
 function normalizarEmail(email) {
-    if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-        throw new Error("Introduce un email válido");
+    if (typeof email !== "string") throw new Error("EMAIL_INVALIDO");
+    const normalizado = email.trim().toLowerCase();
+    const partes = normalizado.split("@");
+    const dominio = partes[1];
+    if (partes.length !== 2 || !partes[0] || !dominio || /\s/.test(normalizado) ||
+        !dominio.includes(".") || dominio.startsWith(".") || dominio.endsWith(".")) {
+        throw new Error("EMAIL_INVALIDO");
     }
-    return email.trim().toLowerCase();
+    return normalizado;
 }
 
 function validarClave(clave) {
@@ -116,6 +121,7 @@ async function limpiarUsuarios() {
 }
 
 module.exports = {
+    normalizarEmail,
     registrarUsuario,
     iniciarSesion,
     obtenerUsuarioSesion,

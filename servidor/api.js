@@ -33,6 +33,14 @@ app.get("/api/salud", async (req, res) => {
     } catch { res.status(503).json({ error: "Base de datos no disponible" }); }
 });
 
+app.post("/api/prueba/email", (req, res) => {
+    try {
+        res.status(200).json({ email: logica.normalizarEmail(req.body?.email) });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
 app.post("/api/registro", async (req, res) => {
     try {
         const { email, clave } = req.body;
