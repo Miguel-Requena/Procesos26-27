@@ -25,6 +25,7 @@ async function inicializar() {
         await client.connect();
         await usuarios.createIndex({ email: 1 }, { unique: true });
         await usuarios.createIndex({ id: 1 }, { unique: true });
+        await usuarios.createIndex({ googleSub: 1 }, { unique: true, sparse: true });
         // Se crea una única vez; las altas incrementan el contador atómicamente.
         await db.collection("contadores").updateOne({ _id: "usuarios" },
             { $setOnInsert: { valor: 0 } }, { upsert: true });
@@ -50,17 +51,28 @@ async function buscarPorId(id) {
 async function listar() {
     return ejecutar(async () => (await usuarios.find().sort({ id: 1 }).toArray()).map(convertir));
 }
-async function crear(email, claveHash) {
+async function crear(email, claveHash, confirmado = false) {
     return ejecutar(async () => {
         const contador = await db.collection("contadores").findOneAndUpdate(
             { _id: "usuarios" }, { $inc: { valor: 1 } },
             { returnDocument: "after", includeResultMetadata: false });
         const documento = { id: contador.valor, email, clave: claveHash, rol: "usuario",
-            confirmado: true, eliminado: false };
+            confirmado, eliminado: false };
         await usuarios.insertOne(documento);
         return convertir(documento);
     });
 }
+async function guardarConfirmacion(id, hash, caduca) {
+    return ejecutar(() => usuarios.updateOne({ id, eliminado: false }, { $set: { confirmacionHash: hash, confirmacionCaduca: caduca } }));
+}
+async function confirmar(hash) {
+    return ejecutar(async () => convertir(await usuarios.findOneAndUpdate(
+        { confirmacionHash: hash, confirmacionCaduca: { $gt: Date.now() }, eliminado: false },
+        { $set: { confirmado: true }, $unset: { confirmacionHash: "", confirmacionCaduca: "" } },
+        { returnDocument: "after", includeResultMetadata: false })));
+}
+async function buscarGoogle(sub) { return ejecutar(async () => convertir(await usuarios.findOne({ googleSub: sub }))); }
+async function vincularGoogle(id, sub) { return ejecutar(() => usuarios.updateOne({ id, googleSub: { $exists: false } }, { $set: { googleSub: sub } })); }
 async function desactivar(id) {
     if (!Number.isSafeInteger(Number(id))) throw new Error("Usuario no encontrado");
     return ejecutar(async () => {
@@ -72,4 +84,4 @@ async function desactivar(id) {
 }
 async function limpiar() { throw new Error("No se permite limpiar la base MongoDB de la aplicación"); }
 async function cerrar() { await client.close(); }
-module.exports = { buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };
+module.exports = { guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };

@@ -34,7 +34,7 @@ for (const tipo of ["registro", "login"]) {
         try {
             if (tipo === "registro") {
                 await window.api.registrar(campos.get("email"), campos.get("clave"));
-                mensaje.textContent = "Cuenta creada. Ya puedes iniciar sesión.";
+                mensaje.textContent = "Cuenta creada. Revisa tu correo y confirma la cuenta antes de entrar.";
                 document.getElementById("login-email").value = campos.get("email");
                 document.getElementById("login-clave").focus();
             } else {
@@ -64,4 +64,28 @@ cerrar.addEventListener("click", async () => {
     }
 });
 
-recuperarSesion();
+document.getElementById("reenviar").addEventListener("submit", async evento => {
+    evento.preventDefault();
+    const formulario = evento.currentTarget;
+    const boton = formulario.querySelector("button");
+    boton.disabled = true;
+    try { mensaje.textContent = (await window.api.reenviar(new FormData(formulario).get("email"))).mensaje; }
+    catch (error) { mensaje.textContent = error.message; }
+    finally { boton.disabled = false; }
+});
+async function iniciar() {
+    const parametros = new URLSearchParams(location.search);
+    const token = parametros.get("confirmacion");
+    const acceso = parametros.get("acceso");
+    history.replaceState(null, "", location.pathname);
+    await recuperarSesion();
+    if (token) {
+        try { mensaje.textContent = (await window.api.confirmar(token)).mensaje; }
+        catch (error) { mensaje.textContent = error.message; }
+    }
+    if (acceso === "error") mensaje.textContent = "No se pudo completar el acceso con Google. Inténtalo de nuevo.";
+    if (acceso === "cuenta-existente") mensaje.textContent = "Ya existe esa cuenta. Accede con tu contraseña.";
+    try { document.getElementById("google").hidden = !(await window.api.servicios()).google; }
+    catch (error) { mensaje.textContent = error.message; }
+}
+iniciar();

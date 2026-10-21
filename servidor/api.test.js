@@ -1,3 +1,6 @@
+process.env.GMAIL_USER = "pruebas@example.com";
+process.env.GMAIL_APP_PASSWORD = "prueba-simulada";
+require("./correo").enviar = async () => {};
 const ayudas = require("./ayudas-pruebas.cjs");
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -88,15 +91,14 @@ test("registro público y login fallido devuelven JSON sin claves ni cookies de 
     assert.equal(res.status, 201);
     const usuario = (await res.json()).usuario;
     assert.equal(Object.hasOwn(usuario, "clave"), false);
-    assert.equal(usuario.activo, true);
+    assert.equal(usuario.activo, false);
     assert.equal(usuario.rol, "usuario");
     const pendiente = await fetch(`${base}/api/login`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: "ana@example.com", clave: "secreto" })
     });
-    assert.equal(pendiente.status, 200);
-    assert.ok(pendiente.headers.get("set-cookie"));
-    assert.equal((await pendiente.json()).usuario.rol, "usuario");
+    assert.equal(pendiente.status, 401);
+    assert.equal(pendiente.headers.get("set-cookie"), null);
     const loginIncorrecto = await fetch(`${base}/api/login`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: "ana@example.com", clave: "incorrecta" })
@@ -109,13 +111,13 @@ test("registro público y login fallido devuelven JSON sin claves ni cookies de 
 test("el servidor impide escalar roles y aplicar operaciones administrativas a usuarios normales", async () => {
     const registro = await fetch(`${base}/api/registro`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "ana@example.com", clave: "clave-prueba", rol: "administrador" })
+        body: JSON.stringify({ email: "roles@example.com", clave: "clave-prueba", rol: "administrador" })
     });
     assert.equal((await registro.json()).usuario.rol, "usuario");
     await require("./datos").configurarCuentaPrueba(1);
     const entrada = await fetch(`${base}/api/login`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "ana@example.com", clave: "clave-prueba" })
+        body: JSON.stringify({ email: "roles@example.com", clave: "clave-prueba" })
     });
     const cookie = entrada.headers.get("set-cookie").split(";")[0];
     const otro = await ayudas.registrarConfirmado("otro@example.com", "clave-prueba");

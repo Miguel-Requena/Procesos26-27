@@ -28,8 +28,8 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         assert.equal(resultado.status, 0, resultado.stderr);
     }
     ejecutar(`const pendiente = await logica.registrarUsuario(${JSON.stringify(email)}, 'clave-prueba');
-        assert.equal(pendiente.activo, true);
-        assert.equal((await logica.iniciarSesion(pendiente.email, 'clave-prueba')).id, pendiente.id);
+        assert.equal(pendiente.activo, false);
+        await assert.rejects(logica.iniciarSesion(pendiente.email, 'clave-prueba'));
         await logica.registrarUsuario(${JSON.stringify(adminEmail)}, 'clave-admin');
         await usuarios.updateOne({email: ${JSON.stringify(email)}}, {$set: {confirmado: true}});
         await usuarios.updateOne({email: ${JSON.stringify(adminEmail)}}, {$set: {confirmado: true, rol: 'administrador'}});`);

@@ -11,7 +11,9 @@ window.api = {
         } catch {
             throw new Error("No se pudo conectar con el servidor. Inténtalo de nuevo.");
         }
-        const datos = await respuesta.json();
+        let datos;
+        try { datos = await respuesta.json(); }
+        catch { throw new Error("El servidor no pudo responder. Inténtalo más tarde."); }
         if (!respuesta.ok) {
             const error = new Error(datos.error || "No se pudo completar la petición");
             error.estado = respuesta.status;
@@ -19,6 +21,9 @@ window.api = {
         }
         return datos;
     },
+    servicios() { return this.peticion("/servicios"); },
+    confirmar(token) { return this.peticion("/confirmacion", { method: "POST", body: JSON.stringify({ token }) }); },
+    reenviar(email) { return this.peticion("/confirmacion/reenviar", { method: "POST", body: JSON.stringify({ email }) }); },
     obtenerSesion() { return this.peticion("/sesion"); },
     registrar(email, clave) {
         return this.peticion("/registro", { method: "POST", body: JSON.stringify({ email, clave }) });

@@ -54,15 +54,14 @@ escalar a cero y requieren volver a iniciar sesión.
 
 ## Registro y administrador
 
-Las cuentas nuevas pueden iniciar sesión inmediatamente. La confirmación se deja
-para una fase posterior. Para el administrador registra su cuenta y cambia solo
+Las cuentas nuevas requieren confirmar su correo. Para el administrador registra su cuenta y cambia solo
 `rol` a `administrador` en Atlas, dentro de `procesos26_27.usuarios`.
 La contraseña de conexión de Atlas es independiente de las contraseñas de la web.
 
 ## Verificación y entrega
 
 - Salud 200; página principal accesible por HTTPS.
-- Registro crea cuenta activa con rol usuario; login funciona inmediatamente.
+- Registro crea cuenta pendiente; login requiere confirmar el correo.
 - Login y recarga funcionan; logout invalida la sesión.
 - Usuario normal no lista ni consulta estados; administrador sí puede hacerlo.
 - Usuario solo se elimina a sí mismo; administrador puede eliminar otras cuentas.
@@ -73,3 +72,44 @@ La contraseña de conexión de Atlas es independiente de las contraseñas de la 
 
 Solo después actualiza la URL en `entrega.txt` y README. No se copian cuentas de
 Neon automáticamente. Mantén el despliegue antiguo mientras verificas el nuevo.
+
+## Hito 4
+
+Pendiente: crear credenciales, configurar remitente, desplegar y verificar con cuentas reales.
+
+1. En Google Auth Platform del proyecto procesos26-27 configura Branding, Audience
+   y Data Access (openid y email). En modo de pruebas agrega alumno y revisor como
+   usuarios de prueba.
+2. Crea un cliente OAuth Web application. Redirección autorizada exacta:
+   `https://procesos26-27-gseerr4ika-no.a.run.app/api/oauth/google/callback`.
+   En local: `http://localhost:3000/api/oauth/google/callback`.
+3. Configura GOOGLE_CLIENT_ID y guarda GOOGLE_CLIENT_SECRET en Secret Manager.
+4. En la cuenta Gmail remitente activa la verificacion en dos pasos y crea una
+   contrasena de aplicacion llamada Procesos26-27. Usa GMAIL_USER para el correo
+   y GMAIL_APP_PASSWORD para esa clave, nunca la contrasena normal de Google.
+   Guarda la clave en Secret Manager y permite su lectura a Cloud Run.
+5. Configura PUBLIC_URL=https://procesos26-27-gseerr4ika-no.a.run.app,
+   GOOGLE_CLIENT_ID, GMAIL_USER y las referencias a GOOGLE_CLIENT_SECRET y
+   GMAIL_APP_PASSWORD. Conserva DATABASE_URL y NODE_ENV=production.
+   Cloud Build usa --update-* y conserva variables y secretos existentes.
+6. Para desarrollo completa .env y usa PUBLIC_URL=http://localhost:3000.
+   Revisa cuotas y costes del proveedor antes de activar envíos.
+
+Referencias oficiales: [Google OAuth](https://developers.google.com/identity/protocols/oauth2/web-server),
+[OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect),
+[Gmail: contrasenas de aplicacion](https://support.google.com/mail/answer/185833).
+
+### Revisión final pendiente
+
+- Registrar correo real, recibir enlace y comprobar rechazo de login sin confirmar.
+- Confirmar, entrar, recargar y cerrar sesión; rechazar reutilización del enlace.
+- Comprobar caducidad, reenvío y errores de proveedor con feedback claro.
+- Entrar con Google y cancelar consentimiento; probar un email ya existente.
+- Verificar que eliminar una cuenta impide ambos tipos de acceso.
+- Verificar roles, persistencia, CI y acceso del revisor; revisar entrega.txt.
+
+Sesiones, state OAuth y límites viven en memoria: el reinicio obliga a repetir
+el acceso. Mantener máximo una instancia. Los tokens de confirmación se guardan
+como SHA-256 en la base y sobreviven al reinicio. El reenvío sustituye el anterior.
+Los logs de aplicación omiten tokens; los de infraestructura pueden incluir
+queries OAuth o de confirmación: limita su acceso y evita compartir esos enlaces.

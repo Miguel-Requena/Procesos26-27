@@ -27,6 +27,7 @@
             </section>
             <section aria-labelledby="titulo-login">
                 <h2 id="titulo-login">Iniciar sesión</h2>
+                <a id="google" href="/api/oauth/google" hidden>Continuar con Google</a>
                 <form id="login">
                     <label for="login-email">Email</label>
                     <input id="login-email" name="email" type="email" autocomplete="username" required>
@@ -35,6 +36,11 @@
                     <button type="submit">Entrar</button>
                 </form>
             </section>
+            <form id="reenviar">
+                <label for="reenviar-email">¿No has recibido el correo de confirmación?</label>
+                <input id="reenviar-email" name="email" type="email" autocomplete="email" required>
+                <button type="submit">Reenviar confirmación</button>
+            </form>
         </div>
         <section id="panel-sesion" hidden>
             <h2>Tu cuenta</h2>

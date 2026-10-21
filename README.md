@@ -1,29 +1,14 @@
 # Gestión de usuarios — Procesos26-27
 
-Aplicación por capas: `cliente/presentacion.js` gestiona formularios y DOM;
-`cliente/rest.js` realiza HTTP; `servidor/api.js` expone la API;
-`servidor/logica.js` aplica reglas y bcrypt; `servidor/datos.js` selecciona
-el adaptador de acceso a datos. El navegador nunca accede directamente a Atlas.
+Aplicación por capas con Node.js 24, Express, bcrypt y MongoDB Atlas.
+`cliente/presentacion.js` gestiona el DOM, `cliente/rest.js` realiza HTTP,
+`servidor/api.js` expone rutas, `logica.js` aplica reglas y `datos.js` selecciona
+persistencia. SQLite se reserva para pruebas aisladas.
 
-## Tecnologías
+## Ejecución
 
-| Tecnología | Motivo |
-|---|---|
-| Node.js 24 + Express | API y servidor de la interfaz en un mismo origen |
-| HTML, CSS y JavaScript + Fetch | Presentación y comunicación separadas |
-| bcrypt | Hash seguro de contraseñas |
-| MongoDB + controlador oficial | Persistencia real local o en Atlas sin SQL en la lógica |
-| MongoDB Atlas | Base de datos externa para el servidor de Google Cloud |
-| SQLite | Solo pruebas locales aisladas sin credenciales ni servicios externos |
-| GitHub Actions | Pruebas en cada push y pull request, incluido MongoDB real en CI |
-| Google Cloud Run + Cloud Build | Despliegue del contenedor y automatización desde GitHub |
-
-## Ejecutar en local
-
-Requiere Node.js 24. Copia `.env.example` a `.env` en la raíz y configura
-`DATABASE_URL` con la conexión de Atlas, incluyendo el nombre de la base
-`procesos26_27` en la URL. El archivo `.env` se ignora en Git.
-También puedes usar MongoDB local con `mongodb://localhost:27017/procesos26_27`.
+Copia `.env.example` a `.env` en la raíz. Configura DATABASE_URL con una URI de
+MongoDB que incluya el nombre de base de datos (local o Atlas).
 
 ```powershell
 cd servidor
@@ -31,27 +16,66 @@ npm.cmd ci
 npm.cmd start
 ```
 
-Abre http://localhost:3000. Usa `Ctrl+C` en esa terminal para detenerlo.
-`PORT` permite configurar otro puerto; `NODE_ENV=production` habilita cookies
-Secure y TLS a MongoDB. Las variables del entorno tienen prioridad sobre `.env`.
+Abre http://localhost:3000. Requiere Node.js 24. El entorno prevalece sobre `.env`.
+En producción usa NODE_ENV=production para cookies Secure y TLS a MongoDB.
 
-## Registro e inicio de sesión
+## Registro, confirmación y Google
 
-El registro permite iniciar sesión inmediatamente con correo y contraseña.
-La confirmación por correo y la aprobación manual se han aplazado.
-Las cuentas nuevas se guardan con `rol: "usuario"`, `confirmado: true` y
-`eliminado: false`; la contraseña se almacena como hash bcrypt.
+El registro crea una cuenta pendiente con contraseña bcrypt y rol usuario.
+Gmail SMTP envía un enlace de un solo uso que caduca en 24 horas. Hasta confirmarlo
+no se permite entrar. El reenvío invalida el enlace anterior; si falla el envío,
+la cuenta permanece pendiente y se puede solicitar otro correo. Los tokens se
+almacenan como SHA-256 y no se devuelven en la API. Las cuentas ya confirmadas
+conservan su estado. Sin configurar correo, el registro devuelve 503 sin crear cuenta.
 
-Para disponer de un administrador, registra primero su cuenta y en Atlas abre
-**Browse Collections / Data Explorer → procesos26_27 → usuarios**. Busca su email
-y cambia únicamente `rol` al texto **administrador**. Guarda el documento y vuelve
-a iniciar sesión. No cambies el hash, el ID ni `eliminado`.
-No hay ruta pública de promoción: enviar un rol en el registro no concede permisos.
+Google usa Authorization Code con PKCE y state ligado a cookie HttpOnly, válido
+10 minutos. El servidor consulta el perfil y exige email verificado; identifica
+la cuenta por sub. Un email ya registrado debe entrar con contraseña: no se
+vinculan cuentas automáticamente. Google no concede contraseña local ni rol admin.
+El botón aparece cuando se configuran las credenciales.
 
-Solo el administrador lista y consulta estados; puede eliminar cualquier cuenta.
-Un usuario normal solo elimina la suya. Un eliminado no puede iniciar sesión.
-El servidor valida sesión y rol en cada operación. Envía al profesor las
-credenciales de revisión por separado, nunca en GitHub.
+## Variables
+
+- PORT, NODE_ENV, DATABASE_URL: servidor y MongoDB.
+- PUBLIC_URL: origen HTTPS público sin ruta; en desarrollo permite HTTP localhost.
+- GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET: cliente OAuth web.
+- GMAIL_USER y GMAIL_APP_PASSWORD: cuenta remitente y contraseña de aplicación (no la habitual).
+- DATABASE_PATH: archivo SQLite exclusivo de pruebas.
+- MONGODB_TEST_URL: MongoDB local desechable de CI con base `pruebas_*`.
+
+No subas `.env`, secretos, bases ni logs. En Cloud Run guarda claves en Secret
+Manager. No se usan ADMIN_EMAIL ni ADMIN_CLAVE.
+
+## Roles y sesiones
+
+Para crear un administrador, registra y confirma su correo. En Atlas modifica
+solo `rol` a `administrador` en `procesos26_27.usuarios` y vuelve a iniciar sesión.
+El servidor comprueba sesión y rol en cada operación; el registro ignora roles
+y estados enviados por el cliente. Un usuario solo elimina su cuenta; el admin
+puede listar, consultar estados y eliminar otras cuentas. El eliminado no puede entrar.
+
+Las sesiones duran 8 horas y viven en memoria, igual que state OAuth y límites
+de envío. Reiniciar o escalar a cero obliga a entrar de nuevo. Mantener máximo
+una instancia; varias requieren almacenamiento compartido. Los usuarios y tokens
+de confirmación persisten en MongoDB. El límite de solicitudes por correo es un
+minuto por proceso. Los logs de aplicación omiten correos, claves y tokens.
+
+## API
+
+- POST /api/prueba/email: normaliza email; 400 EMAIL_INVALIDO si no es válido.
+- POST /api/registro: email y clave; crea cuenta pendiente y envía correo.
+- POST /api/confirmacion: token del enlace; confirma una única vez.
+- POST /api/confirmacion/reenviar: email; respuesta genérica y límite por minuto.
+- GET /api/servicios: disponibilidad de proveedores sin credenciales.
+- GET /api/oauth/google y /api/oauth/google/callback: acceso externo.
+- POST /api/login: email y clave; solo cuenta confirmada y no eliminada.
+- POST /api/logout y GET /api/sesion.
+- GET /api/usuarios y /api/usuarios/:id/activo: administrador.
+- DELETE /api/usuarios/:id: administrador o titular.
+- GET /api/salud: comprueba conexión a la base.
+
+La interfaz muestra errores de red, formularios, correo y OAuth. Las respuestas
+no incluyen errores internos de proveedores ni credenciales.
 
 ## Pruebas
 
@@ -60,57 +84,24 @@ cd servidor
 npm.cmd test
 ```
 
-Las pruebas locales usan archivos SQLite temporales y no conectan con la base
-real aunque exista `.env`. Comprueban hashes, duplicados, cuentas pendientes,
-login inmediato, roles falsificados, eliminación, recuperación de sesión y logs.
-CI usa además un MongoDB 8 desechable para probar persistencia entre procesos,
-roles editando documentos y restricciones. La prueba MongoDB se omite en
-local si no se define `MONGODB_TEST_URL`; solo acepta un servidor local y una base
-cuyo nombre empiece por `pruebas_`, nunca Atlas.
-
-## Variables y secretos
-
-Nombres de la aplicación: `PORT`, `NODE_ENV`, `DATABASE_URL`.
-`DATABASE_PATH` se reserva para SQLite en pruebas; `MONGODB_TEST_URL` para CI.
-No se usan `ADMIN_EMAIL` ni `ADMIN_CLAVE`: el rol administrador se edita en Atlas.
-No subas `.env`, credenciales, bases ni logs al repositorio.
-
-Las sesiones están en memoria: recargar la página conserva la cookie, pero
-reiniciar o escalar a cero termina las sesiones. Los usuarios permanecen en Atlas.
-Los logs incluyen fechas, operaciones, resultados e IDs, sin correos, hashes,
-contraseñas, cookies ni cadenas de conexión.
-
-## API
-
-- `POST /api/prueba/email` (público): recibe `{ "email": " Ana@X.com " }` y
-  devuelve `200 { "email": "ana@x.com" }`. Normaliza con trim y minúsculas;
-  exige una sola arroba, parte local no vacía, ausencia de espacios y un dominio
-  con punto que no empiece ni termine por punto. Los datos ausentes, de tipo
-  incorrecto o inválidos devuelven `400 { "error": "EMAIL_INVALIDO" }`.
-- `POST /api/registro`: email y clave; permite entrar inmediatamente.
-- `POST /api/login`: email y clave; solo cuenta confirmada y no eliminada.
-- `POST /api/logout` y `GET /api/sesion`.
-- `GET /api/usuarios` y `GET /api/usuarios/:id/activo`: administrador.
-- `DELETE /api/usuarios/:id`: administrador o titular de la cuenta.
-- `GET /api/salud`: comprueba conexión con la base.
+Usan SQLite temporal y correo simulado, sin cargar `.env`. Cubren hashes,
+duplicados, roles falsificados, sesiones, eliminación, confirmación de un solo
+uso, caducidad, sustitución de tokens y rechazo de callbacks OAuth falsificados.
+GitHub Actions prueba además persistencia con MongoDB local desechable; esa
+prueba se omite en local si falta MONGODB_TEST_URL. Las pruebas simuladas no
+acreditan recepción real del correo ni consentimiento de Google.
 
 ## Despliegue y entrega
 
-**URL del prototipo:** https://procesos26-27-gseerr4ika-no.a.run.app
+URL: https://procesos26-27-gseerr4ika-no.a.run.app
 
-Google Cloud Run ejecuta cliente y servidor; MongoDB Atlas conserva usuarios,
-hashes y roles. La conexión se guarda en el secreto `atlas-database-url` de Google,
-referenciado como `DATABASE_URL`. Cloud Build despliega automáticamente los commits
-de `main` con `cloudbuild.yaml`. Las cuentas antiguas de Neon y SQLite no se copian.
+Cloud Run sirve cliente y servidor; Atlas guarda las cuentas. Cloud Build
+compila y despliega commits de main mediante cloudbuild.yaml. Consulta la
+[guía de servicios y despliegue](DESPLIEGUE-GOOGLE-CLOUD.md#hito-4).
 
-Verificado en producción: salud, interfaz, registro y login inmediato, cookie
-segura, sesión tras recargar, logout, restricciones para usuario normal y
-eliminación propia. La confirmación se ha aplazado. El administrador se establece
-cambiando el rol en Atlas; no se publica ninguna contraseña de revisión.
-
-`entrega.txt` contiene la URL pública y el repositorio, una por línea.
-Consulta [la guía de despliegue](DESPLIEGUE-GOOGLE-CLOUD.md).
-
-Se usa GitHub Flow: rama por cambio, pruebas locales, PR, CI en verde, revisión e
-integración por el alumno. Las tareas de DoneTonic se verifican antes de marcarlas
-Hecho. La fecha de entrega usa el último commit de `main`, no las ramas pendientes.
+Estado del hito 4: código preparado; faltan alta de proveedores, credenciales,
+remitente, despliegue y prueba real de ambos servicios. La revisión anterior
+estaba desplegada; no se ha verificado este hito en producción.
+`entrega.txt` contiene URL y repositorio. Envía credenciales del revisor por
+separado. GitHub Flow: rama, pruebas, PR, CI y revisión antes de integrar main.
+No marcar el hito como terminado hasta completar la comprobación pública.
