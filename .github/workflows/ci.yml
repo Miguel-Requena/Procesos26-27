@@ -6,7 +6,9 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # MongoDB 8.0 no arranca con el kernel >= 6.19 de Ubuntu 26.
+    # Fijar el runner evita cambios de sistema durante la entrega.
+    runs-on: ubuntu-24.04
     services:
       mongodb:
         image: mongo:8.0
