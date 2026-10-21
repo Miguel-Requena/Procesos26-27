@@ -66,7 +66,7 @@ async function iniciarSesion(email, clave) {
     validarClave(clave);
     const usuario = await datos.buscarPorEmail(email);
 
-    if (!usuario || usuario.eliminado) {
+    if (!usuario || usuario.eliminado || !usuario.clave) {
         throw new Error("Credenciales incorrectas");
     }
 
@@ -81,6 +81,19 @@ async function iniciarSesion(email, clave) {
 
     if (!usuario.activo) throw new Error("Cuenta pendiente de confirmación");
 
+    return publico(usuario);
+}
+async function entrarGoogle(perfil) {
+    if (!perfil || perfil.email_verified !== true || typeof perfil.sub !== "string" || !perfil.sub) throw errorAcceso("Google no ha verificado tu correo", 401);
+    let usuario = await datos.buscarGoogle(perfil.sub);
+    if (!usuario) {
+        const email = normalizarEmail(perfil.email);
+        // No se vinculan cuentas existentes solo por coincidencia de correo.
+        if (await datos.buscarPorEmail(email)) throw errorAcceso("Ya existe esa cuenta. Accede con tu contraseña.", 409);
+        usuario = await datos.crear(email, "", true);
+        await datos.vincularGoogle(usuario.id, perfil.sub);
+    }
+    if (!usuario.activo) throw errorAcceso("Cuenta no disponible", 403);
     return publico(usuario);
 }
 
@@ -121,6 +134,7 @@ async function limpiarUsuarios() {
 }
 
 module.exports = {
+    entrarGoogle,
     normalizarEmail,
     registrarUsuario,
     iniciarSesion,

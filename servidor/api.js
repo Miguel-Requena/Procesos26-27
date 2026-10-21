@@ -6,6 +6,7 @@ const logica = require("./logica");
 const sesiones = require("./sesiones");
 const actividad = require("./actividad");
 
+const externos = require("./externos");
 const app = express();
 
 app.use(actividad.middleware);
@@ -16,6 +17,7 @@ app.use("/api", (req, res, next) => {
     next();
 });
 
+externos.instalar(app);
 async function exigirSesion(req, res, next) {
     try {
         req.usuario = await logica.obtenerUsuarioSesion(sesiones.obtenerUsuarioId(req));
@@ -37,33 +39,35 @@ app.post("/api/prueba/email", (req, res) => {
     try {
         res.status(200).json({ email: logica.normalizarEmail(req.body?.email) });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(400).json({ error: error.estado === 503 ? "Servicio temporalmente no disponible. Inténtalo más tarde." : error.message });
     }
 });
 
 app.post("/api/registro", async (req, res) => {
     try {
-        const { email, clave } = req.body;
-
+        const { email, clave } = req.body || {};
+        if (!externos.correoDisponible()) throw Object.assign(new Error("El envío de correo no está configurado. Contacta con el administrador."), { estado: 503 });
+        externos.urlPublica();
+        externos.limitar(logica.normalizarEmail(email));
         const usuario = await logica.registrarUsuario(email, clave);
+        await externos.enviarConfirmacion(usuario);
         req.usuarioActividad = usuario.id;
 
         res.status(201).json({
-            mensaje: "Usuario registrado correctamente",
+            mensaje: "Cuenta creada. Revisa tu correo para confirmarla antes de entrar.",
             usuario: usuario
         });
 
     } catch (error) {
         res.status(error.estado || 400).json({
-            error: error.message
+            error: error.estado === 503 ? "Servicio temporalmente no disponible. Inténtalo más tarde." : error.message
         });
     }
 });
 
 app.post("/api/login", async (req, res) => {
     try {
-        const { email, clave } = req.body;
-
+        const { email, clave } = req.body || {};
         const usuario = await logica.iniciarSesion(email, clave);
         req.usuarioActividad = usuario.id;
         sesiones.crearSesion(req, res, usuario.id);
@@ -75,7 +79,7 @@ app.post("/api/login", async (req, res) => {
 
     } catch (error) {
         res.status(error.estado || 401).json({
-            error: error.message
+            error: error.estado === 503 ? "Servicio temporalmente no disponible. Inténtalo más tarde." : error.message
         });
     }
 });
@@ -111,7 +115,7 @@ app.get("/api/usuarios/:id/activo", async (req, res) => {
         const activo = await logica.comprobarUsuarioActivo(req.params.id, req.usuario);
         res.status(200).json({ activo: activo });
     } catch (error) {
-        res.status(error.estado || 404).json({ error: error.message });
+        res.status(error.estado || 404).json({ error: error.estado === 503 ? "Servicio temporalmente no disponible. Inténtalo más tarde." : error.message });
     }
 });
 
@@ -123,13 +127,13 @@ app.delete("/api/usuarios/:id", async (req, res) => {
             usuario: usuario
         });
     } catch (error) {
-        res.status(error.estado || 404).json({ error: error.message });
+        res.status(error.estado || 404).json({ error: error.estado === 503 ? "Servicio temporalmente no disponible. Inténtalo más tarde." : error.message });
     }
 });
 
 app.use((error, req, res, next) => {
     if (error.type === "entity.parse.failed") return res.status(400).json({ error: "El cuerpo de la petición debe ser JSON válido" });
-    res.status(500).json({ error: "No se pudo completar la operación" });
+    res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo completar la operación" });
 });
 
 if (require.main === module) {
