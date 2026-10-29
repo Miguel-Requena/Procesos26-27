@@ -3,44 +3,66 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Gestión de usuarios</title>
+    <title>Transdrakkar · Área privada</title>
+    <meta name="theme-color" content="#ed1c2b">
     <link rel="stylesheet" href="estilos.css">
     <script src="rest.js" defer></script>
     <script src="presentacion.js" defer></script>
 </head>
 <body>
-    <main>
-        <h1>Gestión de usuarios</h1>
+    <header class="cabecera">
+        <a class="marca" href="/" aria-label="Transdrakkar, inicio">TRANS<span>DRAKKAR</span><span class="punto-marca" aria-hidden="true"></span></a>
+        <span class="cabecera-detalle">TRANSPORTE DE MOBILIARIO</span>
+        <a class="enlace-acceso" href="#acceso">Área privada <span aria-hidden="true">↗</span></a>
+    </header>
+    <main class="acceso-layout">
+        <aside class="identidad" aria-labelledby="titulo-marca">
+            <div class="identidad-superior"><span class="etiqueta">CONECTAMOS DESTINOS</span><span aria-hidden="true">↗</span></div>
+            <img class="logo" src="imagenes/transdrakkar-logo.jpg" alt="Transdrakkar, barco drakkar blanco sobre fondo rojo" width="816" height="484">
+            <div class="identidad-texto">
+                <h1 id="titulo-marca">Tu mobiliario.<br>Nuestro compromiso.</h1>
+                <p>Un espacio para conectar clientes, equipo y transporte.</p>
+            </div>
+            <div class="sedes" aria-label="Nuestras sedes"><span>Yecla</span><i aria-hidden="true"></i><span>Rubí · Barcelona</span><i aria-hidden="true"></i><span>Palma de Mallorca</span></div>
+            <div class="identidad-pie"><span>TRANSDRAKKAR</span><span>DE ORIGEN A DESTINO.</span></div>
+        </aside>
+        <div class="zona-acceso" id="acceso">
+        <div class="intro-acceso"><span class="antetitulo">ÁREA PRIVADA / TRANSDRAKKAR</span><h2>Bienvenido a bordo.</h2><p>Accede a tu cuenta para continuar.</p></div>
         <p id="estado" role="status">Comprobando sesión…</p>
         <p id="mensaje" role="alert" aria-live="polite"></p>
         <div id="formularios" hidden>
-            <section aria-labelledby="titulo-registro">
+            <div class="selector-acceso" role="group" aria-label="Acceso a la cuenta"><button id="ver-login" type="button" aria-pressed="true" aria-controls="seccion-login">Iniciar sesión</button><button id="ver-registro" type="button" aria-pressed="false" aria-controls="seccion-registro">Crear cuenta</button></div>
+            <section id="seccion-registro" aria-labelledby="titulo-registro" hidden>
                 <h2 id="titulo-registro">Crear una cuenta</h2>
+                <p class="descripcion-formulario">Tu primer paso con Transdrakkar. Confirma tu correo para activar la cuenta.</p>
                 <form id="registro">
-                    <label for="registro-email">Email</label>
-                    <input id="registro-email" name="email" type="email" autocomplete="email" required>
+                    <label for="registro-email">Correo electrónico</label>
+                    <input id="registro-email" name="email" type="email" autocomplete="email" placeholder="tu@email.com" required>
                     <label for="registro-clave">Contraseña</label>
                     <input id="registro-clave" name="clave" type="password" autocomplete="new-password" minlength="6" required aria-describedby="ayuda-clave">
                     <p id="ayuda-clave" class="ayuda">Al menos 6 caracteres y como máximo 72 bytes.</p>
                     <button type="submit">Crear cuenta</button>
                 </form>
             </section>
-            <section aria-labelledby="titulo-login">
+            <section id="seccion-login" aria-labelledby="titulo-login">
                 <h2 id="titulo-login">Iniciar sesión</h2>
+                <p class="descripcion-formulario">Introduce tus datos de acceso.</p>
                 <a id="google" href="/api/oauth/google" hidden>Continuar con Google</a>
                 <form id="login">
-                    <label for="login-email">Email</label>
-                    <input id="login-email" name="email" type="email" autocomplete="username" required>
+                    <label for="login-email">Correo electrónico</label>
+                    <input id="login-email" name="email" type="email" autocomplete="username" placeholder="tu@email.com" required>
                     <label for="login-clave">Contraseña</label>
                     <input id="login-clave" name="clave" type="password" autocomplete="current-password" required>
-                    <button type="submit">Entrar</button>
+                    <button type="submit">Entrar en mi cuenta <span aria-hidden="true">→</span></button>
                 </form>
             </section>
+            <details class="confirmacion"><summary>¿No has recibido el correo de confirmación?</summary>
             <form id="reenviar">
-                <label for="reenviar-email">¿No has recibido el correo de confirmación?</label>
-                <input id="reenviar-email" name="email" type="email" autocomplete="email" required>
+                <label for="reenviar-email">Correo de tu cuenta</label>
+                <input id="reenviar-email" name="email" type="email" autocomplete="email" placeholder="tu@email.com" required>
                 <button type="submit">Reenviar confirmación</button>
             </form>
+            </details>
         </div>
         <section id="panel-sesion" hidden>
             <h2>Tu cuenta</h2>
@@ -48,6 +70,9 @@
             <button id="cerrar-sesion" type="button">Cerrar sesión</button>
         </section>
         <noscript>Activa JavaScript para utilizar los formularios de esta aplicación.</noscript>
+        <p class="nota-acceso">Clientes · Conductores · Administración<br><span>El acceso depende de los permisos de tu cuenta.</span></p>
+        </div>
     </main>
+    <footer class="pie"><span>© Transdrakkar</span><span>Transporte de mobiliario · Yecla / Rubí / Palma</span></footer>
 </body>
 </html>
