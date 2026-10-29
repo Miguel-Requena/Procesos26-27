@@ -11,10 +11,11 @@ Copia `.env.example` a `.env` en la raíz. Configura DATABASE_URL con una URI de
 MongoDB que incluya el nombre de base de datos (local o Atlas).
 
 ```powershell
-cd servidor
-npm.cmd ci
+npm.cmd --prefix servidor ci
 npm.cmd start
 ```
+
+También puedes entrar en `servidor` y ejecutar allí `npm.cmd ci` y `npm.cmd start`.
 
 Abre http://localhost:3000. Requiere Node.js 24. El entorno prevalece sobre `.env`.
 En producción usa NODE_ENV=production para cookies Secure y TLS a MongoDB.

@@ -1,0 +1,8 @@
+{
+  "name": "procesos26-27",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix servidor start",
+    "test": "npm --prefix servidor test"
+  }
+}
