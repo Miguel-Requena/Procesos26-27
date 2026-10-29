@@ -5,6 +5,16 @@ const panelSesion = document.getElementById("panel-sesion");
 const mensaje = document.getElementById("mensaje");
 const cerrar = document.getElementById("cerrar-sesion");
 
+function seleccionarAcceso(tipo) {
+    for (const opcion of ["login", "registro"]) {
+        document.getElementById(`seccion-${opcion}`).hidden = opcion !== tipo;
+        document.getElementById(`ver-${opcion}`).setAttribute("aria-pressed", String(opcion === tipo));
+    }
+}
+for (const tipo of ["login", "registro"]) {
+    document.getElementById(`ver-${tipo}`).addEventListener("click", () => seleccionarAcceso(tipo));
+}
+
 function mostrarUsuario(usuario) {
     formularios.hidden = Boolean(usuario);
     panelSesion.hidden = !usuario;
@@ -36,6 +46,7 @@ for (const tipo of ["registro", "login"]) {
                 await window.api.registrar(campos.get("email"), campos.get("clave"));
                 mensaje.textContent = "Cuenta creada. Revisa tu correo y confirma la cuenta antes de entrar.";
                 document.getElementById("login-email").value = campos.get("email");
+                seleccionarAcceso("login");
                 document.getElementById("login-clave").focus();
             } else {
                 const { usuario } = await window.api.iniciarSesion(campos.get("email"), campos.get("clave"));
