@@ -6,9 +6,9 @@ on:
 
 jobs:
   test:
-    # MongoDB 8.0 no arranca con el kernel >= 6.19 de Ubuntu 26.
-    # Fijar el runner evita cambios de sistema durante la entrega.
-    runs-on: ubuntu-24.04
+    # MongoDB 8.0 falla al detectar el kernel Azure actual de Ubuntu 24.04.
+    # Solución temporal recomendada: https://github.com/actions/runner-images/issues/15005
+    runs-on: ubuntu-22.04
     services:
       mongodb:
         image: mongo:8.0
@@ -44,7 +44,7 @@ jobs:
           for intento in $(seq 1 20); do
             if curl --fail --silent http://127.0.0.1:8080/api/salud; then
               curl --fail --silent http://127.0.0.1:8080/ > /tmp/prototipo.html
-              node -e "require('node:assert/strict').ok(require('node:fs').readFileSync('/tmp/prototipo.html', 'utf8').includes('Gestión de usuarios'))"
+              node -e 'const assert = require("node:assert/strict"); const html = require("node:fs").readFileSync("/tmp/prototipo.html", "utf8"); assert.match(html, /<form\b[^>]*\bid="login"/, "Falta el formulario de acceso"); assert.match(html, /<form\b[^>]*\bid="registro"/, "Falta el formulario de registro");'
               exit 0
             fi
             sleep 2
