@@ -20,10 +20,20 @@ const perfiles = {
     conductor: { nombre: "Conductor", titulo: "Tu espacio de conductor", descripcion: "Un espacio para organizar tu jornada de transporte.", funciones: ["Rutas y paradas asignadas", "Registro de entregas e incidencias"] },
     administrador: { nombre: "Administración", titulo: "Centro de operaciones", descripcion: "Coordina la actividad de Transdrakkar desde un mismo lugar.", funciones: ["Revisión de solicitudes de transporte", "Vehículos y conductores", "Planificación de rutas"] }
 };
+const enlacesPrivados = document.querySelectorAll(".navegacion-privada nav a");
+function activarNavegacion(enlace) {
+    for (const item of enlacesPrivados) {
+        item.classList.toggle("nav-inicio", item === enlace);
+        if (item === enlace) item.setAttribute("aria-current", "location");
+        else item.removeAttribute("aria-current");
+    }
+}
+for (const enlace of enlacesPrivados) enlace.addEventListener("click", () => activarNavegacion(enlace));
 let versionPanel = 0;
 let versionDatos = 0;
 let rolActual;
 function limpiarDatosPanel() {
+    document.getElementById("resumen-total").textContent = "—";
     document.getElementById("lista-cuentas").replaceChildren();
     document.getElementById("lista-transportes").replaceChildren();
     document.getElementById("cuentas-equipo").hidden = true;
@@ -100,6 +110,7 @@ async function cargarDatosPanel() {
             }
             document.getElementById("lista-transportes").append(bloque);
         }
+        document.getElementById("resumen-total").textContent = respuestas.reduce((total, respuesta, i) => total + respuesta[tipos[i]].length, 0);
         estadoPanel.textContent = "Datos actualizados.";
     } catch (error) {
         if (version !== versionPanel || carga !== versionDatos) return;
@@ -118,6 +129,9 @@ async function mostrarUsuario(usuario) {
     formularios.hidden = Boolean(usuario);
     document.querySelector(".intro-acceso").hidden = Boolean(usuario);
     panelSesion.hidden = true;
+    document.body.classList.remove("sesion-activa");
+    activarNavegacion(enlacesPrivados[0]);
+    document.querySelector(".zona-acceso").prepend(estado, mensaje);
     document.getElementById("panel-funciones").replaceChildren();
     estado.textContent = usuario ? "Cargando tu espacio…" : "Inicia sesión para utilizar la aplicación.";
     if (!usuario) return;
@@ -136,6 +150,13 @@ async function mostrarUsuario(usuario) {
             document.getElementById("panel-funciones").append(elemento);
         }
         estado.textContent = `Sesión iniciada: ${panel.usuario.email}`;
+        document.getElementById("cuenta-privada").textContent = panel.usuario.email;
+        document.getElementById("nav-equipo").hidden = panel.rol !== "administrador";
+        document.getElementById("nav-transportes").textContent = panel.rol === "cliente" ? "Mis solicitudes" : panel.rol === "conductor" ? "Mis rutas" : "Transportes";
+        document.getElementById("titulo-transportes").textContent = document.getElementById("nav-transportes").textContent;
+        document.getElementById("resumen-titulo").textContent = panel.rol === "cliente" ? "Solicitudes disponibles" : panel.rol === "conductor" ? "Rutas asignadas" : "Solicitudes y rutas";
+        document.querySelector(".barra-privada").after(estado, mensaje);
+        document.body.classList.add("sesion-activa");
         panelSesion.hidden = false;
         rolActual = panel.rol;
         await cargarDatosPanel();

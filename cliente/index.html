@@ -65,23 +65,34 @@
             </details>
         </div>
         <section id="panel-sesion" hidden>
+            <aside class="navegacion-privada" aria-label="Navegación del área privada">
+                <a class="marca" href="/">TRANS<span>DRAKKAR</span></a>
+                <span class="nav-subtitulo">TU ÁREA DE TRANSPORTE</span>
+                <nav><a href="#panel-titulo" class="nav-inicio">⌂ <span>Vista general</span></a><a href="#transportes">↗ <span id="nav-transportes">Transportes</span></a><a href="#cuentas-equipo" id="nav-equipo" hidden>◎ <span>Perfiles del equipo</span></a></nav>
+                <div class="nav-sedes"><span class="antetitulo">CONECTAMOS DESTINOS</span><p></p><span class="nav-linea" aria-hidden="true">● ───────── ●</span></div>
+                <button id="cerrar-sesion" type="button">Cerrar sesión <span aria-hidden="true">↗</span></button>
+            </aside>
+            <div class="contenido-privado">
+            <div class="barra-privada"><span>ÁREA PRIVADA <span aria-hidden="true">/</span> VISTA GENERAL</span><span id="cuenta-privada"></span></div>
+            <div class="bienvenida-privada"><div>
             <span id="perfil-etiqueta" class="antetitulo"></span>
             <h2 id="panel-titulo">Tu espacio Transdrakkar</h2>
-            <p id="panel-descripcion"></p>
+            <p id="panel-descripcion"></p></div><span class="sello-privado" aria-hidden="true">↗</span></div>
+            <div class="resumen-privado" aria-label="Resumen de actividad"><article><span id="resumen-titulo">Transportes disponibles</span><strong id="resumen-total">—</strong><small>Según los permisos de tu cuenta</small></article><article class="tarjeta-red"><span>NUESTRA RED</span><strong>De origen<br>a destino.</strong><small>Yecla · Rubí · Palma de Mallorca</small></article></div>
             <ul id="panel-funciones" class="panel-funciones"></ul>
-            <section id="cuentas-equipo" hidden aria-labelledby="titulo-equipo">
-                <h3 id="titulo-equipo">Perfiles del equipo</h3>
-                <p class="ayuda">Habilita como conductores las cuentas confirmadas del equipo o devuélvelas al perfil de cliente.</p>
-                <div id="lista-cuentas"></div>
-            </section>
             <section id="transportes" aria-labelledby="titulo-transportes">
                 <h3 id="titulo-transportes">Transportes</h3>
                 <button id="actualizar-panel" type="button">Actualizar datos</button>
                 <p id="estado-panel" role="status"></p>
                 <div id="lista-transportes"></div>
             </section>
+            <section id="cuentas-equipo" hidden aria-labelledby="titulo-equipo">
+                <h3 id="titulo-equipo">Perfiles del equipo</h3>
+                <p class="ayuda">Habilita como conductores las cuentas confirmadas del equipo o devuélvelas al perfil de cliente.</p>
+                <div id="lista-cuentas"></div>
+            </section>
             <p class="ayuda">La creación de solicitudes y la planificación de rutas estarán disponibles próximamente.</p>
-            <button id="cerrar-sesion" type="button">Cerrar sesión</button>
+            </div>
         </section>
         <noscript>Activa JavaScript para utilizar los formularios de esta aplicación.</noscript>
         <p class="nota-acceso">Clientes · Conductores · Administración<br><span>El acceso depende de los permisos de tu cuenta.</span></p>

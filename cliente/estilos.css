@@ -69,3 +69,60 @@ input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visibl
 .cuenta-equipo p { margin-top: 0; }
 .cuenta-equipo button { width: 100%; }
 #actualizar-panel { background: #343038; }
+/* Área privada: un espacio de trabajo independiente del acceso. */
+.sesion-activa { background: #f4f5f7; }
+.sesion-activa > .cabecera, .sesion-activa .identidad, .sesion-activa .nota-acceso, .sesion-activa > .pie { display: none; }
+.sesion-activa .acceso-layout { display: block; max-width: none; margin: 0; padding: 0; }
+.sesion-activa .zona-acceso { max-width: none; padding: 0; }
+.sesion-activa #panel-sesion { display: grid; grid-template-columns: 246px minmax(0, 1fr); min-height: 100dvh; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.navegacion-privada { position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column; padding: 38px 25px 25px; background: #202329; color: #fff; }
+.navegacion-privada .marca { font-size: 19px; }
+.nav-subtitulo { margin-top: 10px; font-size: 8px; letter-spacing: 2px; color: #a4a8b1; }
+.navegacion-privada nav { display: grid; gap: 10px; margin-top: 55px; }
+.navegacion-privada nav a { display: flex; gap: 15px; align-items: center; padding: 14px; border-radius: 9px; text-decoration: none; color: #c6c9cf; font-size: 14px; transition: background .2s, color .2s; }
+.navegacion-privada nav a:hover { background: #ffffff12; color: white; }
+.navegacion-privada nav .nav-inicio { background: #d91626; color: white; }
+.nav-sedes { margin-top: auto; padding: 40px 8px; }
+.nav-sedes .antetitulo { color: #e9a4aa; font-size: 8px; }
+.nav-sedes p { color: #bdc0c7; }
+.nav-linea { color: #e15b65; letter-spacing: 3px; font-size: 11px; }
+.navegacion-privada button { background: #ffffff0b; border: 1px solid #ffffff18; display: flex; justify-content: space-between; }
+.navegacion-privada button:hover { background: #ffffff20; }
+.contenido-privado { min-width: 0; width: 100%; max-width: 1400px; margin: 0 auto; padding: 0 48px 45px; }
+.barra-privada { min-height: 89px; border-bottom: 1px solid #dfe2e7; display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: 10px; letter-spacing: 1.2px; color: #747984; }
+.barra-privada > span:first-child span { margin: 0 13px; color: #b9bdc5; }
+#cuenta-privada { letter-spacing: 0; font-size: 12px; overflow-wrap: anywhere; }
+.sesion-activa #estado { margin: 15px 0 0; font-size: 11px; }
+.bienvenida-privada { display: flex; justify-content: space-between; gap: 20px; align-items: center; margin: 34px 0 30px; }
+.sesion-activa #panel-titulo { font-size: clamp(28px, 3.2vw, 42px); letter-spacing: -1.5px; margin: 10px 0; }
+#panel-descripcion { color: #747984; margin-bottom: 0; }
+.sello-privado { width: 66px; height: 66px; flex-shrink: 0; border: 1px solid #d9dde3; border-radius: 50%; display: grid; place-items: center; font-size: 35px; color: var(--rojo); }
+.resumen-privado { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.resumen-privado article { display: flex; flex-direction: column; padding: 25px 30px; border: 1px solid #e2e4e8; border-radius: 14px; background: white; }
+.resumen-privado article > span { font-size: 12px; color: #747984; }
+.resumen-privado strong { font-size: 49px; letter-spacing: -2px; line-height: 1.2; margin: 12px 0; }
+.resumen-privado small { font-size: 11px; color: #747984; }
+.resumen-privado .tarjeta-red { background: #d91626; border-color: #d91626; color: white; position: relative; overflow: hidden; }
+.tarjeta-red:after { content: '↗'; position: absolute; right: 20px; top: 5px; font-size: 150px; line-height: 1; color: #ffffff12; }
+.resumen-privado .tarjeta-red > span, .resumen-privado .tarjeta-red small { color: #ffdbde; }
+.resumen-privado .tarjeta-red strong { font-size: 29px; letter-spacing: -1px; }
+.sesion-activa .panel-funciones { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 30px; }
+.sesion-activa .panel-funciones li { font-size: 11px; border: 1px solid #dfe2e7; border-radius: 30px; background: transparent; padding: 7px 13px; color: #686e78; }
+.sesion-activa #transportes, .sesion-activa #cuentas-equipo { background: white; border: 1px solid #e2e4e8; padding: 26px; border-radius: 14px; margin: 22px 0; scroll-margin-top: 20px; }
+.sesion-activa #transportes h3, .sesion-activa #cuentas-equipo h3 { margin-top: 0; font-size: 19px; }
+.sesion-activa #actualizar-panel { background: white; color: #444b56; border: 1px solid #dfe2e7; padding: 10px 15px; }
+.sesion-activa #actualizar-panel:hover { background: #f4f5f7; }
+.sesion-activa #estado-panel { font-size: 11px; color: #747984; }
+.sesion-activa .cuenta-equipo { display: flex; align-items: center; justify-content: space-between; gap: 20px; background: #f8f9fb; padding: 17px; }
+.sesion-activa .cuenta-equipo p { margin: 0; font-size: 12px; }
+.sesion-activa .cuenta-equipo button { width: auto; flex-shrink: 0; font-size: 11px; padding: 11px 13px; }
+.sesion-activa .ficha-transporte { border-left: 3px solid var(--rojo); background: #f8f9fb; padding: 16px 20px; transition: box-shadow .2s, transform .2s; }
+.sesion-activa .ficha-transporte:hover { transform: translateY(-2px); box-shadow: 0 8px 20px #2023290a; }
+.sesion-activa #lista-transportes section > p { border: 1px dashed #dfe2e7; padding: 35px 20px; text-align: center; color: #747984; border-radius: 10px; font-size: 13px; }
+@keyframes entrada-panel { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.bienvenida-privada, .resumen-privado, .sesion-activa #transportes, .sesion-activa #cuentas-equipo { animation: entrada-panel .45s ease-out both; }
+.resumen-privado { animation-delay: .06s; }
+.sesion-activa #transportes { animation-delay: .12s; }
+@media (max-width: 1050px) { .sesion-activa #panel-sesion { grid-template-columns: 210px minmax(0, 1fr); } .navegacion-privada { padding: 30px 18px; } .contenido-privado { padding: 0 25px 30px; } .sesion-activa .cuenta-equipo { flex-wrap: wrap; } }
+@media (max-width: 700px) { .sesion-activa #panel-sesion { grid-template-columns: 1fr; } .navegacion-privada { position: static; height: auto; padding: 22px; flex-direction: row; flex-wrap: wrap; gap: 20px; align-items: center; } .nav-subtitulo, .nav-sedes { display: none; } .navegacion-privada nav { order: 3; width: 100%; display: flex; flex-wrap: wrap; margin: 0; gap: 6px; } .navegacion-privada nav a { padding: 10px; font-size: 12px; gap: 7px; } .navegacion-privada button { margin-left: auto; padding: 9px; font-size: 11px; gap: 10px; } .contenido-privado { padding: 0 20px 25px; } .barra-privada { min-height: 75px; flex-wrap: wrap; gap: 8px; padding: 16px 0; } .bienvenida-privada { margin-top: 25px; } .sello-privado { display: none; } .resumen-privado { gap: 12px; } .resumen-privado article { padding: 20px 16px; } .resumen-privado .tarjeta-red strong { font-size: 24px; } .sesion-activa #transportes, .sesion-activa #cuentas-equipo { padding: 20px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
