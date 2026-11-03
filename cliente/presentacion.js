@@ -102,9 +102,11 @@ async function cargarDatosPanel() {
                 const nombre = document.createElement("h4");
                 nombre.textContent = registro.referencia || registro.id;
                 const detalle = document.createElement("p");
-                detalle.textContent = `${registro.origen || "Origen pendiente"} → ${registro.destino || "Destino pendiente"}`;
+                detalle.textContent = tipos[i] === "solicitudes" && !registro.destino
+                    ? `Recogida: ${registro.origen || "Dirección pendiente"}`
+                    : `${registro.origen || "Origen pendiente"} → ${registro.destino || "Destino pendiente"}`;
                 const datos = document.createElement("p");
-                datos.textContent = `${registro.fecha || "Fecha pendiente"} · ${registro.estado || "Sin estado"}`;
+                datos.textContent = `${registro.fecha || "Fecha pendiente"} · ${registro.estado === "pendiente_recogida" ? "Pendiente de recogida" : registro.estado || "Sin estado"}`;
                 ficha.append(nombre, detalle, datos);
                 bloque.append(ficha);
             }
@@ -260,7 +262,7 @@ function agregarMueble(enfocar = false) {
     const numero = ++numeroMueble;
     const fila = document.createElement("div");
     fila.className = "linea-mueble";
-    const campos = [["descripcion", "Mueble", "text", 200], ["cantidad", "Unidades", "number", null]];
+    const campos = [["descripcion", "Mercancía", "text", 200], ["cantidad", "Cantidad", "number", null]];
     for (const [campo, titulo, tipo, maximo] of campos) {
         const grupo = document.createElement("div");
         const label = document.createElement("label");
@@ -268,13 +270,22 @@ function agregarMueble(enfocar = false) {
         label.textContent = `${titulo} ${numero}`;
         const input = document.createElement("input");
         input.id = label.htmlFor; input.name = campo; input.type = tipo; input.required = true;
-        if (maximo) { input.maxLength = maximo; input.placeholder = "Ej.: sofá de tres plazas"; }
+        if (maximo) { input.maxLength = maximo; input.placeholder = "Ej.: sillas, sofás o sillones"; }
         else { input.min = "1"; input.max = "999"; input.step = "1"; input.value = "1"; }
         grupo.append(label, input); fila.append(grupo);
     }
+    const grupoUnidad = document.createElement("div");
+    const labelUnidad = document.createElement("label");
+    labelUnidad.htmlFor = `mueble-unidad-${numero}`; labelUnidad.textContent = `Formato ${numero}`;
+    const unidad = document.createElement("select");
+    unidad.id = labelUnidad.htmlFor; unidad.name = "unidad"; unidad.required = true;
+    for (const [valor, texto] of [["bultos", "Bultos"], ["cajas", "Cajas"], ["unidades", "Unidades"]]) {
+        const opcion = document.createElement("option"); opcion.value = valor; opcion.textContent = texto; unidad.append(opcion);
+    }
+    grupoUnidad.append(labelUnidad, unidad); fila.append(grupoUnidad);
     const quitar = document.createElement("button");
     quitar.type = "button"; quitar.className = "boton-secundario"; quitar.textContent = "Quitar";
-    quitar.setAttribute("aria-label", `Quitar mobiliario ${numero}`);
+    quitar.setAttribute("aria-label", `Quitar mercancía ${numero}`);
     quitar.addEventListener("click", () => {
         fila.remove();
         if (!lista.children.length) agregarMueble(true);
@@ -306,10 +317,9 @@ formularioSolicitud.addEventListener("submit", async evento => {
     if (enviandoSolicitud || rolActual !== "cliente") return;
     const campos = new FormData(formularioSolicitud);
     const datos = {
-        origen: campos.get("origen"), destino: campos.get("destino"), fecha: campos.get("fecha"),
+        fabricante: campos.get("fabricante"), origen: campos.get("origen"), fecha: campos.get("fecha"),
         contactoRecogida: { nombre: campos.get("recogidaNombre"), telefono: campos.get("recogidaTelefono") },
-        contactoEntrega: { nombre: campos.get("entregaNombre"), telefono: campos.get("entregaTelefono") },
-        mobiliario: [...document.querySelectorAll(".linea-mueble")].map(fila => ({ descripcion: fila.querySelector('[name="descripcion"]').value, cantidad: Number(fila.querySelector('[name="cantidad"]').value) })),
+        mobiliario: [...document.querySelectorAll(".linea-mueble")].map(fila => ({ descripcion: fila.querySelector('[name="descripcion"]').value, cantidad: Number(fila.querySelector('[name="cantidad"]').value), unidad: fila.querySelector('[name="unidad"]').value })),
         observaciones: campos.get("observaciones")
     };
     const contenido = JSON.stringify(datos);
@@ -330,7 +340,7 @@ formularioSolicitud.addEventListener("submit", async evento => {
         restablecerSolicitud();
         await cargarDatosPanel();
         if (version !== versionPanel) return;
-        mensaje.textContent = `Solicitud ${resultado.solicitud.referencia} guardada. Está pendiente de revisión por el equipo.`;
+        mensaje.textContent = `Solicitud ${resultado.solicitud.referencia} guardada. Está pendiente de recogida.`;
         document.getElementById("abrir-solicitud").focus();
     } catch (error) {
         if (version !== versionPanel) return;

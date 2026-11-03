@@ -154,3 +154,13 @@ textarea::placeholder { color: #8a8e97; }
 #panel-sesion .solicitud-pie p { font-size: 11px; color: #747984; }
 @media (max-width: 700px) { #acciones-cliente { align-items: start; flex-direction: column; gap: 10px; } #nueva-solicitud { padding: 20px; } .solicitud-columnas { grid-template-columns: 1fr; } .formulario-cabecera { flex-wrap: wrap; } .linea-mueble { grid-template-columns: minmax(0, 1fr) 80px; } .linea-mueble button { grid-column: 1 / -1; min-height: 36px; justify-self: start; } .solicitud-pie { flex-direction: column; align-items: stretch; } }
 @media (max-width: 700px) { #formulario-solicitud input, #formulario-solicitud textarea { font-size: 16px; } }
+/* Solicitud de recogida en fábrica. */
+.recogida-datos { margin-top: 24px; }
+.recogida-datos > fieldset { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+.recogida-datos > fieldset > legend, .recogida-datos > fieldset > label:first-of-type, .recogida-datos textarea { grid-column: 1 / -1; }
+.recogida-datos label[for="solicitud-recogida-nombre"] { grid-column: 1; grid-row: 3; }
+.recogida-datos label[for="solicitud-recogida-telefono"] { grid-column: 2; grid-row: 3; }
+select { width: 100%; min-height: 46px; padding: 12px; border: 1px solid #d9d5d2; border-radius: 7px; font: inherit; font-size: 14px; background: white; color: #272329; }
+select:focus-visible { outline: 3px solid #ed1c2b88; outline-offset: 3px; }
+.linea-mueble { grid-template-columns: minmax(0, 1fr) 90px 115px auto; }
+@media (max-width: 700px) { .recogida-datos > fieldset { display: block; } .linea-mueble { grid-template-columns: 90px minmax(0, 1fr); } .linea-mueble > div:first-child { grid-column: 1 / -1; } select { font-size: 16px; } }

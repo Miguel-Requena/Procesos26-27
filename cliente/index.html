@@ -79,30 +79,26 @@
             <h2 id="panel-titulo">Tu espacio Transdrakkar</h2>
             <p id="panel-descripcion"></p></div><span class="sello-privado" aria-hidden="true">↗</span></div>
             <div class="resumen-privado" aria-label="Resumen de actividad"><article><span id="resumen-titulo">Transportes disponibles</span><strong id="resumen-total">—</strong><small>Según los permisos de tu cuenta</small></article><article class="tarjeta-red"><span>NUESTRA RED</span><strong>De origen<br>a destino.</strong><small>Yecla · Rubí · Palma de Mallorca</small></article></div>
-            <div id="acciones-cliente" hidden><button id="abrir-solicitud" type="button">Nueva solicitud <span aria-hidden="true">＋</span></button><span>Organiza tu próximo transporte de mobiliario.</span></div>
+            <div id="acciones-cliente" hidden><button id="abrir-solicitud" type="button">Nueva solicitud <span aria-hidden="true">＋</span></button><span>Pide la recogida de mercancía en fábrica.</span></div>
             <section id="nueva-solicitud" hidden aria-labelledby="titulo-nueva-solicitud">
-                <div class="formulario-cabecera"><div><span class="antetitulo">UN NUEVO DESTINO</span><h3 id="titulo-nueva-solicitud" tabindex="-1">Solicita tu transporte</h3><p>Cuéntanos qué necesitas mover. Nuestro equipo revisará tu solicitud.</p></div><button id="cancelar-solicitud" type="button">Cerrar formulario</button></div>
+                <div class="formulario-cabecera"><div><span class="antetitulo">UN NUEVO DESTINO</span><h3 id="titulo-nueva-solicitud" tabindex="-1">Solicita una recogida</h3><p>Indica qué mercancía debemos recoger. En la base de Yecla organizaremos los camiones.</p></div><button id="cancelar-solicitud" type="button">Cerrar formulario</button></div>
                 <form id="formulario-solicitud">
-                    <fieldset id="campos-solicitud"><legend>Datos del transporte</legend>
+                    <fieldset id="campos-solicitud"><legend>Datos de la recogida</legend>
                     <p class="ayuda">Todos los campos son obligatorios salvo las observaciones. La fecha está sujeta a confirmación.</p>
-                    <div class="solicitud-columnas">
+                    <label for="solicitud-fabricante">Nombre del fabricante</label><input id="solicitud-fabricante" name="fabricante" maxlength="160" autocomplete="organization" required placeholder="Nombre de la fábrica">
+                    <div class="recogida-datos">
                         <fieldset><legend><span aria-hidden="true">01 · </span>Recogida</legend>
                             <label for="solicitud-origen">Dirección de recogida</label><textarea id="solicitud-origen" name="origen" rows="2" maxlength="300" placeholder="Calle, número, localidad y código postal" required></textarea>
                             <label for="solicitud-recogida-nombre">Persona de contacto en recogida</label><input id="solicitud-recogida-nombre" name="recogidaNombre" maxlength="120" autocomplete="off" required>
                             <label for="solicitud-recogida-telefono">Teléfono de recogida</label><input id="solicitud-recogida-telefono" name="recogidaTelefono" type="tel" maxlength="30" autocomplete="off" required>
                         </fieldset>
-                        <fieldset><legend><span aria-hidden="true">02 · </span>Entrega</legend>
-                            <label for="solicitud-destino">Dirección de entrega</label><textarea id="solicitud-destino" name="destino" rows="2" maxlength="300" placeholder="Calle, número, localidad y código postal" required></textarea>
-                            <label for="solicitud-entrega-nombre">Persona de contacto en entrega</label><input id="solicitud-entrega-nombre" name="entregaNombre" maxlength="120" autocomplete="off" required>
-                            <label for="solicitud-entrega-telefono">Teléfono de entrega</label><input id="solicitud-entrega-telefono" name="entregaTelefono" type="tel" maxlength="30" autocomplete="off" required>
-                        </fieldset>
                     </div>
-                    <div class="campo-fecha"><label for="solicitud-fecha">Fecha solicitada</label><input id="solicitud-fecha" name="fecha" type="date" max="2099-12-31" required aria-describedby="ayuda-fecha"><p class="ayuda" id="ayuda-fecha">La fecha definitiva se acordará con el equipo.</p></div>
-                    <fieldset class="mobiliario"><legend><span aria-hidden="true">03 · </span>¿Qué transportamos?</legend><p class="ayuda">Describe cada tipo de mueble e indica cuántas unidades hay.</p><div id="lineas-mobiliario"></div><button id="agregar-mueble" class="boton-secundario" type="button">＋ Añadir mobiliario</button></fieldset>
-                    <label for="solicitud-observaciones">Observaciones de acceso (opcional)</label><textarea id="solicitud-observaciones" name="observaciones" rows="3" maxlength="2000" placeholder="Planta, ascensor, acceso de vehículos o dificultades en recogida y entrega"></textarea>
+                    <div class="campo-fecha"><label for="solicitud-fecha">Fecha solicitada de recogida</label><input id="solicitud-fecha" name="fecha" type="date" max="2099-12-31" required aria-describedby="ayuda-fecha"><p class="ayuda" id="ayuda-fecha">La fecha definitiva se acordará con el equipo.</p></div>
+                    <fieldset class="mobiliario"><legend><span aria-hidden="true">02 · </span>¿Qué recogemos?</legend><p class="ayuda">Describe la mercancía e indica la cantidad en bultos, cajas o unidades.</p><div id="lineas-mobiliario"></div><button id="agregar-mueble" class="boton-secundario" type="button">＋ Añadir mercancía</button></fieldset>
+                    <label for="solicitud-observaciones">Observaciones de recogida (opcional)</label><textarea id="solicitud-observaciones" name="observaciones" rows="3" maxlength="2000" placeholder="Horario, acceso del camión o indicaciones para la recogida"></textarea>
                     </fieldset>
                     <p id="mensaje-solicitud" role="status" aria-live="polite"></p>
-                    <div class="solicitud-pie"><p>Se enviará como <strong>pendiente de revisión</strong>.</p><button id="enviar-solicitud" type="submit">Enviar solicitud <span aria-hidden="true">↗</span></button></div>
+                    <div class="solicitud-pie"><p>Se enviará como <strong>pendiente de recogida</strong>.</p><button id="enviar-solicitud" type="submit">Enviar solicitud <span aria-hidden="true">↗</span></button></div>
                 </form>
             </section>
             <ul id="panel-funciones" class="panel-funciones"></ul>

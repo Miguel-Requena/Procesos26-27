@@ -39,6 +39,25 @@ function limitar(clave) {
     if (intentos.size >= 10000) throw fallo("Demasiadas solicitudes. Inténtalo más tarde.", 429);
     intentos.set(clave, ahora + 60000);
 }
+const fallosLogin = new Map();
+function claveLogin(ip, email) {
+    return `${ip || "desconocida"}:${typeof email === "string" ? email.trim().toLowerCase() : ""}`;
+}
+function comprobarLogin(ip, email) {
+    const ahora = Date.now();
+    const clave = claveLogin(ip, email);
+    const intento = fallosLogin.get(clave);
+    if (intento?.caduca <= ahora) fallosLogin.delete(clave);
+    if (intento && intento.cantidad >= 5) throw fallo("Demasiados intentos. Inténtalo de nuevo más tarde.", 429);
+}
+function registrarFalloLogin(ip, email) {
+    const clave = claveLogin(ip, email);
+    const ahora = Date.now();
+    const intento = fallosLogin.get(clave);
+    if (!intento || intento.caduca <= ahora) fallosLogin.set(clave, { cantidad: 1, caduca: ahora + 15 * 60 * 1000 });
+    else intento.cantidad++;
+}
+function registrarLoginCorrecto(ip, email) { fallosLogin.delete(claveLogin(ip, email)); }
 function instalar(app) {
     app.get("/api/servicios", (req, res) => res.json({ google: googleDisponible(), correo: correoDisponible() }));
     app.post("/api/confirmacion/reenviar", async (req, res, next) => {
@@ -89,10 +108,9 @@ function instalar(app) {
             if (typeof tokens.access_token !== "string") throw fallo("Respuesta de Google inválida");
             const perfil = await jsonExterno("https://openidconnect.googleapis.com/v1/userinfo", { headers: { Authorization: `Bearer ${tokens.access_token}` } });
             const usuario = await logica.entrarGoogle(perfil);
-            sesiones.crearSesion(req, res, usuario.id);
+            await sesiones.crearSesion(req, res, usuario.id);
             res.redirect("/?acceso=correcto");
         } catch (error) { res.redirect(error.estado === 409 ? "/?acceso=cuenta-existente" : "/?acceso=error"); }
     });
 }
-module.exports = { instalar, enviarConfirmacion, correoDisponible, limitar, urlPublica };
-
+module.exports = { instalar, enviarConfirmacion, correoDisponible, limitar, comprobarLogin, registrarFalloLogin, registrarLoginCorrecto, urlPublica };

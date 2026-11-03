@@ -56,14 +56,14 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         await assert.rejects(logica.consultarTransportes('rutas', usuario, 'ruta-ajena-' + usuario.id), {estado:404});
         await logica.cambiarPerfilEquipo(usuario.id, 'cliente', admin);
         await assert.rejects(logica.consultarTransportes('rutas', usuario), {estado:403});
-        const entrada = { origen:'Yecla', destino:'Rubí', fecha:'2099-12-15',
-            contactoRecogida:{nombre:'Ana',telefono:'612345678'}, contactoEntrega:{nombre:'Luis',telefono:'698765432'},
-            mobiliario:[{descripcion:'Sofá',cantidad:2}], observaciones:'Con ascensor' };
+        const entrada = { fabricante:'Fabricante de Yecla', origen:'Yecla', fecha:'2099-12-15',
+            contactoRecogida:{nombre:'Ana',telefono:'612345678'},
+            mobiliario:[{descripcion:'Sofá',cantidad:2,unidad:'unidades'}], observaciones:'Con ascensor' };
         const resultados = await Promise.all([logica.crearSolicitud(entrada,'mongo-envio-12345678',usuario),logica.crearSolicitud(entrada,'mongo-envio-12345678',usuario)]);
         assert.equal(resultados.filter(r=>r.creada).length,1);
         assert.equal(resultados[0].solicitud.id,resultados[1].solicitud.id);
         assert.equal(await manual.db().collection('solicitudes').countDocuments({clienteId:usuario.id,claveEnvio:'mongo-envio-12345678'}),1);
-        await assert.rejects(logica.crearSolicitud({...entrada,destino:'Otro destino'},'mongo-envio-12345678',usuario),{estado:409});
+        await assert.rejects(logica.crearSolicitud({...entrada,fabricante:'Otro fabricante'},'mongo-envio-12345678',usuario),{estado:409});
         assert.equal((await logica.consultarTransportes('solicitudes',usuario)).length,1);
         assert.equal((await datos.buscarSolicitudEnvio(usuario.id,'mongo-envio-12345678')).mobiliario[0].cantidad,2);
         assert.equal(await logica.comprobarUsuarioActivo(usuario.id, admin), true);

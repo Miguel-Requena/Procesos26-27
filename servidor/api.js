@@ -20,10 +20,11 @@ app.use("/api", (req, res, next) => {
 externos.instalar(app);
 async function exigirSesion(req, res, next) {
     try {
-        req.usuario = await logica.obtenerUsuarioSesion(sesiones.obtenerUsuarioId(req));
+        req.usuario = await logica.obtenerUsuarioSesion(await sesiones.obtenerUsuarioId(req));
         next();
-    } catch {
-        sesiones.cerrarSesion(req, res);
+    } catch (error) {
+        if (error.estado === 503) return res.status(503).json({ error: "Servicio temporalmente no disponible. Inténtalo más tarde." });
+        await sesiones.cerrarSesion(req, res);
         res.status(401).json({ error: "Debes iniciar sesión" });
     }
 }
@@ -68,9 +69,11 @@ app.post("/api/registro", async (req, res) => {
 app.post("/api/login", async (req, res) => {
     try {
         const { email, clave } = req.body || {};
+        externos.comprobarLogin(req.ip, email);
         const usuario = await logica.iniciarSesion(email, clave);
         req.usuarioActividad = usuario.id;
-        sesiones.crearSesion(req, res, usuario.id);
+        await sesiones.crearSesion(req, res, usuario.id);
+        externos.registrarLoginCorrecto(req.ip, email);
 
         res.status(200).json({
             mensaje: "Inicio de sesión correcto",
@@ -78,26 +81,31 @@ app.post("/api/login", async (req, res) => {
         });
 
     } catch (error) {
+        if (error.estado !== 503 && error.estado !== 429) externos.registrarFalloLogin(req.ip, req.body?.email);
+        if (error.estado === 429) return res.status(429).json({ error: error.message });
         res.status(error.estado || 401).json({
             error: error.estado === 503 ? "Servicio temporalmente no disponible. Inténtalo más tarde." : error.message
         });
     }
 });
 
-app.post("/api/logout", (req, res) => {
-    req.usuarioActividad = sesiones.obtenerUsuarioId(req);
-    sesiones.cerrarSesion(req, res);
-    res.status(200).json({ mensaje: "Sesión cerrada correctamente" });
+app.post("/api/logout", async (req, res, next) => {
+    try {
+        req.usuarioActividad = await sesiones.obtenerUsuarioId(req);
+        await sesiones.cerrarSesion(req, res);
+        res.status(200).json({ mensaje: "Sesión cerrada correctamente" });
+    } catch (error) { next(error); }
 });
 
 app.get("/api/sesion", async (req, res) => {
     res.set("Cache-Control", "no-store");
     try {
-        const usuario = await logica.obtenerUsuarioSesion(sesiones.obtenerUsuarioId(req));
+        const usuario = await logica.obtenerUsuarioSesion(await sesiones.obtenerUsuarioId(req));
         req.usuarioActividad = usuario.id;
         res.status(200).json({ usuario });
     } catch (error) {
-        sesiones.cerrarSesion(req, res);
+        if (error.estado === 503) return res.status(503).json({ error: "Servicio temporalmente no disponible. Inténtalo más tarde." });
+        await sesiones.cerrarSesion(req, res);
         res.status(401).json({ error: "Sesión no válida" });
     }
 });

@@ -1,6 +1,5 @@
 const { randomBytes } = require("node:crypto");
-
-const sesiones = new Map();
+const datos = require("./datos");
 const DURACION_MS = 8 * 60 * 60 * 1000;
 const NOMBRE_COOKIE = "sesion";
 
@@ -19,34 +18,26 @@ function opcionesCookie() {
     };
 }
 
-function invalidarSesion(req) {
-    sesiones.delete(tokenDePeticion(req));
+async function invalidarSesion(req) {
+    const token = tokenDePeticion(req);
+    if (token) await datos.eliminarSesion(token);
 }
 
-function crearSesion(req, res, usuarioId) {
-    invalidarSesion(req);
+async function crearSesion(req, res, usuarioId) {
+    await invalidarSesion(req);
     const ahora = Date.now();
-    for (const [token, sesion] of sesiones) {
-        if (sesion.caduca <= ahora) sesiones.delete(token);
-    }
     const token = randomBytes(32).toString("hex");
-    sesiones.set(token, { usuarioId, caduca: ahora + DURACION_MS });
+    await datos.crearSesion(token, usuarioId, ahora + DURACION_MS);
     res.cookie(NOMBRE_COOKIE, token, { ...opcionesCookie(), maxAge: DURACION_MS });
 }
 
-function obtenerUsuarioId(req) {
+async function obtenerUsuarioId(req) {
     const token = tokenDePeticion(req);
-    const sesion = sesiones.get(token);
-    if (!sesion) return undefined;
-    if (sesion.caduca <= Date.now()) {
-        sesiones.delete(token);
-        return undefined;
-    }
-    return sesion.usuarioId;
+    return token ? datos.buscarSesion(token) : undefined;
 }
 
-function cerrarSesion(req, res) {
-    invalidarSesion(req);
+async function cerrarSesion(req, res) {
+    await invalidarSesion(req);
     res.clearCookie(NOMBRE_COOKIE, opcionesCookie());
 }
 

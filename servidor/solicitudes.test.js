@@ -14,9 +14,9 @@ test.before(async () => {
 });
 test.after(() => new Promise(resolve => servidor.close(resolve)));
 test.beforeEach(() => logica.limpiarUsuarios());
-const contenido = () => ({ origen: "Calle Uno 1, Yecla, 30510", destino: "Calle Dos 2, Rubí, 08191", fecha: "2099-12-15",
-    contactoRecogida: { nombre: "Ana", telefono: "+34 612 345 678" }, contactoEntrega: { nombre: "Luis", telefono: "698765432" },
-    mobiliario: [{ descripcion: "Sofá", cantidad: 2 }, { descripcion: "Mesa", cantidad: 1 }], observaciones: "Segunda planta, con ascensor" });
+const contenido = () => ({ fabricante: "Muebles de Yecla", origen: "Calle Uno 1, Yecla, 30510", fecha: "2099-12-15",
+    contactoRecogida: { nombre: "Ana", telefono: "+34 612 345 678" },
+    mobiliario: [{ descripcion: "Sofá", cantidad: 2, unidad: "unidades" }, { descripcion: "Sillas", cantidad: 8, unidad: "cajas" }], observaciones: "Segunda planta, con ascensor" });
 async function cuenta(email, rol = "cliente") {
     const usuario = await ayudas.registrarConfirmado(email, "clave-prueba", rol);
     const res = await fetch(`${base}/api/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, clave: "clave-prueba" }) });
@@ -30,8 +30,9 @@ test("el alta asigna propietario y estado desde sesión, persiste todo y mantien
     const res = await enviar(ana.cookie, { ...contenido(), clienteId: otra.usuario.id, estado: "aceptada", id: "inventado" });
     assert.equal(res.status, 201);
     const { solicitud, creada } = await res.json();
-    assert.equal(creada, true); assert.equal(solicitud.estado, "pendiente");
+    assert.equal(creada, true); assert.equal(solicitud.estado, "pendiente_recogida");
     assert.notEqual(solicitud.id, "inventado");
+    assert.equal(solicitud.destino, undefined); assert.equal(solicitud.contactoEntrega, undefined);
     assert.equal(solicitud.huella, undefined); assert.equal(solicitud.claveEnvio, undefined);
     const guardada = await datos.buscarSolicitudEnvio(ana.usuario.id, "envio-prueba-12345678");
     assert.equal(guardada.clienteId, ana.usuario.id);
@@ -49,7 +50,7 @@ test("doble envío concurrente y reintento conservan una solicitud; cambiar dato
     const cuerpos = await Promise.all(respuestas.map(r => r.json()));
     assert.equal(cuerpos[0].solicitud.id, cuerpos[1].solicitud.id);
     assert.equal((await enviar(ana.cookie)).status, 200);
-    assert.equal((await enviar(ana.cookie, { ...contenido(), destino: "Otra dirección" })).status, 409);
+    assert.equal((await enviar(ana.cookie, { ...contenido(), fabricante: "Otra fábrica" })).status, 409);
     assert.equal((await logica.consultarTransportes("solicitudes", ana.usuario)).length, 1);
     const otra = await cuenta("otra@example.com");
     assert.equal((await enviar(otra.cookie)).status, 201);
@@ -68,11 +69,11 @@ test("rechaza anónimos, conductores, administradores y permisos revocados en se
 });
 test("valida fechas reales no pasadas, contactos, límites y cantidades sin guardar solicitudes inválidas", async () => {
     const ana = await cuenta("ana@example.com");
-    const errores = [{ fecha: "2027-02-30" }, { fecha: "2020-01-01" }, { fecha: "no-fecha" }, { origen: " " }, { destino: "x".repeat(301) },
-        { contactoRecogida: { nombre: "Ana", telefono: "hola" } }, { contactoEntrega: null },
-        { mobiliario: [] }, { mobiliario: Array(51).fill({ descripcion: "Mesa", cantidad: 1 }) },
-        ...[0, -1, 1.5, "2", 1000].map(cantidad => ({ mobiliario: [{ descripcion: "Mesa", cantidad }] })),
-        { mobiliario: [{ descripcion: "", cantidad: 1 }] }, { observaciones: "x".repeat(2001) }];
+    const errores = [{ fecha: "2027-02-30" }, { fecha: "2020-01-01" }, { fecha: "no-fecha" }, { origen: " " }, { fabricante: "x".repeat(161) }, { fabricante: " " }, { origen: "x".repeat(301) },
+        { contactoRecogida: { nombre: "Ana", telefono: "hola" } }, { contactoRecogida: null },
+        { mobiliario: [] }, { mobiliario: Array(51).fill({ descripcion: "Sillas", cantidad: 8, unidad: "cajas" }) },
+        ...[0, -1, 1.5, "2", 1000].map(cantidad => ({ mobiliario: [{ descripcion: "Mesa", cantidad, unidad: "bultos" }] })),
+        { mobiliario: [{ descripcion: "", cantidad: 1, unidad: "bultos" }] }, { mobiliario: [{ descripcion: "Sillas", cantidad: 1, unidad: "palets" }] }, { observaciones: "x".repeat(2001) }];
     for (const cambio of errores) assert.equal((await enviar(ana.cookie, { ...contenido(), ...cambio })).status, 400, JSON.stringify(cambio));
     assert.equal((await enviar(ana.cookie, contenido(), "corta")).status, 400);
     assert.equal((await logica.consultarTransportes("solicitudes", ana.usuario)).length, 0);
