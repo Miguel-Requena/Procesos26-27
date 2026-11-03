@@ -102,7 +102,30 @@ app.get("/api/sesion", async (req, res) => {
     }
 });
 
+for (const rol of ["cliente", "conductor", "administrador"]) {
+    app.get(`/api/panel/${rol}`, exigirSesion, async (req, res) => {
+        try { res.json(await logica.obtenerPanel(rol, req.usuario)); }
+        catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo cargar el panel" }); }
+    });
+}
+
+for (const tipo of ["solicitudes", "rutas"]) {
+    app.get(`/api/${tipo}`, exigirSesion, async (req, res) => {
+        try { res.json({ [tipo]: await logica.consultarTransportes(tipo, req.usuario) }); }
+        catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo consultar el transporte" }); }
+    });
+    app.get(`/api/${tipo}/:id`, exigirSesion, async (req, res) => {
+        try { res.json({ registro: await logica.consultarTransportes(tipo, req.usuario, req.params.id) }); }
+        catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo consultar el transporte" }); }
+    });
+}
+
 app.use("/api/usuarios", exigirSesion);
+app.patch("/api/usuarios/:id/perfil", async (req, res) => {
+    try { res.json({ usuario: await logica.cambiarPerfilEquipo(req.params.id, req.body?.rol, req.usuario) }); }
+    catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo cambiar el perfil" }); }
+});
+
 
 app.get("/api/usuarios", async (req, res) => {
     try {

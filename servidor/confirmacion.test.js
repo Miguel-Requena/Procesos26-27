@@ -7,7 +7,7 @@ test.beforeEach(() => logica.limpiarUsuarios());
 test("el registro queda pendiente y una cuenta sin confirmar no puede entrar", async () => {
     const cuenta = await logica.registrarUsuario("admin@example.com", "clave-prueba");
     assert.equal(cuenta.activo, false);
-    assert.equal(cuenta.rol, "usuario");
+    assert.equal(cuenta.rol, "cliente");
     await assert.rejects(logica.iniciarSesion(cuenta.email, "clave-prueba"), { message: "Cuenta pendiente de confirmación" });
     await datos.configurarCuentaPrueba(cuenta.id, false, "administrador");
     await assert.rejects(logica.iniciarSesion(cuenta.email, "clave-prueba"), { message: "Cuenta pendiente de confirmación" });
@@ -22,7 +22,7 @@ test("revocar confirmación o rol se aplica a una sesión existente, y confirmar
     const cuenta = await logica.registrarUsuario("admin@example.com", "clave-prueba");
     await datos.configurarCuentaPrueba(cuenta.id, true, "administrador");
     const admin = await logica.iniciarSesion(cuenta.email, "clave-prueba");
-    await datos.configurarCuentaPrueba(admin.id, true, "usuario");
+    await datos.configurarCuentaPrueba(admin.id, true, "cliente");
     await assert.rejects(logica.listarUsuarios(admin), { estado: 403 });
     await datos.configurarCuentaPrueba(admin.id, false, "administrador");
     await assert.rejects(logica.obtenerUsuarioSesion(admin.id));

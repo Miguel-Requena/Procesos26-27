@@ -15,20 +15,166 @@ for (const tipo of ["login", "registro"]) {
     document.getElementById(`ver-${tipo}`).addEventListener("click", () => seleccionarAcceso(tipo));
 }
 
-function mostrarUsuario(usuario) {
+const perfiles = {
+    cliente: { nombre: "Cliente", titulo: "Tu espacio de cliente", descripcion: "Prepara tus próximos transportes con Transdrakkar.", funciones: ["Solicitudes de transporte de mobiliario", "Consulta y seguimiento de tus solicitudes"] },
+    conductor: { nombre: "Conductor", titulo: "Tu espacio de conductor", descripcion: "Un espacio para organizar tu jornada de transporte.", funciones: ["Rutas y paradas asignadas", "Registro de entregas e incidencias"] },
+    administrador: { nombre: "Administración", titulo: "Centro de operaciones", descripcion: "Coordina la actividad de Transdrakkar desde un mismo lugar.", funciones: ["Revisión de solicitudes de transporte", "Vehículos y conductores", "Planificación de rutas"] }
+};
+const enlacesPrivados = document.querySelectorAll(".navegacion-privada nav a");
+function activarNavegacion(enlace) {
+    for (const item of enlacesPrivados) {
+        item.classList.toggle("nav-inicio", item === enlace);
+        if (item === enlace) item.setAttribute("aria-current", "location");
+        else item.removeAttribute("aria-current");
+    }
+}
+for (const enlace of enlacesPrivados) enlace.addEventListener("click", () => activarNavegacion(enlace));
+let versionPanel = 0;
+let versionDatos = 0;
+let rolActual;
+function limpiarDatosPanel() {
+    document.getElementById("resumen-total").textContent = "—";
+    document.getElementById("lista-cuentas").replaceChildren();
+    document.getElementById("lista-transportes").replaceChildren();
+    document.getElementById("cuentas-equipo").hidden = true;
+    document.getElementById("estado-panel").textContent = "";
+}
+async function cargarDatosPanel() {
+    const version = versionPanel, carga = ++versionDatos, rol = rolActual;
+    limpiarDatosPanel();
+    if (!rol) return;
+    const estadoPanel = document.getElementById("estado-panel");
+    estadoPanel.textContent = "Cargando datos…";
+    const tipos = rol === "administrador" ? ["solicitudes", "rutas"] : [rol === "cliente" ? "solicitudes" : "rutas"];
+    try {
+        const [cuentas, ...respuestas] = await Promise.all([
+            rol === "administrador" ? window.api.listarUsuarios() : null,
+            ...tipos.map(tipo => window.api.consultarTransportes(tipo))
+        ]);
+        if (version !== versionPanel || carga !== versionDatos) return;
+        if (cuentas) {
+            document.getElementById("cuentas-equipo").hidden = false;
+            for (const cuenta of cuentas.usuarios) {
+                const fila = document.createElement("div");
+                fila.className = "cuenta-equipo";
+                const texto = document.createElement("p");
+                texto.textContent = `${cuenta.email} · ${cuenta.rol}${cuenta.activo ? "" : " · No disponible"}`;
+                fila.append(texto);
+                if (cuenta.activo && ["cliente", "conductor"].includes(cuenta.rol)) {
+                    const boton = document.createElement("button");
+                    const siguiente = cuenta.rol === "cliente" ? "conductor" : "cliente";
+                    boton.type = "button";
+                    boton.textContent = siguiente === "conductor" ? "Habilitar conductor" : "Volver a cliente";
+                    boton.setAttribute("aria-label", `${boton.textContent}: ${cuenta.email}`);
+                    boton.addEventListener("click", async () => {
+                        boton.disabled = true;
+                        mensaje.textContent = "";
+                        try {
+                            await window.api.cambiarPerfil(cuenta.id, siguiente);
+                            if (version !== versionPanel) return;
+                            await cargarDatosPanel();
+                            mensaje.textContent = "Perfil actualizado correctamente.";
+                        } catch (error) {
+                            if (version !== versionPanel) return;
+                            await cargarDatosPanel();
+                            mensaje.textContent = error.message;
+                        } finally { boton.disabled = false; }
+                    });
+                    fila.append(boton);
+                }
+                document.getElementById("lista-cuentas").append(fila);
+            }
+        }
+        for (let i = 0; i < tipos.length; i++) {
+            const bloque = document.createElement("section");
+            const titulo = document.createElement("h4");
+            titulo.textContent = tipos[i] === "solicitudes" ? (rol === "cliente" ? "Mis solicitudes" : "Solicitudes") : (rol === "conductor" ? "Mis rutas" : "Rutas");
+            bloque.append(titulo);
+            const registros = respuestas[i][tipos[i]];
+            if (!registros.length) {
+                const vacio = document.createElement("p");
+                vacio.textContent = tipos[i] === "solicitudes" ? "No hay solicitudes disponibles." : "No hay rutas asignadas disponibles.";
+                bloque.append(vacio);
+            }
+            for (const registro of registros) {
+                const ficha = document.createElement("article");
+                ficha.className = "ficha-transporte";
+                const nombre = document.createElement("h4");
+                nombre.textContent = registro.referencia || registro.id;
+                const detalle = document.createElement("p");
+                detalle.textContent = `${registro.origen || "Origen pendiente"} → ${registro.destino || "Destino pendiente"}`;
+                const datos = document.createElement("p");
+                datos.textContent = `${registro.fecha || "Fecha pendiente"} · ${registro.estado || "Sin estado"}`;
+                ficha.append(nombre, detalle, datos);
+                bloque.append(ficha);
+            }
+            document.getElementById("lista-transportes").append(bloque);
+        }
+        document.getElementById("resumen-total").textContent = respuestas.reduce((total, respuesta, i) => total + respuesta[tipos[i]].length, 0);
+        estadoPanel.textContent = "Datos actualizados.";
+    } catch (error) {
+        if (version !== versionPanel || carga !== versionDatos) return;
+        limpiarDatosPanel();
+        estadoPanel.textContent = error.message;
+        if ([401, 403].includes(error.estado)) {
+            mensaje.textContent = "Tu sesión o tus permisos han cambiado. Recarga la página para actualizar tu acceso.";
+        }
+    }
+}
+document.getElementById("actualizar-panel").addEventListener("click", cargarDatosPanel);
+async function mostrarUsuario(usuario) {
+    const version = ++versionPanel;
+    rolActual = undefined;
+    limpiarDatosPanel();
     formularios.hidden = Boolean(usuario);
-    panelSesion.hidden = !usuario;
-    estado.textContent = usuario
-        ? `Sesión iniciada: ${usuario.email}`
-        : "Inicia sesión para utilizar la aplicación.";
+    document.querySelector(".intro-acceso").hidden = Boolean(usuario);
+    panelSesion.hidden = true;
+    document.body.classList.remove("sesion-activa");
+    activarNavegacion(enlacesPrivados[0]);
+    document.querySelector(".zona-acceso").prepend(estado, mensaje);
+    document.getElementById("panel-funciones").replaceChildren();
+    estado.textContent = usuario ? "Cargando tu espacio…" : "Inicia sesión para utilizar la aplicación.";
+    if (!usuario) return;
+    // El servidor comprueba el perfil de la cuenta en cada petición.
+    try {
+        const panel = await window.api.obtenerPanel(usuario.rol);
+        if (version !== versionPanel) return;
+        const perfil = perfiles[panel.rol];
+        if (!perfil) throw new Error("Perfil no disponible. Contacta con administración.");
+        document.getElementById("perfil-etiqueta").textContent = perfil.nombre;
+        document.getElementById("panel-titulo").textContent = perfil.titulo;
+        document.getElementById("panel-descripcion").textContent = perfil.descripcion;
+        for (const texto of perfil.funciones) {
+            const elemento = document.createElement("li");
+            elemento.textContent = texto;
+            document.getElementById("panel-funciones").append(elemento);
+        }
+        estado.textContent = `Sesión iniciada: ${panel.usuario.email}`;
+        document.getElementById("cuenta-privada").textContent = panel.usuario.email;
+        document.getElementById("nav-equipo").hidden = panel.rol !== "administrador";
+        document.getElementById("nav-transportes").textContent = panel.rol === "cliente" ? "Mis solicitudes" : panel.rol === "conductor" ? "Mis rutas" : "Transportes";
+        document.getElementById("titulo-transportes").textContent = document.getElementById("nav-transportes").textContent;
+        document.getElementById("resumen-titulo").textContent = panel.rol === "cliente" ? "Solicitudes disponibles" : panel.rol === "conductor" ? "Rutas asignadas" : "Solicitudes y rutas";
+        document.querySelector(".barra-privada").after(estado, mensaje);
+        document.body.classList.add("sesion-activa");
+        panelSesion.hidden = false;
+        rolActual = panel.rol;
+        await cargarDatosPanel();
+    } catch (error) {
+        if (version !== versionPanel) return;
+        formularios.hidden = false;
+        document.querySelector(".intro-acceso").hidden = false;
+        estado.textContent = "No se pudo cargar tu espacio. Vuelve a iniciar sesión.";
+        mensaje.textContent = error.message;
+    }
 }
 
 async function recuperarSesion() {
     try {
         const { usuario } = await window.api.obtenerSesion();
-        mostrarUsuario(usuario);
+        await mostrarUsuario(usuario);
     } catch (error) {
-        mostrarUsuario(null);
+        await mostrarUsuario(null);
         if (error.estado !== 401) mensaje.textContent = error.message;
     }
 }
@@ -50,7 +196,7 @@ for (const tipo of ["registro", "login"]) {
                 document.getElementById("login-clave").focus();
             } else {
                 const { usuario } = await window.api.iniciarSesion(campos.get("email"), campos.get("clave"));
-                mostrarUsuario(usuario);
+                await mostrarUsuario(usuario);
             }
             formulario.reset();
         } catch (error) {
@@ -66,7 +212,7 @@ cerrar.addEventListener("click", async () => {
     mensaje.textContent = "";
     try {
         await window.api.cerrarSesion();
-        mostrarUsuario(null);
+        await mostrarUsuario(null);
         mensaje.textContent = "Has cerrado la sesión.";
     } catch (error) {
         mensaje.textContent = error.message;

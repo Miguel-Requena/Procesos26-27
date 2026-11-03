@@ -10,7 +10,7 @@ let inicializacion;
 function convertir(documento) {
     if (!documento) return undefined;
     return { id: documento.id, email: documento.email, clave: documento.clave,
-        rol: documento.rol, confirmado: documento.confirmado === true,
+        rol: documento.rol === "usuario" ? "cliente" : documento.rol, confirmado: documento.confirmado === true,
         eliminado: documento.eliminado === true,
         activo: documento.confirmado === true && documento.eliminado === false };
 }
@@ -23,8 +23,13 @@ function errorBaseDatos(causa) {
 async function inicializar() {
     if (!inicializacion) inicializacion = (async () => {
         await client.connect();
+        await usuarios.updateMany({ rol: "usuario" }, { $set: { rol: "cliente" } });
         await usuarios.createIndex({ email: 1 }, { unique: true });
         await usuarios.createIndex({ id: 1 }, { unique: true });
+        for (const [coleccion, propietario] of [["solicitudes", "clienteId"], ["rutas", "conductorId"]]) {
+            await db.collection(coleccion).createIndex({ id: 1 }, { unique: true, sparse: true });
+            await db.collection(coleccion).createIndex({ [propietario]: 1 });
+        }
         await usuarios.createIndex({ googleSub: 1 }, { unique: true, sparse: true });
         // Se crea una única vez; las altas incrementan el contador atómicamente.
         await db.collection("contadores").updateOne({ _id: "usuarios" },
@@ -56,7 +61,7 @@ async function crear(email, claveHash, confirmado = false) {
         const contador = await db.collection("contadores").findOneAndUpdate(
             { _id: "usuarios" }, { $inc: { valor: 1 } },
             { returnDocument: "after", includeResultMetadata: false });
-        const documento = { id: contador.valor, email, clave: claveHash, rol: "usuario",
+        const documento = { id: contador.valor, email, clave: claveHash, rol: "cliente",
             confirmado, eliminado: false };
         await usuarios.insertOne(documento);
         return convertir(documento);
@@ -82,6 +87,30 @@ async function desactivar(id) {
         return convertir(documento);
     });
 }
+async function asignarRol(id, rol) {
+    if (!["cliente", "conductor", "administrador"].includes(rol)) throw new Error("Rol inválido");
+    return ejecutar(async () => {
+        const documento = await usuarios.findOneAndUpdate({ id: Number(id), confirmado: true, eliminado: false },
+            { $set: { rol } }, { returnDocument: "after", includeResultMetadata: false });
+        if (!documento) throw new Error("Usuario no encontrado");
+        return convertir(documento);
+    });
+}
+async function asignarPerfilEquipo(id, rol) {
+    if (!["cliente", "conductor"].includes(rol)) throw new Error("Rol inválido");
+    return ejecutar(async () => convertir(await usuarios.findOneAndUpdate(
+        { id: Number(id), confirmado: true, eliminado: false, rol: { $in: ["cliente", "conductor"] } },
+        { $set: { rol } }, { returnDocument: "after", includeResultMetadata: false })));
+}
+async function consultarTransportes(tipo, propietarioId, id) {
+    const propietario = tipo === "solicitudes" ? "clienteId" : "conductorId";
+    if (!["solicitudes", "rutas"].includes(tipo)) throw new Error("Recurso inválido");
+    const filtro = { ...(propietarioId === undefined ? {} : { [propietario]: propietarioId }), ...(id === undefined ? {} : { id }) };
+    // Proyección cerrada: no se devuelven campos internos o contactos ajenos.
+    return ejecutar(() => db.collection(tipo).find(filtro, { projection: {
+        _id: 0, id: 1, referencia: 1, origen: 1, destino: 1, fecha: 1, estado: 1
+    } }).sort({ id: 1 }).toArray());
+}
 async function limpiar() { throw new Error("No se permite limpiar la base MongoDB de la aplicación"); }
 async function cerrar() { await client.close(); }
-module.exports = { guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };
+module.exports = { asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };

@@ -1,4 +1,4 @@
-const eventos = new Set(["registro", "login", "logout", "consulta_sesion", "listado_usuarios", "consulta_estado", "eliminacion_usuario", "peticion_api", "servidor_iniciado", "administrador_inicializado"]);
+const eventos = new Set(["registro", "login", "logout", "consulta_sesion", "listado_usuarios", "consulta_estado", "eliminacion_usuario", "peticion_api", "servidor_iniciado", "administrador_inicializado", "cambio_perfil"]);
 function registrar(evento, campos = {}, salida = process.stdout) {
     if (!eventos.has(evento)) evento = "peticion_api";
     const entrada = { fecha: new Date().toISOString(), evento };
@@ -16,13 +16,14 @@ function middleware(req, res, next) {
         ["POST", /^\/api\/logout\/?$/, "logout"],
         ["GET", /^\/api\/sesion\/?$/, "consulta_sesion"],
         ["GET", /^\/api\/usuarios\/?$/, "listado_usuarios"],
+        ["PATCH", /^\/api\/usuarios\/[^/]+\/perfil\/?$/, "cambio_perfil"],
         ["GET", /^\/api\/usuarios\/[^/]+\/activo\/?$/, "consulta_estado"],
         ["DELETE", /^\/api\/usuarios\/[^/]+\/?$/, "eliminacion_usuario"]
     ];
     const ruta = rutas.find(([metodo, patron]) => req.method === metodo && patron.test(req.path));
     if (req.path.startsWith("/api/") && req.path !== "/api/salud") {
         res.on("finish", () => {
-            const objetivo = /^\/api\/usuarios\/(\d+)(?:\/activo)?\/?$/.exec(req.path);
+            const objetivo = /^\/api\/usuarios\/(\d+)(?:\/(?:activo|perfil))?\/?$/.exec(req.path);
             registrar(ruta?.[2] || "peticion_api", {
                 estado: res.statusCode,
                 usuarioId: req.usuario?.id || req.usuarioActividad,

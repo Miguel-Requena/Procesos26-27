@@ -36,7 +36,7 @@ test("Google no vincula por email, exige correo verificado y conserva la identid
     await assert.rejects(logica.entrarGoogle({ sub: "1", email: "google@example.com", email_verified: false }));
     const perfil = { sub: "1", email: "google@example.com", email_verified: true };
     const usuario = await logica.entrarGoogle(perfil);
-    assert.equal(usuario.rol, "usuario");
+    assert.equal(usuario.rol, "cliente");
     assert.equal((await logica.entrarGoogle({ ...perfil, email: "cambio@example.com" })).id, usuario.id);
     await assert.rejects(logica.iniciarSesion(usuario.email, "secreto"));
     await assert.rejects(logica.entrarGoogle({ ...perfil, sub: "otro" }), { estado: 409 });
