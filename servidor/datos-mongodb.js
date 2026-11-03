@@ -1,4 +1,5 @@
 const { MongoClient } = require("mongodb");
+const { createHash } = require("node:crypto");
 const { urlBaseDatos } = require("./configuracion");
 const client = new MongoClient(urlBaseDatos, {
     maxPoolSize: 5, serverSelectionTimeoutMS: 15000,
@@ -33,6 +34,8 @@ async function inicializar() {
         await db.collection("solicitudes").createIndex({ clienteId: 1, claveEnvio: 1 },
             { unique: true, partialFilterExpression: { claveEnvio: { $type: "string" } } });
         await usuarios.createIndex({ googleSub: 1 }, { unique: true, sparse: true });
+        await db.collection("sesiones").createIndex({ token: 1 }, { unique: true });
+        await db.collection("sesiones").createIndex({ caduca: 1 }, { expireAfterSeconds: 0 });
         // Se crea una única vez; las altas incrementan el contador atómicamente.
         await db.collection("contadores").updateOne({ _id: "usuarios" },
             { $setOnInsert: { valor: 0 } }, { upsert: true });
@@ -117,6 +120,22 @@ async function consultarTransportes(tipo, propietarioId, id) {
 async function buscarSolicitudEnvio(clienteId, claveEnvio) {
     return ejecutar(() => db.collection("solicitudes").findOne({ clienteId, claveEnvio }, { projection: { _id: 0 } }));
 }
+function hashSesion(token) { return createHash("sha256").update(token).digest("hex"); }
+async function crearSesion(token, usuarioId, caduca) {
+    return ejecutar(async () => {
+        await db.collection("sesiones").deleteOne({ token: hashSesion(token) });
+        await db.collection("sesiones").insertOne({ token: hashSesion(token), usuarioId, caduca: new Date(caduca) });
+    });
+}
+async function buscarSesion(token) {
+    return ejecutar(async () => {
+        const sesion = await db.collection("sesiones").findOne({ token: hashSesion(token), caduca: { $gt: new Date() } });
+        return sesion?.usuarioId;
+    });
+}
+async function eliminarSesion(token) {
+    return ejecutar(() => db.collection("sesiones").deleteOne({ token: hashSesion(token) }));
+}
 async function crearSolicitud(registro) {
     return ejecutar(async () => {
         try {
@@ -132,4 +151,4 @@ async function crearSolicitud(registro) {
 }
 async function limpiar() { throw new Error("No se permite limpiar la base MongoDB de la aplicación"); }
 async function cerrar() { await client.close(); }
-module.exports = { buscarSolicitudEnvio, crearSolicitud, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };
+module.exports = { buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };

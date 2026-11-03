@@ -9,35 +9,35 @@ function respuesta() {
     };
 }
 
-test("crea una sesión con cookie HttpOnly y la invalida al cerrar", () => {
+test("crea una sesión con cookie HttpOnly y la invalida al cerrar", async () => {
     const res = respuesta();
-    sesiones.crearSesion({ headers: {} }, res, 7);
+    await sesiones.crearSesion({ headers: {} }, res, 7);
     const req = { headers: { cookie: `otra=valor; sesion=${res.token}` } };
-    assert.equal(sesiones.obtenerUsuarioId(req), 7);
+    assert.equal(await sesiones.obtenerUsuarioId(req), 7);
     assert.equal(res.opciones.httpOnly, true);
     assert.equal(res.opciones.sameSite, "strict");
-    sesiones.cerrarSesion(req, res);
-    assert.equal(sesiones.obtenerUsuarioId(req), undefined);
+    await sesiones.cerrarSesion(req, res);
+    assert.equal(await sesiones.obtenerUsuarioId(req), undefined);
     assert.equal(res.borrada, "sesion");
 });
 
-test("un nuevo login rota el token e invalida el anterior", () => {
+test("un nuevo login rota el token e invalida el anterior", async () => {
     const res = respuesta();
-    sesiones.crearSesion({ headers: {} }, res, 7);
+    await sesiones.crearSesion({ headers: {} }, res, 7);
     const anterior = { headers: { cookie: `sesion=${res.token}` } };
-    sesiones.crearSesion(anterior, res, 7);
-    assert.equal(sesiones.obtenerUsuarioId(anterior), undefined);
+    await sesiones.crearSesion(anterior, res, 7);
+    assert.equal(await sesiones.obtenerUsuarioId(anterior), undefined);
     const actual = { headers: { cookie: `sesion=${res.token}` } };
-    assert.equal(sesiones.obtenerUsuarioId(actual), 7);
-    sesiones.cerrarSesion(actual, res);
+    assert.equal(await sesiones.obtenerUsuarioId(actual), 7);
+    await sesiones.cerrarSesion(actual, res);
 });
 
-test("rechaza tokens inventados y sesiones caducadas", (t) => {
-    assert.equal(sesiones.obtenerUsuarioId({ headers: { cookie: "sesion=inventada" } }), undefined);
+test("rechaza tokens inventados y sesiones caducadas", async (t) => {
+    assert.equal(await sesiones.obtenerUsuarioId({ headers: { cookie: "sesion=inventada" } }), undefined);
     t.mock.timers.enable({ apis: ["Date"], now: 1000 });
     const res = respuesta();
-    sesiones.crearSesion({ headers: {} }, res, 7);
+    await sesiones.crearSesion({ headers: {} }, res, 7);
     const req = { headers: { cookie: `sesion=${res.token}` } };
     t.mock.timers.tick(res.opciones.maxAge + 1);
-    assert.equal(sesiones.obtenerUsuarioId(req), undefined);
+    assert.equal(await sesiones.obtenerUsuarioId(req), undefined);
 });

@@ -18,13 +18,14 @@ function validarSolicitud(entrada) {
     if (!/^20\d{2}-\d{2}-\d{2}$/.test(fecha) || !Number.isFinite(Date.parse(fecha)) || new Date(fecha).toISOString().slice(0, 10) !== fecha) throw invalido("Introduce una fecha solicitada válida.");
     if (!Array.isArray(entrada.mobiliario) || entrada.mobiliario.length < 1 || entrada.mobiliario.length > 50) throw invalido("Añade entre 1 y 50 líneas de mobiliario.");
     return {
+        fabricante: texto(entrada.fabricante, "Fabricante", 160),
         origen: texto(entrada.origen, "Dirección de recogida", 300),
-        destino: texto(entrada.destino, "Dirección de entrega", 300),
         contactoRecogida: contacto(entrada.contactoRecogida, "recogida"),
-        contactoEntrega: contacto(entrada.contactoEntrega, "entrega"), fecha,
+        fecha,
         mobiliario: entrada.mobiliario.map(item => {
             if (!Number.isInteger(item?.cantidad) || item.cantidad < 1 || item.cantidad > 999) throw invalido("Cada cantidad debe ser un número entero entre 1 y 999.");
-            return { descripcion: texto(item.descripcion, "Mobiliario", 200), cantidad: item.cantidad };
+            if (!["bultos", "cajas", "unidades"].includes(item.unidad)) throw invalido("Selecciona bultos, cajas o unidades para cada línea de mercancía.");
+            return { descripcion: texto(item.descripcion, "Mercancía", 200), cantidad: item.cantidad, unidad: item.unidad };
         }),
         observaciones: texto(entrada.observaciones, "Observaciones de acceso", 2000, true)
     };
@@ -40,7 +41,7 @@ function comprobarReintento(registro, firma) {
     return { registro, creada: false };
 }
 function publica(registro) {
-    const { id, referencia, origen, destino, fecha, estado, contactoRecogida, contactoEntrega, mobiliario, observaciones, creadaEn } = registro;
-    return { id, referencia, origen, destino, fecha, estado, contactoRecogida, contactoEntrega, mobiliario, observaciones, creadaEn };
+    const { id, referencia, fabricante, origen, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn } = registro;
+    return { id, referencia, fabricante, origen, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn };
 }
 module.exports = { validarSolicitud, hoyMadrid, huella, comprobarReintento, publica };

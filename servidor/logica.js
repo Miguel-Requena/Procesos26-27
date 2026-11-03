@@ -171,7 +171,7 @@ async function crearSolicitud(entrada, claveEnvio, actor) {
     if (contenido.fecha < contrato.hoyMadrid()) throw errorAcceso("La fecha solicitada no puede ser anterior a hoy", 400);
     const id = require("node:crypto").randomUUID();
     const registro = { ...contenido, id, referencia: `TD-${id.slice(0, 8).toUpperCase()}`, clienteId: usuario.id,
-        estado: "pendiente", creadaEn: new Date().toISOString(), claveEnvio, huella: firma };
+        estado: "pendiente_recogida", creadaEn: new Date().toISOString(), claveEnvio, huella: firma };
     const resultado = await datos.crearSolicitud(registro);
     return { solicitud: contrato.publica(resultado.registro), creada: resultado.creada };
 }
