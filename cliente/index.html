@@ -69,7 +69,18 @@
             <h2 id="panel-titulo">Tu espacio Transdrakkar</h2>
             <p id="panel-descripcion"></p>
             <ul id="panel-funciones" class="panel-funciones"></ul>
-            <p class="ayuda">Próximamente podrás utilizar estas funciones desde tu panel.</p>
+            <section id="cuentas-equipo" hidden aria-labelledby="titulo-equipo">
+                <h3 id="titulo-equipo">Perfiles del equipo</h3>
+                <p class="ayuda">Habilita como conductores las cuentas confirmadas del equipo o devuélvelas al perfil de cliente.</p>
+                <div id="lista-cuentas"></div>
+            </section>
+            <section id="transportes" aria-labelledby="titulo-transportes">
+                <h3 id="titulo-transportes">Transportes</h3>
+                <button id="actualizar-panel" type="button">Actualizar datos</button>
+                <p id="estado-panel" role="status"></p>
+                <div id="lista-transportes"></div>
+            </section>
+            <p class="ayuda">La creación de solicitudes y la planificación de rutas estarán disponibles próximamente.</p>
             <button id="cerrar-sesion" type="button">Cerrar sesión</button>
         </section>
         <noscript>Activa JavaScript para utilizar los formularios de esta aplicación.</noscript>

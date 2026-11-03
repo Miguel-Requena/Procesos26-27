@@ -85,9 +85,30 @@ function asignarRol(id, rol) {
     if (!resultado.changes) throw new Error("Usuario no encontrado");
     return buscarPorId(id);
 }
+db.exec(`CREATE TABLE IF NOT EXISTS transportes (
+    tipo TEXT NOT NULL CHECK(tipo IN ('solicitudes','rutas')), id TEXT NOT NULL,
+    propietarioId INTEGER NOT NULL, referencia TEXT, origen TEXT, destino TEXT, fecha TEXT, estado TEXT,
+    PRIMARY KEY(tipo,id));`);
+function asignarPerfilEquipo(id, rol) {
+    if (!["cliente", "conductor"].includes(rol)) throw new Error("Rol inválido");
+    const resultado = db.prepare("UPDATE usuarios SET rol=? WHERE id=? AND confirmado=1 AND eliminado=0 AND rol IN ('cliente','conductor')").run(rol, Number(id));
+    return resultado.changes ? buscarPorId(id) : undefined;
+}
+function consultarTransportes(tipo, propietarioId, id) {
+    if (!["solicitudes", "rutas"].includes(tipo)) throw new Error("Recurso inválido");
+    const condiciones = ["tipo=?"], parametros = [tipo];
+    if (propietarioId !== undefined) { condiciones.push("propietarioId=?"); parametros.push(propietarioId); }
+    if (id !== undefined) { condiciones.push("id=?"); parametros.push(id); }
+    return db.prepare(`SELECT id,referencia,origen,destino,fecha,estado FROM transportes WHERE ${condiciones.join(" AND ")} ORDER BY id`).all(...parametros);
+}
+function configurarTransportePrueba(tipo, registro) {
+    if (process.env.NODE_ENV !== "test") throw new Error("Operación exclusiva de pruebas");
+    db.prepare("INSERT INTO transportes VALUES (?,?,?,?,?,?,?,?)").run(tipo, registro.id,
+        registro.clienteId ?? registro.conductorId, registro.referencia, registro.origen, registro.destino, registro.fecha, registro.estado);
+}
 function limpiar() {
     if (process.env.NODE_ENV !== "test") throw new Error("Solo se puede limpiar la base de datos durante las pruebas");
-    db.exec("DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
+    db.exec("DELETE FROM transportes; DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
 }
 function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     if (process.env.NODE_ENV !== "test") throw new Error("Operación exclusiva de pruebas");
@@ -96,5 +117,5 @@ function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     return buscarPorId(id);
 }
 function cerrar() { db.close(); }
-module.exports = { asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
-    ...(process.env.NODE_ENV === "test" ? { configurarCuentaPrueba } : {}) };
+module.exports = { asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
+    ...(process.env.NODE_ENV === "test" ? { configurarCuentaPrueba, configurarTransportePrueba } : {}) };

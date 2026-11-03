@@ -42,6 +42,20 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         assert.equal((await logica.obtenerPanel('conductor', usuario)).rol, 'conductor');
         await assert.rejects(logica.obtenerPanel('cliente', usuario), {estado: 403});
         await datos.asignarRol(usuario.id, 'cliente');
+        const asignado = await logica.cambiarPerfilEquipo(usuario.id, 'conductor', admin);
+        assert.equal(asignado.rol, 'conductor');
+        await assert.rejects(logica.cambiarPerfilEquipo(admin.id, 'cliente', admin), {estado: 409});
+        await manual.db().collection('rutas').insertMany([
+            {id:'ruta-' + usuario.id, conductorId:usuario.id, referencia:'Propia', origen:'Yecla', destino:'Rubi', estado:'pendiente', secreto:'interno'},
+            {id:'ruta-ajena-' + usuario.id, conductorId:admin.id, referencia:'Ajena'}
+        ]);
+        const rutas = await logica.consultarTransportes('rutas', usuario);
+        assert.equal(rutas.length,1);
+        assert.equal(rutas[0].referencia,'Propia');
+        assert.equal(Object.hasOwn(rutas[0],'secreto'),false);
+        await assert.rejects(logica.consultarTransportes('rutas', usuario, 'ruta-ajena-' + usuario.id), {estado:404});
+        await logica.cambiarPerfilEquipo(usuario.id, 'cliente', admin);
+        await assert.rejects(logica.consultarTransportes('rutas', usuario), {estado:403});
         assert.equal(await logica.comprobarUsuarioActivo(usuario.id, admin), true);
         assert.equal(Object.hasOwn((await logica.listarUsuarios(admin))[0], 'clave'), false);
         const intentos = await Promise.allSettled([logica.registrarUsuario(${JSON.stringify(duplicado)}, 'clave-prueba'),

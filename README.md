@@ -121,3 +121,11 @@ node servidor/asignar-perfil.js correo-de-administracion@example.com administrad
 ```
 
 Este procedimiento requiere acceso local al servidor y su base de datos. No hay selector público de roles ni endpoint de promoción. Para retirar permisos se usa el mismo comando con `cliente`. Los cambios se aplican a la siguiente petición incluso con una sesión abierta; recarga la página para cargar el nuevo panel. El comando no crea cuentas ni confirma correos y rechaza cuentas pendientes o eliminadas. No se asignan perfiles reales automáticamente.
+
+### P16: habilitación de conductores y consulta por propietario
+
+Administración dispone de un listado de cuentas en su panel. Puede convertir cuentas confirmadas y disponibles de cliente a conductor y devolver conductores a cliente. `PATCH /api/usuarios/:id/perfil` solo acepta esos dos roles, vuelve a comprobar al administrador y no modifica cuentas de administración, pendientes o eliminadas. Las cuentas de administración siguen gestionándose desde la terminal de confianza. Este endpoint no confirma correos.
+
+`GET /api/solicitudes` y `GET /api/solicitudes/:id` solo permiten cliente propietario o administrador. `GET /api/rutas` y `GET /api/rutas/:id` solo permiten conductor asignado o administrador. El filtro se aplica en la base de datos a partir de la sesión, sin aceptar propietario o perfil de la petición. Un detalle ajeno responde 404 igual que uno inexistente. La proyección pública solo contiene id, referencia, origen, destino, fecha y estado.
+
+Contrato inicial de lectura para los siguientes PBIs: MongoDB usa las colecciones `solicitudes` (`id` de texto y `clienteId` numérico) y `rutas` (`id` de texto y `conductorId` numérico); ambas admiten referencia, origen, destino, fecha y estado. Los ids admiten letras, números, guiones y guiones bajos (máximo 80). P17 y P22 incorporarán las altas y los restantes campos de negocio. La app muestra listas vacías si no hay registros: no inserta datos de demostración en MongoDB. SQLite replica este contrato únicamente en pruebas. Los datos ficticios se cargan mediante una función exclusiva del entorno de pruebas.

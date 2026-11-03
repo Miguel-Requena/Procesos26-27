@@ -103,6 +103,24 @@ async function obtenerPanel(rol, actor) {
     return { usuario: publico(usuario), rol };
 }
 
+async function cambiarPerfilEquipo(id, rol, actor) {
+    await exigirAdministrador(actor);
+    if (!["cliente", "conductor"].includes(rol)) throw errorAcceso("Solo se permite habilitar conductores o devolverlos a cliente", 400);
+    if (!/^[1-9]\d*$/.test(String(id)) || !Number.isSafeInteger(Number(id))) throw errorAcceso("Usuario no encontrado", 404);
+    const usuario = await datos.asignarPerfilEquipo(Number(id), rol);
+    if (!usuario) throw errorAcceso("La cuenta debe estar confirmada, disponible y no ser de administración", 409);
+    return publico(usuario);
+}
+async function consultarTransportes(tipo, actor, id) {
+    const usuario = await usuarioAutorizado(actor);
+    const rol = tipo === "solicitudes" ? "cliente" : tipo === "rutas" ? "conductor" : undefined;
+    if (!rol || ![rol, "administrador"].includes(usuario.rol)) throw errorAcceso("No tienes permiso para consultar estos registros", 403);
+    if (id !== undefined && (typeof id !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(id))) throw errorAcceso("Registro no encontrado", 404);
+    const registros = await datos.consultarTransportes(tipo, usuario.rol === "administrador" ? undefined : usuario.id, id);
+    if (id !== undefined && !registros.length) throw errorAcceso("Registro no encontrado", 404);
+    return id === undefined ? registros : registros[0];
+}
+
 async function listarUsuarios(actor) {
     await exigirAdministrador(actor);
     return (await datos.listar()).map(publico);
@@ -139,6 +157,7 @@ async function limpiarUsuarios() {
 }
 
 module.exports = {
+    cambiarPerfilEquipo, consultarTransportes,
     obtenerPanel,
     entrarGoogle,
     normalizarEmail,

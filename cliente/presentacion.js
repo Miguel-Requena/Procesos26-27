@@ -21,8 +21,100 @@ const perfiles = {
     administrador: { nombre: "Administración", titulo: "Centro de operaciones", descripcion: "Coordina la actividad de Transdrakkar desde un mismo lugar.", funciones: ["Revisión de solicitudes de transporte", "Vehículos y conductores", "Planificación de rutas"] }
 };
 let versionPanel = 0;
+let versionDatos = 0;
+let rolActual;
+function limpiarDatosPanel() {
+    document.getElementById("lista-cuentas").replaceChildren();
+    document.getElementById("lista-transportes").replaceChildren();
+    document.getElementById("cuentas-equipo").hidden = true;
+    document.getElementById("estado-panel").textContent = "";
+}
+async function cargarDatosPanel() {
+    const version = versionPanel, carga = ++versionDatos, rol = rolActual;
+    limpiarDatosPanel();
+    if (!rol) return;
+    const estadoPanel = document.getElementById("estado-panel");
+    estadoPanel.textContent = "Cargando datos…";
+    const tipos = rol === "administrador" ? ["solicitudes", "rutas"] : [rol === "cliente" ? "solicitudes" : "rutas"];
+    try {
+        const [cuentas, ...respuestas] = await Promise.all([
+            rol === "administrador" ? window.api.listarUsuarios() : null,
+            ...tipos.map(tipo => window.api.consultarTransportes(tipo))
+        ]);
+        if (version !== versionPanel || carga !== versionDatos) return;
+        if (cuentas) {
+            document.getElementById("cuentas-equipo").hidden = false;
+            for (const cuenta of cuentas.usuarios) {
+                const fila = document.createElement("div");
+                fila.className = "cuenta-equipo";
+                const texto = document.createElement("p");
+                texto.textContent = `${cuenta.email} · ${cuenta.rol}${cuenta.activo ? "" : " · No disponible"}`;
+                fila.append(texto);
+                if (cuenta.activo && ["cliente", "conductor"].includes(cuenta.rol)) {
+                    const boton = document.createElement("button");
+                    const siguiente = cuenta.rol === "cliente" ? "conductor" : "cliente";
+                    boton.type = "button";
+                    boton.textContent = siguiente === "conductor" ? "Habilitar conductor" : "Volver a cliente";
+                    boton.setAttribute("aria-label", `${boton.textContent}: ${cuenta.email}`);
+                    boton.addEventListener("click", async () => {
+                        boton.disabled = true;
+                        mensaje.textContent = "";
+                        try {
+                            await window.api.cambiarPerfil(cuenta.id, siguiente);
+                            if (version !== versionPanel) return;
+                            await cargarDatosPanel();
+                            mensaje.textContent = "Perfil actualizado correctamente.";
+                        } catch (error) {
+                            if (version !== versionPanel) return;
+                            await cargarDatosPanel();
+                            mensaje.textContent = error.message;
+                        } finally { boton.disabled = false; }
+                    });
+                    fila.append(boton);
+                }
+                document.getElementById("lista-cuentas").append(fila);
+            }
+        }
+        for (let i = 0; i < tipos.length; i++) {
+            const bloque = document.createElement("section");
+            const titulo = document.createElement("h4");
+            titulo.textContent = tipos[i] === "solicitudes" ? (rol === "cliente" ? "Mis solicitudes" : "Solicitudes") : (rol === "conductor" ? "Mis rutas" : "Rutas");
+            bloque.append(titulo);
+            const registros = respuestas[i][tipos[i]];
+            if (!registros.length) {
+                const vacio = document.createElement("p");
+                vacio.textContent = tipos[i] === "solicitudes" ? "No hay solicitudes disponibles." : "No hay rutas asignadas disponibles.";
+                bloque.append(vacio);
+            }
+            for (const registro of registros) {
+                const ficha = document.createElement("article");
+                ficha.className = "ficha-transporte";
+                const nombre = document.createElement("h4");
+                nombre.textContent = registro.referencia || registro.id;
+                const detalle = document.createElement("p");
+                detalle.textContent = `${registro.origen || "Origen pendiente"} → ${registro.destino || "Destino pendiente"}`;
+                const datos = document.createElement("p");
+                datos.textContent = `${registro.fecha || "Fecha pendiente"} · ${registro.estado || "Sin estado"}`;
+                ficha.append(nombre, detalle, datos);
+                bloque.append(ficha);
+            }
+            document.getElementById("lista-transportes").append(bloque);
+        }
+        estadoPanel.textContent = "Datos actualizados.";
+    } catch (error) {
+        if (version !== versionPanel || carga !== versionDatos) return;
+        limpiarDatosPanel();
+        estadoPanel.textContent = error.message;
+        if ([401, 403].includes(error.estado)) {
+            mensaje.textContent = "Tu sesión o tus permisos han cambiado. Recarga la página para actualizar tu acceso.";
+        }
+    }
+}
+document.getElementById("actualizar-panel").addEventListener("click", cargarDatosPanel);
 async function mostrarUsuario(usuario) {
     const version = ++versionPanel;
+    rolActual = undefined;
+    limpiarDatosPanel();
     formularios.hidden = Boolean(usuario);
     document.querySelector(".intro-acceso").hidden = Boolean(usuario);
     panelSesion.hidden = true;
@@ -45,6 +137,8 @@ async function mostrarUsuario(usuario) {
         }
         estado.textContent = `Sesión iniciada: ${panel.usuario.email}`;
         panelSesion.hidden = false;
+        rolActual = panel.rol;
+        await cargarDatosPanel();
     } catch (error) {
         if (version !== versionPanel) return;
         formularios.hidden = false;

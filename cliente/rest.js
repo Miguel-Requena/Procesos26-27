@@ -21,6 +21,9 @@ window.api = {
         }
         return datos;
     },
+    listarUsuarios() { return this.peticion("/usuarios"); },
+    cambiarPerfil(id, rol) { return this.peticion(`/usuarios/${encodeURIComponent(id)}/perfil`, { method: "PATCH", body: JSON.stringify({ rol }) }); },
+    consultarTransportes(tipo) { return this.peticion(`/${tipo}`); },
     servicios() { return this.peticion("/servicios"); },
     confirmar(token) { return this.peticion("/confirmacion", { method: "POST", body: JSON.stringify({ token }) }); },
     reenviar(email) { return this.peticion("/confirmacion/reenviar", { method: "POST", body: JSON.stringify({ email }) }); },
