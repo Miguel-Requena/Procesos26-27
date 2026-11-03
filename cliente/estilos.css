@@ -56,3 +56,8 @@ input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visibl
 @media (min-width: 1500px) { .acceso-layout { margin-top: 60px; margin-bottom: 60px; } }
 @media (max-width: 900px) { .acceso-layout { gap: 5%; padding: 0 24px; } .identidad { padding: 25px; min-height: 570px; } .sedes { font-size: 9px; } .cabecera-detalle { display: none; } }
 @media (max-width: 640px) { .cabecera { padding: 21px 24px; } .acceso-layout { grid-template-columns: 1fr; gap: 26px; margin: 24px auto; } .identidad { min-height: auto; padding: 20px 24px; } .logo { width: 180px; margin: 0 auto; } .identidad-texto h1 { font-size: 30px; margin-top: 4px; } .identidad-texto p { margin-bottom: 18px; } .identidad-pie { display: none; } .zona-acceso { max-width: none; padding: 0 0 15px; } .pie { padding: 0 24px 24px; gap: 15px; flex-wrap: wrap; } }
+
+.panel-funciones { list-style: none; padding: 0; display: grid; gap: 10px; margin: 22px 0; }
+.panel-funciones li { padding: 14px 16px; background: #f7f6f3; border-left: 3px solid var(--rojo); border-radius: 5px; font-size: 13px; line-height: 1.6; }
+#panel-sesion h2 { margin-top: 12px; font-size: 25px; }
+#panel-sesion .ayuda { font-size: 11px; margin-bottom: 22px; }

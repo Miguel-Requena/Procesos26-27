@@ -31,11 +31,17 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         assert.equal(pendiente.activo, false);
         await assert.rejects(logica.iniciarSesion(pendiente.email, 'clave-prueba'));
         await logica.registrarUsuario(${JSON.stringify(adminEmail)}, 'clave-admin');
-        await usuarios.updateOne({email: ${JSON.stringify(email)}}, {$set: {confirmado: true}});
+        await usuarios.updateOne({email: ${JSON.stringify(email)}}, {$set: {confirmado: true, rol: 'usuario'}});
         await usuarios.updateOne({email: ${JSON.stringify(adminEmail)}}, {$set: {confirmado: true, rol: 'administrador'}});`);
     ejecutar(`const usuario = await logica.iniciarSesion(${JSON.stringify(email)}, 'clave-prueba');
         const admin = await logica.iniciarSesion(${JSON.stringify(adminEmail)}, 'clave-admin');
         assert.equal(admin.rol, 'administrador');
+        assert.equal(usuario.rol, 'cliente');
+        assert.equal((await usuarios.findOne({id: usuario.id})).rol, 'cliente');
+        await datos.asignarRol(usuario.id, 'conductor');
+        assert.equal((await logica.obtenerPanel('conductor', usuario)).rol, 'conductor');
+        await assert.rejects(logica.obtenerPanel('cliente', usuario), {estado: 403});
+        await datos.asignarRol(usuario.id, 'cliente');
         assert.equal(await logica.comprobarUsuarioActivo(usuario.id, admin), true);
         assert.equal(Object.hasOwn((await logica.listarUsuarios(admin))[0], 'clave'), false);
         const intentos = await Promise.allSettled([logica.registrarUsuario(${JSON.stringify(duplicado)}, 'clave-prueba'),

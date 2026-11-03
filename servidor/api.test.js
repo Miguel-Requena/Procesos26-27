@@ -92,7 +92,7 @@ test("registro público y login fallido devuelven JSON sin claves ni cookies de 
     const usuario = (await res.json()).usuario;
     assert.equal(Object.hasOwn(usuario, "clave"), false);
     assert.equal(usuario.activo, false);
-    assert.equal(usuario.rol, "usuario");
+    assert.equal(usuario.rol, "cliente");
     const pendiente = await fetch(`${base}/api/login`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: "ana@example.com", clave: "secreto" })
@@ -113,7 +113,7 @@ test("el servidor impide escalar roles y aplicar operaciones administrativas a u
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: "roles@example.com", clave: "clave-prueba", rol: "administrador" })
     });
-    assert.equal((await registro.json()).usuario.rol, "usuario");
+    assert.equal((await registro.json()).usuario.rol, "cliente");
     await require("./datos").configurarCuentaPrueba(1);
     const entrada = await fetch(`${base}/api/login`, {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -127,4 +127,37 @@ test("el servidor impide escalar roles y aplicar operaciones administrativas a u
     const adminCookie = await login("admin@example.com", true);
     assert.equal((await fetch(`${base}/api/usuarios`, { headers: { cookie: adminCookie } })).status, 200);
     assert.equal((await fetch(`${base}/api/usuarios/${otro.id}`, { method: "DELETE", headers: { cookie: adminCookie } })).status, 200);
+});
+
+test("cada perfil solo accede a su panel, incluso con un rol falsificado en cabeceras", async () => {
+    const datos = require("./datos");
+    for (const rol of ["cliente", "conductor", "administrador"]) {
+        const usuario = await ayudas.registrarConfirmado(`${rol}@example.com`, "clave-prueba", rol);
+        const entrada = await fetch(`${base}/api/login`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: usuario.email, clave: "clave-prueba", rol: "administrador" })
+        });
+        const cookie = entrada.headers.get("set-cookie").split(";")[0];
+        for (const destino of ["cliente", "conductor", "administrador"]) {
+            const respuesta = await fetch(`${base}/api/panel/${destino}`, { headers: { cookie, "x-rol": destino } });
+            assert.equal(respuesta.status, destino === rol ? 200 : 403);
+            const cuerpo = await respuesta.json();
+            if (destino === rol) {
+                assert.equal(cuerpo.usuario.id, usuario.id);
+                assert.equal(cuerpo.rol, rol);
+                assert.equal(Object.hasOwn(cuerpo.usuario, "clave"), false);
+            }
+        }
+        if (rol !== "administrador") assert.equal((await fetch(`${base}/api/usuarios`, { headers: { cookie } })).status, 403);
+        const nuevoRol = rol === "cliente" ? "conductor" : "cliente";
+        await datos.asignarRol(usuario.id, nuevoRol);
+        assert.equal((await fetch(`${base}/api/panel/${rol}`, { headers: { cookie } })).status, 403);
+        assert.equal((await fetch(`${base}/api/panel/${nuevoRol}`, { headers: { cookie } })).status, 200);
+        await logica.eliminarUsuario(usuario.id, usuario);
+        assert.equal((await fetch(`${base}/api/panel/${nuevoRol}`, { headers: { cookie } })).status, 401);
+    }
+    for (const rol of ["cliente", "conductor", "administrador"]) {
+        assert.equal((await fetch(`${base}/api/panel/${rol}`)).status, 401);
+        assert.equal((await fetch(`${base}/api/panel/${rol}`, { headers: { cookie: "sesion=falsa" } })).status, 401);
+    }
 });

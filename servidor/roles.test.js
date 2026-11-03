@@ -7,7 +7,7 @@ test.beforeEach(() => logica.limpiarUsuarios());
 test("un usuario normal no puede listar, consultar estados ni eliminar otra cuenta, aunque falsifique su rol", async () => {
     const ana = await ayudas.registrarConfirmado("ana@example.com", "secreto");
     const otro = await ayudas.registrarConfirmado("otro@example.com", "secreto");
-    assert.equal(ana.rol, "usuario");
+    assert.equal(ana.rol, "cliente");
     const falsoAdmin = { ...ana, rol: "administrador" };
     await assert.rejects(() => logica.listarUsuarios(falsoAdmin), { estado: 403 });
     await assert.rejects(() => logica.comprobarUsuarioActivo(ana.id, falsoAdmin), { estado: 403 });
@@ -27,4 +27,14 @@ test("el administrador lista email, rol y estado, consulta y elimina cualquier c
     assert.equal(await logica.comprobarUsuarioActivo(otro.id, admin), false);
     assert.equal((await logica.eliminarUsuario(admin.id, admin)).activo, false);
     await assert.rejects(() => logica.listarUsuarios(admin), { estado: 401 });
+});
+
+test("la lógica rechaza el rol falsificado y valida los perfiles asignables", async () => {
+    const cliente = await ayudas.registrarConfirmado("cliente@example.com", "secreto");
+    await assert.rejects(logica.obtenerPanel("administrador", { ...cliente, rol: "administrador" }), { estado: 403 });
+    await assert.rejects(datos.asignarRol(cliente.id, "superadmin"), /Rol inválido/);
+    await datos.asignarRol(cliente.id, "conductor");
+    assert.equal((await logica.obtenerPanel("conductor", cliente)).rol, "conductor");
+    const pendiente = await logica.registrarUsuario("pendiente@example.com", "secreto");
+    await assert.rejects(datos.asignarRol(pendiente.id, "administrador"));
 });

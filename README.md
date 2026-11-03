@@ -106,3 +106,18 @@ estaba desplegada; no se ha verificado este hito en producción.
 `entrega.txt` contiene URL y repositorio. Envía credenciales del revisor por
 separado. GitHub Flow: rama, pruebas, PR, CI y revisión antes de integrar main.
 No marcar el hito como terminado hasta completar la comprobación pública.
+
+### Sprint 2: perfiles de acceso
+
+El registro con contraseña y el alta mediante Google crean cuentas de **cliente**. Las cuentas antiguas con rol `usuario` se migran a `cliente` al inicializar el almacenamiento; los administradores se conservan. Hay tres paneles protegidos: `/api/panel/cliente`, `/api/panel/conductor` y `/api/panel/administrador`. Cada uno admite únicamente su perfil. El servidor consulta la cuenta en cada petición: cambiar HTML, cabeceras o el rol enviado al login no concede permisos.
+
+Los paneles muestran el espacio de cada perfil; las solicitudes, rutas y entregas se implementarán en los siguientes PBIs. No muestran datos operativos compartidos.
+
+Para asignar un perfil al equipo, primero debe registrar y confirmar su cuenta. Desde una terminal de confianza en la raíz del proyecto, con el `.env` habitual:
+
+```powershell
+node servidor/asignar-perfil.js correo-del-equipo@example.com conductor
+node servidor/asignar-perfil.js correo-de-administracion@example.com administrador
+```
+
+Este procedimiento requiere acceso local al servidor y su base de datos. No hay selector público de roles ni endpoint de promoción. Para retirar permisos se usa el mismo comando con `cliente`. Los cambios se aplican a la siguiente petición incluso con una sesión abierta; recarga la página para cargar el nuevo panel. El comando no crea cuentas ni confirma correos y rechaza cuentas pendientes o eliminadas. No se asignan perfiles reales automáticamente.

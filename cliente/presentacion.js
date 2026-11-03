@@ -15,20 +15,51 @@ for (const tipo of ["login", "registro"]) {
     document.getElementById(`ver-${tipo}`).addEventListener("click", () => seleccionarAcceso(tipo));
 }
 
-function mostrarUsuario(usuario) {
+const perfiles = {
+    cliente: { nombre: "Cliente", titulo: "Tu espacio de cliente", descripcion: "Prepara tus próximos transportes con Transdrakkar.", funciones: ["Solicitudes de transporte de mobiliario", "Consulta y seguimiento de tus solicitudes"] },
+    conductor: { nombre: "Conductor", titulo: "Tu espacio de conductor", descripcion: "Un espacio para organizar tu jornada de transporte.", funciones: ["Rutas y paradas asignadas", "Registro de entregas e incidencias"] },
+    administrador: { nombre: "Administración", titulo: "Centro de operaciones", descripcion: "Coordina la actividad de Transdrakkar desde un mismo lugar.", funciones: ["Revisión de solicitudes de transporte", "Vehículos y conductores", "Planificación de rutas"] }
+};
+let versionPanel = 0;
+async function mostrarUsuario(usuario) {
+    const version = ++versionPanel;
     formularios.hidden = Boolean(usuario);
-    panelSesion.hidden = !usuario;
-    estado.textContent = usuario
-        ? `Sesión iniciada: ${usuario.email}`
-        : "Inicia sesión para utilizar la aplicación.";
+    document.querySelector(".intro-acceso").hidden = Boolean(usuario);
+    panelSesion.hidden = true;
+    document.getElementById("panel-funciones").replaceChildren();
+    estado.textContent = usuario ? "Cargando tu espacio…" : "Inicia sesión para utilizar la aplicación.";
+    if (!usuario) return;
+    // El servidor comprueba el perfil de la cuenta en cada petición.
+    try {
+        const panel = await window.api.obtenerPanel(usuario.rol);
+        if (version !== versionPanel) return;
+        const perfil = perfiles[panel.rol];
+        if (!perfil) throw new Error("Perfil no disponible. Contacta con administración.");
+        document.getElementById("perfil-etiqueta").textContent = perfil.nombre;
+        document.getElementById("panel-titulo").textContent = perfil.titulo;
+        document.getElementById("panel-descripcion").textContent = perfil.descripcion;
+        for (const texto of perfil.funciones) {
+            const elemento = document.createElement("li");
+            elemento.textContent = texto;
+            document.getElementById("panel-funciones").append(elemento);
+        }
+        estado.textContent = `Sesión iniciada: ${panel.usuario.email}`;
+        panelSesion.hidden = false;
+    } catch (error) {
+        if (version !== versionPanel) return;
+        formularios.hidden = false;
+        document.querySelector(".intro-acceso").hidden = false;
+        estado.textContent = "No se pudo cargar tu espacio. Vuelve a iniciar sesión.";
+        mensaje.textContent = error.message;
+    }
 }
 
 async function recuperarSesion() {
     try {
         const { usuario } = await window.api.obtenerSesion();
-        mostrarUsuario(usuario);
+        await mostrarUsuario(usuario);
     } catch (error) {
-        mostrarUsuario(null);
+        await mostrarUsuario(null);
         if (error.estado !== 401) mensaje.textContent = error.message;
     }
 }
@@ -50,7 +81,7 @@ for (const tipo of ["registro", "login"]) {
                 document.getElementById("login-clave").focus();
             } else {
                 const { usuario } = await window.api.iniciarSesion(campos.get("email"), campos.get("clave"));
-                mostrarUsuario(usuario);
+                await mostrarUsuario(usuario);
             }
             formulario.reset();
         } catch (error) {
@@ -66,7 +97,7 @@ cerrar.addEventListener("click", async () => {
     mensaje.textContent = "";
     try {
         await window.api.cerrarSesion();
-        mostrarUsuario(null);
+        await mostrarUsuario(null);
         mensaje.textContent = "Has cerrado la sesión.";
     } catch (error) {
         mensaje.textContent = error.message;

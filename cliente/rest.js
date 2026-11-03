@@ -24,6 +24,7 @@ window.api = {
     servicios() { return this.peticion("/servicios"); },
     confirmar(token) { return this.peticion("/confirmacion", { method: "POST", body: JSON.stringify({ token }) }); },
     reenviar(email) { return this.peticion("/confirmacion/reenviar", { method: "POST", body: JSON.stringify({ email }) }); },
+    obtenerPanel(rol) { return this.peticion(`/panel/${encodeURIComponent(rol)}`); },
     obtenerSesion() { return this.peticion("/sesion"); },
     registrar(email, clave) {
         return this.peticion("/registro", { method: "POST", body: JSON.stringify({ email, clave }) });

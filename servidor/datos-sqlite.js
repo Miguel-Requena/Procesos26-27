@@ -22,6 +22,22 @@ for (const campo of ["confirmado", "eliminado"]) {
         db.exec(campo === "confirmado" ? "UPDATE usuarios SET confirmado = activo" : "UPDATE usuarios SET eliminado = 1 - activo");
     }
 }
+// Sustituye la restricción antigua sin perder ids, cuentas ni confirmaciones.
+if (!db.prepare("SELECT sql FROM sqlite_master WHERE name='usuarios'").get().sql.includes("'conductor'")) {
+    db.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE usuarios_perfiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE, clave TEXT NOT NULL,
+            activo INTEGER NOT NULL CHECK(activo IN (0,1)),
+            rol TEXT NOT NULL DEFAULT 'cliente' CHECK(rol IN ('cliente','conductor','administrador')),
+            confirmado INTEGER NOT NULL DEFAULT 0 CHECK(confirmado IN (0,1)),
+            eliminado INTEGER NOT NULL DEFAULT 0 CHECK(eliminado IN (0,1))
+        );
+        INSERT INTO usuarios_perfiles SELECT id,email,clave,activo,
+            CASE WHEN rol='usuario' THEN 'cliente' ELSE rol END,confirmado,eliminado FROM usuarios;
+        DROP TABLE usuarios;
+        ALTER TABLE usuarios_perfiles RENAME TO usuarios;
+        COMMIT;`);
+}
 function convertir(fila) {
     return fila ? { ...fila, confirmado: Boolean(fila.confirmado), eliminado: Boolean(fila.eliminado),
         activo: fila.confirmado === 1 && fila.eliminado === 0 } : undefined;
@@ -63,16 +79,22 @@ function desactivar(id) {
     db.prepare("UPDATE usuarios SET activo = 0, eliminado = 1 WHERE id = ?").run(Number(id));
     return buscarPorId(id);
 }
+function asignarRol(id, rol) {
+    if (!["cliente", "conductor", "administrador"].includes(rol)) throw new Error("Rol inválido");
+    const resultado = db.prepare("UPDATE usuarios SET rol=? WHERE id=? AND confirmado=1 AND eliminado=0").run(rol, Number(id));
+    if (!resultado.changes) throw new Error("Usuario no encontrado");
+    return buscarPorId(id);
+}
 function limpiar() {
     if (process.env.NODE_ENV !== "test") throw new Error("Solo se puede limpiar la base de datos durante las pruebas");
     db.exec("DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
 }
-function configurarCuentaPrueba(id, confirmado = true, rol = "usuario") {
+function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     if (process.env.NODE_ENV !== "test") throw new Error("Operación exclusiva de pruebas");
-    if (!["usuario", "administrador"].includes(rol)) throw new Error("Rol inválido");
+    if (!["cliente", "conductor", "administrador"].includes(rol)) throw new Error("Rol inválido");
     db.prepare("UPDATE usuarios SET confirmado = ?, rol = ? WHERE id = ?").run(Number(confirmado), rol, Number(id));
     return buscarPorId(id);
 }
 function cerrar() { db.close(); }
-module.exports = { guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
+module.exports = { asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
     ...(process.env.NODE_ENV === "test" ? { configurarCuentaPrueba } : {}) };

@@ -1,6 +1,6 @@
 const logica = require("./logica");
 const datos = require("./datos");
-async function registrarConfirmado(email, clave, rol = "usuario") {
+async function registrarConfirmado(email, clave, rol = "cliente") {
     const usuario = await logica.registrarUsuario(email, clave);
     await datos.configurarCuentaPrueba(usuario.id, true, rol);
     return logica.obtenerUsuarioSesion(usuario.id);

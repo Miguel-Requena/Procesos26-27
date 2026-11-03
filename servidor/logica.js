@@ -12,7 +12,7 @@ function errorAcceso(mensaje, estado) {
 }
 async function usuarioAutorizado(actor) {
     const usuario = actor && await datos.buscarPorId(actor.id);
-    if (!usuario?.activo) throw errorAcceso("Debes iniciar sesión", 401);
+    if (!usuario?.activo || !["cliente", "conductor", "administrador"].includes(usuario.rol)) throw errorAcceso("Debes iniciar sesión", 401);
     return usuario;
 }
 async function exigirAdministrador(actor) {
@@ -97,14 +97,19 @@ async function entrarGoogle(perfil) {
     return publico(usuario);
 }
 
+async function obtenerPanel(rol, actor) {
+    const usuario = await usuarioAutorizado(actor);
+    if (usuario.rol !== rol) throw errorAcceso("No tienes permiso para acceder a este panel", 403);
+    return { usuario: publico(usuario), rol };
+}
+
 async function listarUsuarios(actor) {
     await exigirAdministrador(actor);
     return (await datos.listar()).map(publico);
 }
 
 async function obtenerUsuarioSesion(id) {
-    const usuario = await datos.buscarPorId(id);
-    if (!usuario || !usuario.activo) throw new Error("Sesión no válida");
+    const usuario = await usuarioAutorizado({ id });
     return publico(usuario);
 }
 
@@ -134,6 +139,7 @@ async function limpiarUsuarios() {
 }
 
 module.exports = {
+    obtenerPanel,
     entrarGoogle,
     normalizarEmail,
     registrarUsuario,

@@ -54,7 +54,7 @@ test("registra y lista usuarios sin exponer la clave", async () => {
         id: 1,
         email: "ana@example.com",
         activo: true,
-        rol: "usuario"
+        rol: "cliente"
     });
     assert.deepEqual(await listarUsuarios(admin), [usuario, admin]);
     assert.equal(Object.hasOwn(usuario, "clave"), false);

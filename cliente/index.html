@@ -34,7 +34,7 @@
             <div class="selector-acceso" role="group" aria-label="Acceso a la cuenta"><button id="ver-login" type="button" aria-pressed="true" aria-controls="seccion-login">Iniciar sesión</button><button id="ver-registro" type="button" aria-pressed="false" aria-controls="seccion-registro">Crear cuenta</button></div>
             <section id="seccion-registro" aria-labelledby="titulo-registro" hidden>
                 <h2 id="titulo-registro">Crear una cuenta</h2>
-                <p class="descripcion-formulario">Tu primer paso con Transdrakkar. Confirma tu correo para activar la cuenta.</p>
+                <p class="descripcion-formulario">Crea tu cuenta de cliente. Confirma tu correo para activarla.</p>
                 <form id="registro">
                     <label for="registro-email">Correo electrónico</label>
                     <input id="registro-email" name="email" type="email" autocomplete="email" placeholder="tu@email.com" required>
@@ -65,8 +65,11 @@
             </details>
         </div>
         <section id="panel-sesion" hidden>
-            <h2>Tu cuenta</h2>
-            <p>Puedes recargar la página y conservarás tu sesión mientras sea válida.</p>
+            <span id="perfil-etiqueta" class="antetitulo"></span>
+            <h2 id="panel-titulo">Tu espacio Transdrakkar</h2>
+            <p id="panel-descripcion"></p>
+            <ul id="panel-funciones" class="panel-funciones"></ul>
+            <p class="ayuda">Próximamente podrás utilizar estas funciones desde tu panel.</p>
             <button id="cerrar-sesion" type="button">Cerrar sesión</button>
         </section>
         <noscript>Activa JavaScript para utilizar los formularios de esta aplicación.</noscript>

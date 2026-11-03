@@ -102,6 +102,13 @@ app.get("/api/sesion", async (req, res) => {
     }
 });
 
+for (const rol of ["cliente", "conductor", "administrador"]) {
+    app.get(`/api/panel/${rol}`, exigirSesion, async (req, res) => {
+        try { res.json(await logica.obtenerPanel(rol, req.usuario)); }
+        catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo cargar el panel" }); }
+    });
+}
+
 app.use("/api/usuarios", exigirSesion);
 
 app.get("/api/usuarios", async (req, res) => {
