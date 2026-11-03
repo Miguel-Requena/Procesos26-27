@@ -30,6 +30,8 @@ async function inicializar() {
             await db.collection(coleccion).createIndex({ id: 1 }, { unique: true, sparse: true });
             await db.collection(coleccion).createIndex({ [propietario]: 1 });
         }
+        await db.collection("solicitudes").createIndex({ clienteId: 1, claveEnvio: 1 },
+            { unique: true, partialFilterExpression: { claveEnvio: { $type: "string" } } });
         await usuarios.createIndex({ googleSub: 1 }, { unique: true, sparse: true });
         // Se crea una única vez; las altas incrementan el contador atómicamente.
         await db.collection("contadores").updateOne({ _id: "usuarios" },
@@ -41,6 +43,7 @@ async function ejecutar(operacion) {
     await inicializar();
     try { return await operacion(); }
     catch (causa) {
+        if (causa.estado) throw causa;
         if (causa.code === 11000) throw new Error("Ya existe un usuario con ese email");
         if (causa.message === "Usuario no encontrado") throw causa;
         throw errorBaseDatos(causa);
@@ -111,6 +114,22 @@ async function consultarTransportes(tipo, propietarioId, id) {
         _id: 0, id: 1, referencia: 1, origen: 1, destino: 1, fecha: 1, estado: 1
     } }).sort({ id: 1 }).toArray());
 }
+async function buscarSolicitudEnvio(clienteId, claveEnvio) {
+    return ejecutar(() => db.collection("solicitudes").findOne({ clienteId, claveEnvio }, { projection: { _id: 0 } }));
+}
+async function crearSolicitud(registro) {
+    return ejecutar(async () => {
+        try {
+            await db.collection("solicitudes").insertOne({ ...registro });
+            return { registro, creada: true };
+        } catch (error) {
+            if (error.code !== 11000) throw error;
+            const existente = await db.collection("solicitudes").findOne({ clienteId: registro.clienteId, claveEnvio: registro.claveEnvio });
+            if (!existente) throw error;
+            return require("./solicitudes").comprobarReintento(existente, registro.huella);
+        }
+    });
+}
 async function limpiar() { throw new Error("No se permite limpiar la base MongoDB de la aplicación"); }
 async function cerrar() { await client.close(); }
-module.exports = { asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };
+module.exports = { buscarSolicitudEnvio, crearSolicitud, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };

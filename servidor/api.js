@@ -109,6 +109,15 @@ for (const rol of ["cliente", "conductor", "administrador"]) {
     });
 }
 
+app.post("/api/solicitudes", exigirSesion, async (req, res) => {
+    try {
+        const resultado = await logica.crearSolicitud(req.body, req.get("Idempotency-Key"), req.usuario);
+        res.status(resultado.creada ? 201 : 200).json(resultado);
+    } catch (error) {
+        res.status(error.estado || 500).json({ error: error.estado === 503 ? "Servicio temporalmente no disponible. Inténtalo más tarde." : error.estado ? error.message : "No se pudo guardar la solicitud" });
+    }
+});
+
 for (const tipo of ["solicitudes", "rutas"]) {
     app.get(`/api/${tipo}`, exigirSesion, async (req, res) => {
         try { res.json({ [tipo]: await logica.consultarTransportes(tipo, req.usuario) }); }
