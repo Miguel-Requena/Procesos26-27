@@ -21,6 +21,7 @@ window.api = {
         }
         return datos;
     },
+    crearSolicitud(datos, claveEnvio) { return this.peticion("/solicitudes", { method: "POST", headers: { "Idempotency-Key": claveEnvio }, body: JSON.stringify(datos) }); },
     listarUsuarios() { return this.peticion("/usuarios"); },
     cambiarPerfil(id, rol) { return this.peticion(`/usuarios/${encodeURIComponent(id)}/perfil`, { method: "PATCH", body: JSON.stringify({ rol }) }); },
     consultarTransportes(tipo) { return this.peticion(`/${tipo}`); },

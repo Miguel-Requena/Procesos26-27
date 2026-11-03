@@ -106,9 +106,31 @@ function configurarTransportePrueba(tipo, registro) {
     db.prepare("INSERT INTO transportes VALUES (?,?,?,?,?,?,?,?)").run(tipo, registro.id,
         registro.clienteId ?? registro.conductorId, registro.referencia, registro.origen, registro.destino, registro.fecha, registro.estado);
 }
+db.exec(`CREATE TABLE IF NOT EXISTS solicitudes_detalles (
+    id TEXT PRIMARY KEY, clienteId INTEGER NOT NULL, claveEnvio TEXT NOT NULL, contenido TEXT NOT NULL,
+    UNIQUE(clienteId, claveEnvio));`);
+function buscarSolicitudEnvio(clienteId, claveEnvio) {
+    const fila = db.prepare("SELECT contenido FROM solicitudes_detalles WHERE clienteId=? AND claveEnvio=?").get(clienteId, claveEnvio);
+    return fila ? JSON.parse(fila.contenido) : undefined;
+}
+function crearSolicitud(registro) {
+    db.exec("BEGIN IMMEDIATE");
+    try {
+        const existente = buscarSolicitudEnvio(registro.clienteId, registro.claveEnvio);
+        if (existente) {
+            const resultado = require("./solicitudes").comprobarReintento(existente, registro.huella);
+            db.exec("COMMIT");
+            return resultado;
+        }
+        db.prepare("INSERT INTO solicitudes_detalles VALUES (?,?,?,?)").run(registro.id, registro.clienteId, registro.claveEnvio, JSON.stringify(registro));
+        db.prepare("INSERT INTO transportes VALUES (?,?,?,?,?,?,?,?)").run("solicitudes", registro.id, registro.clienteId, registro.referencia, registro.origen, registro.destino, registro.fecha, registro.estado);
+        db.exec("COMMIT");
+        return { registro, creada: true };
+    } catch (error) { db.exec("ROLLBACK"); throw error; }
+}
 function limpiar() {
     if (process.env.NODE_ENV !== "test") throw new Error("Solo se puede limpiar la base de datos durante las pruebas");
-    db.exec("DELETE FROM transportes; DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
+    db.exec("DELETE FROM solicitudes_detalles; DELETE FROM transportes; DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
 }
 function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     if (process.env.NODE_ENV !== "test") throw new Error("Operación exclusiva de pruebas");
@@ -117,5 +139,5 @@ function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     return buscarPorId(id);
 }
 function cerrar() { db.close(); }
-module.exports = { asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
+module.exports = { buscarSolicitudEnvio, crearSolicitud, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
     ...(process.env.NODE_ENV === "test" ? { configurarCuentaPrueba, configurarTransportePrueba } : {}) };

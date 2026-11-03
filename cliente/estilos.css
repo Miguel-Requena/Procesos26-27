@@ -126,3 +126,31 @@ input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visibl
 @media (max-width: 1050px) { .sesion-activa #panel-sesion { grid-template-columns: 210px minmax(0, 1fr); } .navegacion-privada { padding: 30px 18px; } .contenido-privado { padding: 0 25px 30px; } .sesion-activa .cuenta-equipo { flex-wrap: wrap; } }
 @media (max-width: 700px) { .sesion-activa #panel-sesion { grid-template-columns: 1fr; } .navegacion-privada { position: static; height: auto; padding: 22px; flex-direction: row; flex-wrap: wrap; gap: 20px; align-items: center; } .nav-subtitulo, .nav-sedes { display: none; } .navegacion-privada nav { order: 3; width: 100%; display: flex; flex-wrap: wrap; margin: 0; gap: 6px; } .navegacion-privada nav a { padding: 10px; font-size: 12px; gap: 7px; } .navegacion-privada button { margin-left: auto; padding: 9px; font-size: 11px; gap: 10px; } .contenido-privado { padding: 0 20px 25px; } .barra-privada { min-height: 75px; flex-wrap: wrap; gap: 8px; padding: 16px 0; } .bienvenida-privada { margin-top: 25px; } .sello-privado { display: none; } .resumen-privado { gap: 12px; } .resumen-privado article { padding: 20px 16px; } .resumen-privado .tarjeta-red strong { font-size: 24px; } .sesion-activa #transportes, .sesion-activa #cuentas-equipo { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+#acciones-cliente { display: flex; align-items: center; gap: 18px; margin: 24px 0; }
+#acciones-cliente button { display: flex; gap: 24px; align-items: center; box-shadow: 0 5px 15px #d9162618; }
+#acciones-cliente > span { color: #747984; font-size: 12px; }
+#nueva-solicitud { background: white; border: 1px solid #e2e4e8; border-top: 3px solid var(--rojo); border-radius: 14px; padding: 30px; margin: 25px 0; animation: entrada-panel .3s ease-out; }
+.formulario-cabecera { display: flex; justify-content: space-between; gap: 20px; align-items: start; margin-bottom: 22px; }
+#panel-sesion .formulario-cabecera h3 { font-size: 25px; letter-spacing: -.7px; margin: 10px 0; }
+#panel-sesion .formulario-cabecera p { font-size: 12px; color: #747984; }
+.formulario-cabecera button, .boton-secundario { background: #f4f5f7; color: #444b56; border: 1px solid #dfe2e7; font-size: 11px; padding: 10px 12px; }
+.formulario-cabecera button:hover, .boton-secundario:hover { background: #e8ebef; }
+#formulario-solicitud fieldset { min-width: 0; border: 0; margin: 0; padding: 0; }
+#campos-solicitud > legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#formulario-solicitud legend { font-size: 14px; font-weight: 650; margin-bottom: 18px; }
+#formulario-solicitud legend span { color: var(--rojo); }
+.solicitud-columnas { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 22px; }
+#formulario-solicitud label { display: block; margin: 14px 0 8px; }
+textarea { width: 100%; resize: vertical; padding: 13px 14px; border: 1px solid #d9d5d2; border-radius: 7px; font: inherit; font-size: 14px; color: #272329; background: white; }
+textarea:focus-visible { outline: 3px solid #ed1c2b88; outline-offset: 3px; }
+textarea::placeholder { color: #8a8e97; }
+.campo-fecha { max-width: 300px; margin: 25px 0; }
+#panel-sesion #formulario-solicitud .ayuda { margin: 8px 0 14px; }
+#formulario-solicitud .mobiliario { border-top: 1px solid #e2e4e8; padding-top: 18px; margin-top: 10px; }
+.linea-mueble { display: grid; grid-template-columns: minmax(0, 1fr) 100px auto; gap: 12px; align-items: end; margin-bottom: 12px; }
+.linea-mueble button { min-height: 46px; }
+#mensaje-solicitud:not(:empty) { background: #fff0f0; padding: 12px; border-radius: 7px; color: #9d1420; }
+.solicitud-pie { border-top: 1px solid #e2e4e8; padding-top: 20px; display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+#panel-sesion .solicitud-pie p { font-size: 11px; color: #747984; }
+@media (max-width: 700px) { #acciones-cliente { align-items: start; flex-direction: column; gap: 10px; } #nueva-solicitud { padding: 20px; } .solicitud-columnas { grid-template-columns: 1fr; } .formulario-cabecera { flex-wrap: wrap; } .linea-mueble { grid-template-columns: minmax(0, 1fr) 80px; } .linea-mueble button { grid-column: 1 / -1; min-height: 36px; justify-self: start; } .solicitud-pie { flex-direction: column; align-items: stretch; } }
+@media (max-width: 700px) { #formulario-solicitud input, #formulario-solicitud textarea { font-size: 16px; } }

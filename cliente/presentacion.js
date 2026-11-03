@@ -125,6 +125,8 @@ document.getElementById("actualizar-panel").addEventListener("click", cargarDato
 async function mostrarUsuario(usuario) {
     const version = ++versionPanel;
     rolActual = undefined;
+    document.getElementById("acciones-cliente").hidden = true;
+    restablecerSolicitud();
     limpiarDatosPanel();
     formularios.hidden = Boolean(usuario);
     document.querySelector(".intro-acceso").hidden = Boolean(usuario);
@@ -159,6 +161,7 @@ async function mostrarUsuario(usuario) {
         document.body.classList.add("sesion-activa");
         panelSesion.hidden = false;
         rolActual = panel.rol;
+        document.getElementById("acciones-cliente").hidden = panel.rol !== "cliente";
         await cargarDatosPanel();
     } catch (error) {
         if (version !== versionPanel) return;
@@ -245,4 +248,99 @@ async function iniciar() {
     try { document.getElementById("google").hidden = !(await window.api.servicios()).google; }
     catch (error) { mensaje.textContent = error.message; }
 }
+let numeroMueble = 0;
+let envioSolicitud = null;
+let enviandoSolicitud = false;
+const formularioSolicitud = document.getElementById("formulario-solicitud");
+const seccionSolicitud = document.getElementById("nueva-solicitud");
+const mensajeSolicitud = document.getElementById("mensaje-solicitud");
+function agregarMueble(enfocar = false) {
+    const lista = document.getElementById("lineas-mobiliario");
+    if (lista.children.length >= 50) return;
+    const numero = ++numeroMueble;
+    const fila = document.createElement("div");
+    fila.className = "linea-mueble";
+    const campos = [["descripcion", "Mueble", "text", 200], ["cantidad", "Unidades", "number", null]];
+    for (const [campo, titulo, tipo, maximo] of campos) {
+        const grupo = document.createElement("div");
+        const label = document.createElement("label");
+        label.htmlFor = `mueble-${campo}-${numero}`;
+        label.textContent = `${titulo} ${numero}`;
+        const input = document.createElement("input");
+        input.id = label.htmlFor; input.name = campo; input.type = tipo; input.required = true;
+        if (maximo) { input.maxLength = maximo; input.placeholder = "Ej.: sofá de tres plazas"; }
+        else { input.min = "1"; input.max = "999"; input.step = "1"; input.value = "1"; }
+        grupo.append(label, input); fila.append(grupo);
+    }
+    const quitar = document.createElement("button");
+    quitar.type = "button"; quitar.className = "boton-secundario"; quitar.textContent = "Quitar";
+    quitar.setAttribute("aria-label", `Quitar mobiliario ${numero}`);
+    quitar.addEventListener("click", () => {
+        fila.remove();
+        if (!lista.children.length) agregarMueble(true);
+        else document.getElementById("agregar-mueble").focus();
+        document.getElementById("agregar-mueble").disabled = false;
+    });
+    fila.append(quitar); lista.append(fila);
+    document.getElementById("agregar-mueble").disabled = lista.children.length >= 50;
+    if (enfocar) fila.querySelector("input").focus();
+}
+function restablecerSolicitud() {
+    formularioSolicitud.reset(); seccionSolicitud.hidden = true; envioSolicitud = null;
+    mensajeSolicitud.textContent = "";
+    document.getElementById("lineas-mobiliario").replaceChildren(); numeroMueble = 0;
+    agregarMueble();
+}
+document.getElementById("agregar-mueble").addEventListener("click", () => agregarMueble(true));
+document.getElementById("abrir-solicitud").addEventListener("click", () => {
+    if (rolActual !== "cliente") return;
+    seccionSolicitud.hidden = false;
+    document.getElementById("titulo-nueva-solicitud").focus();
+});
+document.getElementById("cancelar-solicitud").addEventListener("click", () => {
+    seccionSolicitud.hidden = true;
+    document.getElementById("abrir-solicitud").focus();
+});
+formularioSolicitud.addEventListener("submit", async evento => {
+    evento.preventDefault();
+    if (enviandoSolicitud || rolActual !== "cliente") return;
+    const campos = new FormData(formularioSolicitud);
+    const datos = {
+        origen: campos.get("origen"), destino: campos.get("destino"), fecha: campos.get("fecha"),
+        contactoRecogida: { nombre: campos.get("recogidaNombre"), telefono: campos.get("recogidaTelefono") },
+        contactoEntrega: { nombre: campos.get("entregaNombre"), telefono: campos.get("entregaTelefono") },
+        mobiliario: [...document.querySelectorAll(".linea-mueble")].map(fila => ({ descripcion: fila.querySelector('[name="descripcion"]').value, cantidad: Number(fila.querySelector('[name="cantidad"]').value) })),
+        observaciones: campos.get("observaciones")
+    };
+    const contenido = JSON.stringify(datos);
+    if (!envioSolicitud || envioSolicitud.contenido !== contenido) {
+        // getRandomValues también funciona al probar por HTTP en la red local.
+        const bytes = crypto.getRandomValues(new Uint8Array(16));
+        envioSolicitud = { contenido, clave: Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("") };
+    }
+    const version = versionPanel;
+    enviandoSolicitud = true;
+    document.getElementById("campos-solicitud").disabled = true;
+    document.getElementById("enviar-solicitud").disabled = true;
+    document.getElementById("cancelar-solicitud").disabled = true;
+    mensajeSolicitud.textContent = "Enviando tu solicitud…";
+    try {
+        const resultado = await window.api.crearSolicitud(datos, envioSolicitud.clave);
+        if (version !== versionPanel) return;
+        restablecerSolicitud();
+        await cargarDatosPanel();
+        if (version !== versionPanel) return;
+        mensaje.textContent = `Solicitud ${resultado.solicitud.referencia} guardada. Está pendiente de revisión por el equipo.`;
+        document.getElementById("abrir-solicitud").focus();
+    } catch (error) {
+        if (version !== versionPanel) return;
+        mensajeSolicitud.textContent = error.message;
+        if ([401, 403].includes(error.estado)) await recuperarSesion();
+    } finally {
+        enviandoSolicitud = false;
+        document.getElementById("campos-solicitud").disabled = false;
+        document.getElementById("enviar-solicitud").disabled = false;
+        document.getElementById("cancelar-solicitud").disabled = false;
+    }
+});
 iniciar();
