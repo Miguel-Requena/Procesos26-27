@@ -271,3 +271,89 @@ body:not(.sesion-activa) .zona-acceso { padding: 16px 0; max-width: 410px; }
 @media (max-width: 700px) { .sesion-activa .contenido-privado { padding: 0 20px 25px; } .sesion-activa .navegacion-privada { padding: 20px; } .sesion-activa .navegacion-privada nav { margin-top: 0; } .sesion-activa .barra-privada { gap: 16px; } .sesion-activa .bienvenida-privada { margin-top: 24px; } .sesion-activa #panel-titulo { font-size: 28px; } .sesion-activa .resumen-privado article { padding: 16px 12px; } .sesion-activa .resumen-privado article:first-child::before { display: none; } .sesion-activa .resumen-privado strong { font-size: 29px; } .sesion-activa .resumen-privado article > span { font-size: 10px; line-height: 1.5; } .sesion-activa .resumen-privado small { font-size: 9px; } .sesion-activa #transportes, .sesion-activa #cuentas-equipo { padding: 18px; } .red-discreta { padding: 20px; } #camion-panel { width: 115px; height: 64px; } #camion-panel .camion-marca { width: 105px; height: 52px; bottom: 1px; left: 0; animation: none; } .red-discreta i { margin: 0 3px; } }
 @media (max-width: 400px) { .sesion-activa .resumen-privado { grid-template-columns: 1fr; } .sesion-activa .resumen-privado article { display: grid; grid-template-columns: 1fr auto; gap: 5px 10px; padding: 16px; } .sesion-activa .resumen-privado strong { grid-column: 2; grid-row: 1 / 3; margin: 0; } .red-discreta { flex-wrap: wrap; } .sesion-activa .ficha-transporte { grid-template-columns: 1fr; } .insignia-estado { justify-self: start; } }
 .icono-nav { width: 17px; height: 17px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Acceso: tipografía propia, fondo nocturno y tarjeta de lectura clara. */
+@font-face {
+    font-family: 'Manrope';
+    font-style: normal;
+    font-weight: 400 800;
+    font-display: swap;
+    src: url('fuentes/manrope-latin.woff2') format('woff2');
+}
+body:not(.sesion-activa) {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Manrope', 'Segoe UI', sans-serif;
+    background-color: #141e2b;
+    background-image: radial-gradient(ellipse at 91% 8%, #70303e55, transparent 48%), radial-gradient(ellipse at 7% 90%, #35587645, transparent 52%), linear-gradient(125deg, #1d2b3b 0%, #172230 46%, #171c28 100%);
+    color: #f3f4f6;
+}
+body:not(.sesion-activa) > .cabecera { width: 100%; border-bottom-color: #ffffff12; padding-top: 24px; padding-bottom: 24px; }
+body:not(.sesion-activa) .cabecera .marca { font-family: 'Manrope', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -.9px; }
+body:not(.sesion-activa) .cabecera .marca > span:first-child { color: #ff4c60; }
+body:not(.sesion-activa) .cabecera-detalle { color: #a9b5c4; border-left-color: #ffffff26; font-size: 9px; }
+body:not(.sesion-activa) .enlace-acceso { font-size: 11px; color: #e0e5ed; }
+body:not(.sesion-activa) .enlace-acceso span { color: #ff7181; }
+body:not(.sesion-activa) .acceso-layout { width: 100%; flex: 1; margin: 30px auto; gap: clamp(28px, 4vw, 58px); align-content: center; }
+body:not(.sesion-activa) .identidad { min-height: 590px; border: 1px solid #ffffff16; box-shadow: 0 24px 65px #00000030; }
+body:not(.sesion-activa) .identidad-texto h1 { font-weight: 800; font-size: clamp(33px, 3.2vw, 44px); line-height: 1.15; letter-spacing: -1.9px; }
+body:not(.sesion-activa) .identidad-texto p { font-size: 12px; line-height: 1.85; }
+body:not(.sesion-activa) .zona-acceso { max-width: 460px; color: #252d39; background: #f9f8f5; border: 1px solid #ffffff80; border-radius: 20px; padding: 34px 36px 27px; box-shadow: 0 24px 70px #00000030, inset 0 1px 0 #ffffff; }
+body:not(.sesion-activa) .intro-acceso .antetitulo { font-size: 8px; letter-spacing: 1.8px; }
+body:not(.sesion-activa) .intro-acceso h2 { font-family: 'Manrope', sans-serif; font-size: clamp(28px, 2.6vw, 35px); line-height: 1.2; letter-spacing: -1.5px; font-weight: 800; margin: 15px 0 12px; }
+body:not(.sesion-activa) .intro-acceso > p { font-size: 12px; color: #67717e; }
+body:not(.sesion-activa) .selector-acceso { border-radius: 10px; background: #eaece9; border-color: #e1e4e0; margin: 25px 0 22px; }
+body:not(.sesion-activa) .selector-acceso button { font-size: 11px; border-radius: 7px; font-weight: 700; }
+body:not(.sesion-activa) label { font-size: 11px; font-weight: 700; color: #414b58; }
+body:not(.sesion-activa) input { font-family: inherit; font-size: 13px; border-color: #dce0df; border-radius: 9px; background: #fff; transition: border-color .2s, box-shadow .2s; }
+body:not(.sesion-activa) input:focus-visible { border-color: #ad2638; outline: 2px solid #d9162638; outline-offset: 2px; box-shadow: 0 0 0 4px #d9162609; }
+body:not(.sesion-activa) form > button { font-size: 12px; border-radius: 9px; font-weight: 800; }
+body:not(.sesion-activa) #login button { background: linear-gradient(115deg, #d91626, #bd1025); box-shadow: 0 6px 16px #bd102523; }
+body:not(.sesion-activa) #login button:hover { background: #aa1022; }
+body:not(.sesion-activa) .confirmacion { border-color: #dedfdc; margin-top: 22px; }
+body:not(.sesion-activa) .confirmacion summary { font-size: 10px; color: #626c78; }
+body:not(.sesion-activa) .nota-acceso { font-size: 9px; color: #606b78; margin-top: 23px; }
+body:not(.sesion-activa) .nota-acceso span { color: #707b87; }
+body:not(.sesion-activa) > .pie { width: 100%; color: #a6b2c2; font-size: 9px; padding-bottom: 22px; }
+@media (max-width: 900px) {
+    body:not(.sesion-activa) .zona-acceso { padding: 28px 24px 23px; }
+    body:not(.sesion-activa) .acceso-layout { gap: 24px; }
+    body:not(.sesion-activa) .identidad { padding: 25px; }
+    body:not(.sesion-activa) .identidad-texto h1 { font-size: 34px; }
+}
+@media (max-width: 640px) {
+    body:not(.sesion-activa) > .cabecera { padding: 21px 20px; gap: 14px; }
+    body:not(.sesion-activa) .cabecera .marca { font-size: 17px; }
+    body:not(.sesion-activa) .acceso-layout { margin: 22px auto; gap: 22px; }
+    body:not(.sesion-activa) .identidad { min-height: auto; padding: 24px; }
+    body:not(.sesion-activa) .identidad-texto h1 { font-size: 33px; }
+    body:not(.sesion-activa) .zona-acceso { max-width: none; padding: 28px 24px 24px; border-radius: 16px; }
+    body:not(.sesion-activa) .intro-acceso h2 { font-size: 30px; }
+    body:not(.sesion-activa) input { font-size: 16px; }
+}
+
+@font-face {
+    font-family: 'DM Serif Display';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('fuentes/dm-serif-display-latin.woff2') format('woff2');
+}
+body:not(.sesion-activa) .identidad-texto h1,
+body:not(.sesion-activa) .intro-acceso h2 {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -.8px;
+    text-wrap: balance;
+}
+body:not(.sesion-activa) .identidad-texto h1 { font-size: clamp(38px, 3.7vw, 51px); line-height: 1.08; }
+body:not(.sesion-activa) .intro-acceso h2 { font-size: clamp(32px, 2.9vw, 40px); line-height: 1.12; }
+@media (max-width: 900px) {
+    body:not(.sesion-activa) .identidad-texto h1 { font-size: 39px; }
+    body:not(.sesion-activa) .intro-acceso h2 { font-size: 33px; }
+}
+@media (max-width: 640px) {
+    body:not(.sesion-activa) .identidad-texto h1 { font-size: 39px; }
+    body:not(.sesion-activa) .intro-acceso h2 { font-size: 35px; }
+}
