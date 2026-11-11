@@ -35,9 +35,12 @@ conservan su estado. Sin configurar correo, el registro devuelve 503 sin crear c
 
 Google usa Authorization Code con PKCE y state ligado a cookie HttpOnly, válido
 10 minutos. El servidor consulta el perfil y exige email verificado; identifica
-la cuenta por sub. Un email ya registrado debe entrar con contraseña: no se
-vinculan cuentas automáticamente. Google no concede contraseña local ni rol admin.
-El botón aparece cuando se configuran las credenciales.
+la cuenta por sub. Si el correo ya está registrado, solicita la contraseña de esa
+misma cuenta para vincular Google una sola vez, conservando id, perfil y solicitudes.
+La vinculación requiere una prueba de Google verificada, ligada al navegador,
+de un solo uso y válida durante 10 minutos. Se puede continuar solo con contraseña.
+Google no concede contraseña local ni rol admin. Los botones «Registrarse con
+Google» y «Continuar con Google» aparecen cuando se configuran las credenciales.
 
 ## Variables
 
@@ -59,11 +62,14 @@ El servidor comprueba sesión y rol en cada operación; el registro ignora roles
 y estados enviados por el cliente. Un usuario solo elimina su cuenta; el admin
 puede listar, consultar estados y eliminar otras cuentas. El eliminado no puede entrar.
 
-Las sesiones duran 8 horas y viven en memoria, igual que state OAuth y límites
-de envío. Reiniciar o escalar a cero obliga a entrar de nuevo. Mantener máximo
-una instancia; varias requieren almacenamiento compartido. Los usuarios y tokens
-de confirmación persisten en MongoDB. El límite de solicitudes por correo es un
-minuto por proceso. Los logs de aplicación omiten correos, claves y tokens.
+Las sesiones duran 8 horas y persisten en MongoDB, con el token almacenado como
+hash. Los intentos OAuth (state y PKCE) y las pruebas de vinculación también se
+guardan en MongoDB: caducan a los 10 minutos, usan índices TTL y se consumen
+atómicamente una sola vez. Reiniciar o escalar a cero Cloud Run no pierde estos
+datos. Los límites de envío y login siguen siendo por proceso; se mantiene un
+máximo de una instancia. Los usuarios y tokens de confirmación persisten en
+MongoDB. El límite de solicitudes por correo es un minuto por proceso. Los logs
+de aplicación omiten correos, claves y tokens.
 
 ## API
 

@@ -4,6 +4,16 @@ const formularios = document.getElementById("formularios");
 const panelSesion = document.getElementById("panel-sesion");
 const mensaje = document.getElementById("mensaje");
 const cerrar = document.getElementById("cerrar-sesion");
+let vinculoGooglePendiente = false;
+function prepararVinculoGoogle(pendiente) {
+    vinculoGooglePendiente = pendiente;
+    document.getElementById("login").querySelector('button[type="submit"]').textContent = pendiente ? "Entrar y vincular Google" : "Entrar en mi cuenta →";
+    document.getElementById("cancelar-vinculo-google").hidden = !pendiente;
+}
+document.getElementById("cancelar-vinculo-google").addEventListener("click", () => {
+    prepararVinculoGoogle(false);
+    mensaje.textContent = "Puedes acceder con tu contraseña sin vincular Google.";
+});
 
 function seleccionarAcceso(tipo) {
     for (const opcion of ["login", "registro"]) {
@@ -252,8 +262,11 @@ for (const tipo of ["registro", "login"]) {
                 seleccionarAcceso("login");
                 document.getElementById("login-clave").focus();
             } else {
-                const { usuario } = await window.api.iniciarSesion(campos.get("email"), campos.get("clave"));
+                const vinculando = vinculoGooglePendiente;
+                const { usuario } = await window.api.iniciarSesion(campos.get("email"), campos.get("clave"), vinculando);
+                prepararVinculoGoogle(false);
                 await mostrarUsuario(usuario);
+                if (vinculando) mensaje.textContent = "Google se ha vinculado a tu cuenta. La próxima vez podrás entrar con Google o con tu contraseña.";
             }
             formulario.reset();
         } catch (error) {
@@ -298,8 +311,19 @@ async function iniciar() {
         catch (error) { mensaje.textContent = error.message; }
     }
     if (acceso === "error") mensaje.textContent = "No se pudo completar el acceso con Google. Inténtalo de nuevo.";
-    if (acceso === "cuenta-existente") mensaje.textContent = "Ya existe esa cuenta. Accede con tu contraseña.";
-    try { document.getElementById("google").hidden = !(await window.api.servicios()).google; }
+    if (acceso === "cuenta-existente") {
+        seleccionarAcceso("login");
+        prepararVinculoGoogle(true);
+        mensaje.textContent = "Ya tienes una cuenta con ese correo. Introduce su correo y contraseña para vincular Google y conservar tus datos. Solo tendrás que hacerlo una vez.";
+    }
+    if (acceso === "caducado") mensaje.textContent = "El intento con Google ha caducado o no se ha podido validar. Vuelve a pulsar el botón de Google y completa el acceso en la misma pestaña.";
+    if (acceso === "cancelado") mensaje.textContent = "Se ha cancelado el acceso con Google. Puedes volver a intentarlo o usar tu contraseña.";
+    if (acceso === "cuenta-no-disponible") mensaje.textContent = "Esta cuenta no está disponible. Si está pendiente, confirma primero tu correo; si ya lo has confirmado, contacta con administración.";
+    if (acceso === "google-no-disponible") mensaje.textContent = "No se ha podido conectar con Google. Inténtalo más tarde o entra con tu contraseña.";
+    try {
+        const disponible = Boolean((await window.api.servicios()).google);
+        for (const id of ["google", "google-registro"]) document.getElementById(id).hidden = !disponible;
+    }
     catch (error) { mensaje.textContent = error.message; }
 }
 let numeroMueble = 0;

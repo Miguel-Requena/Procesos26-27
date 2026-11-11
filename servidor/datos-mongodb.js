@@ -36,6 +36,7 @@ async function inicializar() {
         await usuarios.createIndex({ googleSub: 1 }, { unique: true, sparse: true });
         await db.collection("sesiones").createIndex({ token: 1 }, { unique: true });
         await db.collection("sesiones").createIndex({ caduca: 1 }, { expireAfterSeconds: 0 });
+        await db.collection("intentos_oauth").createIndex({ caduca: 1 }, { expireAfterSeconds: 0 });
         // Se crea una única vez; las altas incrementan el contador atómicamente.
         await db.collection("contadores").updateOne({ _id: "usuarios" },
             { $setOnInsert: { valor: 0 } }, { upsert: true });
@@ -83,7 +84,15 @@ async function confirmar(hash) {
         { returnDocument: "after", includeResultMetadata: false })));
 }
 async function buscarGoogle(sub) { return ejecutar(async () => convertir(await usuarios.findOne({ googleSub: sub }))); }
-async function vincularGoogle(id, sub) { return ejecutar(() => usuarios.updateOne({ id, googleSub: { $exists: false } }, { $set: { googleSub: sub } })); }
+async function vincularGoogle(id, sub) {
+    return ejecutar(async () => {
+        try {
+            const resultado = await usuarios.updateOne({ id, confirmado: true, eliminado: false,
+                $or: [{ googleSub: { $exists: false } }, { googleSub: sub }] }, { $set: { googleSub: sub } });
+            return resultado.matchedCount === 1;
+        } catch (error) { if (error.code === 11000) return false; throw error; }
+    });
+}
 async function desactivar(id) {
     if (!Number.isSafeInteger(Number(id))) throw new Error("Usuario no encontrado");
     return ejecutar(async () => {
@@ -136,6 +145,16 @@ async function buscarSesion(token) {
 async function eliminarSesion(token) {
     return ejecutar(() => db.collection("sesiones").deleteOne({ token: hashSesion(token) }));
 }
+async function guardarIntentoOAuth(id, contenido, caduca) {
+    return ejecutar(() => db.collection("intentos_oauth").insertOne({ _id: id, contenido, caduca: new Date(caduca) }));
+}
+async function leerIntentoOAuth(id, consumir = false) {
+    return ejecutar(async () => {
+        const filtro = { _id: id, caduca: { $gt: new Date(Date.now()) } };
+        const registro = consumir ? await db.collection("intentos_oauth").findOneAndDelete(filtro) : await db.collection("intentos_oauth").findOne(filtro);
+        return registro?.contenido;
+    });
+}
 async function crearSolicitud(registro) {
     return ejecutar(async () => {
         try {
@@ -151,4 +170,4 @@ async function crearSolicitud(registro) {
 }
 async function limpiar() { throw new Error("No se permite limpiar la base MongoDB de la aplicación"); }
 async function cerrar() { await client.close(); }
-module.exports = { buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };
+module.exports = { guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };

@@ -61,6 +61,15 @@ db.exec(`CREATE TABLE IF NOT EXISTS confirmaciones (
 db.exec(`CREATE TABLE IF NOT EXISTS sesiones (
     token TEXT PRIMARY KEY, usuarioId INTEGER NOT NULL, caduca INTEGER NOT NULL
 ); CREATE INDEX IF NOT EXISTS sesiones_caduca ON sesiones(caduca);`);
+db.exec("CREATE TABLE IF NOT EXISTS intentos_oauth (id TEXT PRIMARY KEY, contenido TEXT NOT NULL, caduca INTEGER NOT NULL)");
+function guardarIntentoOAuth(id, contenido, caduca) {
+    db.prepare("DELETE FROM intentos_oauth WHERE caduca<=?").run(Date.now());
+    db.prepare("INSERT INTO intentos_oauth VALUES (?,?,?)").run(id, JSON.stringify(contenido), caduca);
+}
+function leerIntentoOAuth(id, consumir = false) {
+    const fila = db.prepare(consumir ? "DELETE FROM intentos_oauth WHERE id=? AND caduca>? RETURNING contenido" : "SELECT contenido FROM intentos_oauth WHERE id=? AND caduca>?").get(id, Date.now());
+    return fila ? JSON.parse(fila.contenido) : undefined;
+}
 function guardarConfirmacion(usuarioId, hash, caduca) {
     db.prepare("INSERT INTO confirmaciones VALUES (?, ?, ?) ON CONFLICT(usuarioId) DO UPDATE SET hash=excluded.hash, caduca=excluded.caduca").run(hash, usuarioId, caduca);
 }
@@ -77,7 +86,12 @@ function buscarGoogle(sub) {
     const identidad = db.prepare("SELECT usuarioId FROM identidades WHERE sub=?").get(sub);
     return identidad ? buscarPorId(identidad.usuarioId) : undefined;
 }
-function vincularGoogle(id, sub) { db.prepare("INSERT INTO identidades VALUES (?, ?)").run(sub, id); }
+function vincularGoogle(id, sub) {
+    const usuario = buscarPorId(id);
+    if (!usuario?.activo) return false;
+    db.prepare("INSERT OR IGNORE INTO identidades VALUES (?, ?)").run(sub, id);
+    return db.prepare("SELECT usuarioId FROM identidades WHERE sub=?").get(sub)?.usuarioId === id;
+}
 function desactivar(id) {
     if (!buscarPorId(id)) throw new Error("Usuario no encontrado");
     db.prepare("UPDATE usuarios SET activo = 0, eliminado = 1 WHERE id = ?").run(Number(id));
@@ -146,7 +160,7 @@ function crearSolicitud(registro) {
 }
 function limpiar() {
     if (process.env.NODE_ENV !== "test") throw new Error("Solo se puede limpiar la base de datos durante las pruebas");
-    db.exec("DELETE FROM solicitudes_detalles; DELETE FROM transportes; DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM sesiones; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
+    db.exec("DELETE FROM intentos_oauth; DELETE FROM solicitudes_detalles; DELETE FROM transportes; DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM sesiones; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
 }
 function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     if (process.env.NODE_ENV !== "test") throw new Error("Operación exclusiva de pruebas");
@@ -155,5 +169,5 @@ function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     return buscarPorId(id);
 }
 function cerrar() { db.close(); }
-module.exports = { buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
+module.exports = { guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
     ...(process.env.NODE_ENV === "test" ? { configurarCuentaPrueba, configurarTransportePrueba } : {}) };

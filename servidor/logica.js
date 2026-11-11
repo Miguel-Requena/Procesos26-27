@@ -89,11 +89,24 @@ async function entrarGoogle(perfil) {
     if (!usuario) {
         const email = normalizarEmail(perfil.email);
         // No se vinculan cuentas existentes solo por coincidencia de correo.
-        if (await datos.buscarPorEmail(email)) throw errorAcceso("Ya existe esa cuenta. Accede con tu contraseña.", 409);
+        const existente = await datos.buscarPorEmail(email);
+        if (existente && !existente.activo) throw errorAcceso("Cuenta no disponible", 403);
+        if (existente) throw errorAcceso("Ya existe esa cuenta. Accede con tu contraseña para vincular Google.", 409);
         usuario = await datos.crear(email, "", true);
         await datos.vincularGoogle(usuario.id, perfil.sub);
     }
     if (!usuario.activo) throw errorAcceso("Cuenta no disponible", 403);
+    return publico(usuario);
+}
+
+async function vincularGoogle(perfil, actor) {
+    const usuario = await usuarioAutorizado(actor);
+    if (perfil?.email_verified !== true || typeof perfil.sub !== "string" || !perfil.sub || normalizarEmail(perfil.email) !== usuario.email) {
+        throw errorAcceso("Utiliza la contraseña de la cuenta que tiene el mismo correo que Google.", 409);
+    }
+    const identidad = await datos.buscarGoogle(perfil.sub);
+    if (identidad && identidad.id !== usuario.id) throw errorAcceso("Esta identidad de Google ya está vinculada a otra cuenta.", 409);
+    if (!await datos.vincularGoogle(usuario.id, perfil.sub)) throw errorAcceso("La cuenta ya tiene otra identidad de Google vinculada.", 409);
     return publico(usuario);
 }
 
@@ -181,6 +194,7 @@ module.exports = {
     cambiarPerfilEquipo, consultarTransportes,
     obtenerPanel,
     entrarGoogle,
+    vincularGoogle,
     normalizarEmail,
     registrarUsuario,
     iniciarSesion,

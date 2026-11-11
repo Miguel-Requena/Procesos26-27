@@ -58,6 +58,25 @@ function registrarFalloLogin(ip, email) {
     else intento.cantidad++;
 }
 function registrarLoginCorrecto(ip, email) { fallosLogin.delete(claveLogin(ip, email)); }
+const cookieVinculo = () => ({ httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/api/login" });
+function tokenVinculo(req) {
+    return (req.headers.cookie || "").split(";").map(x => x.trim()).find(x => x.startsWith("google_vinculo="))?.slice(15);
+}
+async function completarVinculoGoogle(req, res, usuario) {
+    const token = tokenVinculo(req);
+    const pendiente = token && await datos.leerIntentoOAuth(hash(token));
+    if (req.body?.vincularGoogle === true) {
+        if (pendiente?.tipo !== "vinculo") throw fallo("La vinculación con Google ha caducado. Pulsa Continuar con Google para empezar de nuevo.", 409);
+        if (logica.normalizarEmail(pendiente.perfil.email) !== usuario.email) throw fallo("Utiliza la contraseña de la cuenta que tiene el mismo correo que Google.", 409);
+        const prueba = await datos.leerIntentoOAuth(hash(token), true);
+        if (!prueba) throw fallo("La vinculación ya se ha utilizado. Vuelve a empezar con Google.", 409);
+        await logica.vincularGoogle(prueba.perfil, usuario);
+    }
+    if (token) {
+        await datos.leerIntentoOAuth(hash(token), true);
+        res.clearCookie("google_vinculo", cookieVinculo());
+    }
+}
 function instalar(app) {
     app.get("/api/servicios", (req, res) => res.json({ google: googleDisponible(), correo: correoDisponible() }));
     app.post("/api/confirmacion/reenviar", async (req, res, next) => {
@@ -78,17 +97,14 @@ function instalar(app) {
             res.json({ mensaje: "Cuenta confirmada. Ya puedes iniciar sesión." });
         } catch (error) { next(error); }
     });
-    const pendientes = new Map();
     const opciones = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/api/oauth/google" };
-    app.get("/api/oauth/google", (req, res, next) => {
+    app.get("/api/oauth/google", async (req, res, next) => {
         try {
             if (!googleDisponible()) throw fallo("El acceso con Google no está configurado.");
             const ahora = Date.now();
-            for (const [k, v] of pendientes) if (v.caduca <= ahora) pendientes.delete(k);
-            if (pendientes.size >= 10000) throw fallo("Demasiados accesos. Inténtalo más tarde.", 429);
             const state = randomBytes(32).toString("hex");
             const verifier = randomBytes(32).toString("base64url");
-            pendientes.set(state, { verifier, caduca: ahora + 600000 });
+            await datos.guardarIntentoOAuth(hash(state), { tipo: "acceso", verifier }, ahora + 600000);
             res.cookie("oauth_state", state, { ...opciones, maxAge: 600000 });
             const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
             url.search = new URLSearchParams({ client_id: process.env.GOOGLE_CLIENT_ID, redirect_uri: `${urlPublica()}/api/oauth/google/callback`, response_type: "code", scope: "openid email", state, code_challenge: createHash("sha256").update(verifier).digest("base64url"), code_challenge_method: "S256" }).toString();
@@ -97,20 +113,31 @@ function instalar(app) {
     });
     app.get("/api/oauth/google/callback", async (req, res) => {
         res.clearCookie("oauth_state", opciones);
+        let perfil;
         try {
             const state = req.query.state;
             const cookie = (req.headers.cookie || "").split(";").map(x => x.trim()).find(x => x.startsWith("oauth_state="))?.slice(12);
-            const pendiente = typeof state === "string" && pendientes.get(state);
-            if (!pendiente || cookie !== state || pendiente.caduca <= Date.now()) throw fallo("Acceso caducado", 400);
-            pendientes.delete(state);
-            if (req.query.error || typeof req.query.code !== "string") throw fallo("Acceso cancelado", 400);
+            if (typeof state !== "string" || cookie !== state) throw Object.assign(fallo("Acceso caducado", 400), { acceso: "caducado" });
+            const pendiente = await datos.leerIntentoOAuth(hash(state), true);
+            if (pendiente?.tipo !== "acceso") throw Object.assign(fallo("Acceso caducado", 400), { acceso: "caducado" });
+            if (req.query.error || typeof req.query.code !== "string") throw Object.assign(fallo("Acceso cancelado", 400), { acceso: "cancelado" });
             const tokens = await jsonExterno("https://oauth2.googleapis.com/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ client_id: process.env.GOOGLE_CLIENT_ID, client_secret: process.env.GOOGLE_CLIENT_SECRET, code: req.query.code, code_verifier: pendiente.verifier, grant_type: "authorization_code", redirect_uri: `${urlPublica()}/api/oauth/google/callback` }) });
             if (typeof tokens.access_token !== "string") throw fallo("Respuesta de Google inválida");
-            const perfil = await jsonExterno("https://openidconnect.googleapis.com/v1/userinfo", { headers: { Authorization: `Bearer ${tokens.access_token}` } });
+            perfil = await jsonExterno("https://openidconnect.googleapis.com/v1/userinfo", { headers: { Authorization: `Bearer ${tokens.access_token}` } });
             const usuario = await logica.entrarGoogle(perfil);
             await sesiones.crearSesion(req, res, usuario.id);
             res.redirect("/?acceso=correcto");
-        } catch (error) { res.redirect(error.estado === 409 ? "/?acceso=cuenta-existente" : "/?acceso=error"); }
+        } catch (error) {
+            if (error.estado === 409 && perfil?.email_verified === true) {
+                const ahora = Date.now();
+                const token = randomBytes(32).toString("hex");
+                await datos.guardarIntentoOAuth(hash(token), { tipo: "vinculo", perfil: { sub: perfil.sub, email: perfil.email, email_verified: true } }, ahora + 600000);
+                res.cookie("google_vinculo", token, { ...cookieVinculo(), maxAge: 600000 });
+                return res.redirect("/?acceso=cuenta-existente");
+            }
+            const acceso = error.acceso || (error.estado === 403 ? "cuenta-no-disponible" : error.estado === 503 ? "google-no-disponible" : "error");
+            res.redirect(`/?acceso=${acceso}`);
+        }
     });
 }
-module.exports = { instalar, enviarConfirmacion, correoDisponible, limitar, comprobarLogin, registrarFalloLogin, registrarLoginCorrecto, urlPublica };
+module.exports = { instalar, enviarConfirmacion, correoDisponible, limitar, comprobarLogin, registrarFalloLogin, registrarLoginCorrecto, completarVinculoGoogle, urlPublica };

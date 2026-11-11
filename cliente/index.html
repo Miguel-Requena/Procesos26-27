@@ -21,7 +21,7 @@
             <div class="identidad-superior"><span class="etiqueta">CONECTAMOS DESTINOS</span><span aria-hidden="true">↗</span></div>
             <span class="identidad-firma">TRANS<strong>DRAKKAR</strong><i></i></span>
             <div class="identidad-texto">
-                <h1 id="titulo-marca">Tu mobiliario.<br>Nuestro compromiso.</h1>
+                <h1 id="titulo-marca">Tu mobiliario<br>Nuestro compromiso</h1>
                 <p>Un espacio para conectar clientes, equipo y transporte.</p>
             </div>
             <div class="ruta-escena" role="img" aria-label="Camión Transdrakkar en ruta">
@@ -49,7 +49,7 @@
             <div class="identidad-pie"><span>TRANSDRAKKAR</span><span>DE ORIGEN A DESTINO.</span></div>
         </aside>
         <div class="zona-acceso" id="acceso">
-        <div class="intro-acceso"><span class="antetitulo">ÁREA PRIVADA / TRANSDRAKKAR</span><h2>Bienvenido a bordo.</h2><p>Accede a tu cuenta para continuar.</p></div>
+        <div class="intro-acceso"><span class="antetitulo">ÁREA PRIVADA / TRANSDRAKKAR</span><h2>Bienvenido a bordo</h2><p>Accede a tu cuenta para continuar.</p></div>
         <p id="estado" role="status">Comprobando sesión…</p>
         <p id="mensaje" role="alert" aria-live="polite"></p>
         <div id="formularios" hidden>
@@ -57,6 +57,7 @@
             <section id="seccion-registro" aria-labelledby="titulo-registro" hidden>
                 <h2 id="titulo-registro">Crear una cuenta</h2>
                 <p class="descripcion-formulario">Crea tu cuenta de cliente. Confirma tu correo para activarla.</p>
+                <a id="google-registro" class="acceso-google" href="/api/oauth/google" hidden><span class="google-simbolo" aria-hidden="true">G</span> Registrarse con Google</a>
                 <form id="registro">
                     <label for="registro-email">Correo electrónico</label>
                     <input id="registro-email" name="email" type="email" autocomplete="email" placeholder="tu@email.com" required>
@@ -68,7 +69,7 @@
             </section>
             <section id="seccion-login" aria-labelledby="titulo-login">
                 <h2 id="titulo-login" class="solo-lectores">Iniciar sesión</h2>
-                <a id="google" href="/api/oauth/google" hidden>Continuar con Google</a>
+                <a id="google" class="acceso-google" href="/api/oauth/google" hidden><span class="google-simbolo" aria-hidden="true">G</span> Continuar con Google</a>
                 <form id="login">
                     <label for="login-email">Correo electrónico</label>
                     <input id="login-email" name="email" type="email" autocomplete="username" placeholder="tu@email.com" required>
@@ -76,6 +77,7 @@
                     <input id="login-clave" name="clave" type="password" autocomplete="current-password" required>
                     <button type="submit">Entrar en mi cuenta <span aria-hidden="true">→</span></button>
                 </form>
+                <button id="cancelar-vinculo-google" class="cancelar-vinculo" type="button" hidden>Continuar solo con contraseña</button>
             </section>
             <details class="confirmacion"><summary>¿No has recibido el correo de confirmación?</summary>
             <form id="reenviar">
