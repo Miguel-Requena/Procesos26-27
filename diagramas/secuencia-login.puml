@@ -1,0 +1,40 @@
+@startuml
+title TransDrakkar - Inicio de sesion (caso de uso del Sprint 1)
+hide footbox
+autonumber
+actor Usuario
+boundary "Interfaz web" as UI
+control "API REST" as API
+control "Logica" as L
+database "Persistencia" as BD
+Usuario -> UI : Introducir correo y contrasena
+UI -> API : POST /api/login
+API -> L : iniciarSesion(email, clave)
+L -> BD : Buscar cuenta por correo
+BD --> L : Cuenta y hash de contrasena
+L -> L : Comprobar estado y comparar con bcrypt
+alt Cuenta confirmada y credenciales validas
+ L --> API : Usuario publico, sin contrasena
+ API -> API : Generar token aleatorio de sesion
+ API -> BD : Guardar hash del token, usuario y caducidad
+ BD --> API : Sesion guardada
+ API --> UI : 200 OK + usuario
+ note over API,UI : Cookie HttpOnly; Secure en produccion; 8 horas
+ UI --> Usuario : Mostrar panel autorizado
+ opt Recarga de pagina o reinicio del servidor
+  UI -> API : GET /api/sesion + cookie
+  API -> BD : Consultar sesion vigente y cuenta actual
+  BD --> API : Sesion y cuenta
+  API --> UI : 200 OK + usuario
+  UI --> Usuario : Mantener acceso
+ end
+else Credenciales incorrectas o cuenta no disponible
+ L --> API : Error de autenticacion
+ API --> UI : 401 Unauthorized
+ UI --> Usuario : Mostrar error; no abrir sesion
+end
+note over API,BD
+La persistencia en MongoDB corresponde a la revision actual.
+El diagrama no fecha esta mejora como entrega del Sprint 1.
+end note
+@enduml

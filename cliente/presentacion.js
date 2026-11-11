@@ -16,8 +16,8 @@ for (const tipo of ["login", "registro"]) {
 }
 
 const perfiles = {
-    cliente: { nombre: "Cliente", titulo: "Tu espacio de cliente", descripcion: "Prepara tus próximos transportes con Transdrakkar.", funciones: ["Solicitudes de transporte de mobiliario", "Consulta y seguimiento de tus solicitudes"] },
-    conductor: { nombre: "Conductor", titulo: "Tu espacio de conductor", descripcion: "Un espacio para organizar tu jornada de transporte.", funciones: ["Rutas y paradas asignadas", "Registro de entregas e incidencias"] },
+    cliente: { nombre: "Cliente", titulo: "Tu próximo destino empieza aquí.", descripcion: "Solicita una recogida y consulta tus transportes en un mismo lugar.", funciones: [] },
+    conductor: { nombre: "Conductor", titulo: "Todo listo para tu próxima ruta.", descripcion: "Consulta tus rutas asignadas y los detalles de cada transporte.", funciones: [] },
     administrador: { nombre: "Administración", titulo: "Centro de operaciones", descripcion: "Coordina la actividad de Transdrakkar desde un mismo lugar.", funciones: ["Revisión de solicitudes de transporte", "Vehículos y conductores", "Planificación de rutas"] }
 };
 const enlacesPrivados = document.querySelectorAll(".navegacion-privada nav a");
@@ -32,8 +32,25 @@ for (const enlace of enlacesPrivados) enlace.addEventListener("click", () => act
 let versionPanel = 0;
 let versionDatos = 0;
 let rolActual;
+const camionPanel = document.querySelector(".camion-marca").cloneNode(true);
+document.getElementById("camion-panel").append(camionPanel);
+function grupoEstado(valor) {
+    const texto = String(valor || "").toLowerCase();
+    if (["completada", "completado", "entregado", "entregada", "finalizada", "finalizado"].includes(texto)) return "completado";
+    if (["pendiente", "pendiente_recogida", "asignada", "asignado"].includes(texto)) return "pendiente";
+    if (["en_curso", "en_transito", "en_reparto"].includes(texto)) return "en-curso";
+    return "otro";
+}
+function etiquetaEstado(valor) {
+    if (!valor) return "Sin estado";
+    if (valor === "pendiente_recogida") return "Pendiente de recogida";
+    const texto = String(valor).replaceAll("_", " ");
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
 function limpiarDatosPanel() {
     document.getElementById("resumen-total").textContent = "—";
+    document.getElementById("metrica-segunda").textContent = "—";
+    document.getElementById("metrica-tercera").textContent = "—";
     document.getElementById("lista-cuentas").replaceChildren();
     document.getElementById("lista-transportes").replaceChildren();
     document.getElementById("cuentas-equipo").hidden = true;
@@ -58,7 +75,12 @@ async function cargarDatosPanel() {
                 const fila = document.createElement("div");
                 fila.className = "cuenta-equipo";
                 const texto = document.createElement("p");
-                texto.textContent = `${cuenta.email} · ${cuenta.rol}${cuenta.activo ? "" : " · No disponible"}`;
+                const email = document.createElement("strong");
+                email.textContent = cuenta.email;
+                const perfil = document.createElement("span");
+                perfil.className = "perfil-cuenta";
+                perfil.textContent = `${perfiles[cuenta.rol]?.nombre || cuenta.rol} · ${cuenta.activo ? "Cuenta activa" : "No disponible"}`;
+                texto.append(email, perfil);
                 fila.append(texto);
                 if (cuenta.activo && ["cliente", "conductor"].includes(cuenta.rol)) {
                     const boton = document.createElement("button");
@@ -92,8 +114,22 @@ async function cargarDatosPanel() {
             bloque.append(titulo);
             const registros = respuestas[i][tipos[i]];
             if (!registros.length) {
-                const vacio = document.createElement("p");
-                vacio.textContent = tipos[i] === "solicitudes" ? "No hay solicitudes disponibles." : "No hay rutas asignadas disponibles.";
+                const vacio = document.createElement("div");
+                vacio.className = "estado-vacio";
+                const icono = camionPanel.cloneNode(true);
+                icono.classList.add("camion-vacio");
+                const encabezado = document.createElement("strong");
+                encabezado.textContent = rol === "cliente" ? "Tu próximo transporte empieza aquí" : tipos[i] === "rutas" ? "Todavía no hay rutas asignadas" : "No hay solicitudes por ahora";
+                const ayuda = document.createElement("p");
+                ayuda.textContent = rol === "cliente" ? "Crea tu primera solicitud e indica dónde debemos recoger tu mercancía." : rol === "conductor" ? "Cuando te asignen una ruta, podrás consultar aquí su recorrido y sus detalles." : "La actividad del equipo aparecerá aquí cuando esté disponible.";
+                vacio.append(icono, encabezado, ayuda);
+                if (rol === "cliente") {
+                    const boton = document.createElement("button");
+                    boton.type = "button";
+                    boton.textContent = "Crear mi primera solicitud +";
+                    boton.addEventListener("click", () => document.getElementById("abrir-solicitud").click());
+                    vacio.append(boton);
+                }
                 bloque.append(vacio);
             }
             for (const registro of registros) {
@@ -106,13 +142,22 @@ async function cargarDatosPanel() {
                     ? `Recogida: ${registro.origen || "Dirección pendiente"}`
                     : `${registro.origen || "Origen pendiente"} → ${registro.destino || "Destino pendiente"}`;
                 const datos = document.createElement("p");
-                datos.textContent = `${registro.fecha || "Fecha pendiente"} · ${registro.estado === "pendiente_recogida" ? "Pendiente de recogida" : registro.estado || "Sin estado"}`;
-                ficha.append(nombre, detalle, datos);
+                datos.className = "fecha-transporte";
+                const fecha = /^\d{4}-\d{2}-\d{2}$/.test(registro.fecha || "") ? new Date(`${registro.fecha}T12:00:00`) : null;
+                datos.textContent = fecha && !Number.isNaN(fecha.getTime()) ? new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", year: "numeric" }).format(fecha) : registro.fecha || "Fecha pendiente";
+                const insignia = document.createElement("span");
+                insignia.className = `insignia-estado estado-${grupoEstado(registro.estado)}`;
+                insignia.textContent = etiquetaEstado(registro.estado);
+                ficha.append(nombre, insignia, detalle, datos);
                 bloque.append(ficha);
             }
             document.getElementById("lista-transportes").append(bloque);
         }
         document.getElementById("resumen-total").textContent = respuestas.reduce((total, respuesta, i) => total + respuesta[tipos[i]].length, 0);
+        const registros = respuestas.flatMap((respuesta, i) => respuesta[tipos[i]]);
+        document.getElementById("metrica-segunda").textContent = rol === "administrador" ? respuestas[1].rutas.length : registros.filter(item => grupoEstado(item.estado) === "pendiente").length;
+        document.getElementById("metrica-tercera").textContent = rol === "administrador" ? cuentas.usuarios.filter(cuenta => cuenta.activo && cuenta.rol === "conductor").length : registros.filter(item => grupoEstado(item.estado) === "completado").length;
+        if (rol === "administrador") document.getElementById("resumen-total").textContent = respuestas[0].solicitudes.length;
         estadoPanel.textContent = "Datos actualizados.";
     } catch (error) {
         if (version !== versionPanel || carga !== versionDatos) return;
@@ -137,7 +182,7 @@ async function mostrarUsuario(usuario) {
     activarNavegacion(enlacesPrivados[0]);
     document.querySelector(".zona-acceso").prepend(estado, mensaje);
     document.getElementById("panel-funciones").replaceChildren();
-    estado.textContent = usuario ? "Cargando tu espacio…" : "Inicia sesión para utilizar la aplicación.";
+    estado.textContent = usuario ? "Cargando tu espacio…" : "";
     if (!usuario) return;
     // El servidor comprueba el perfil de la cuenta en cada petición.
     try {
@@ -153,12 +198,19 @@ async function mostrarUsuario(usuario) {
             elemento.textContent = texto;
             document.getElementById("panel-funciones").append(elemento);
         }
-        estado.textContent = `Sesión iniciada: ${panel.usuario.email}`;
+        estado.textContent = "";
         document.getElementById("cuenta-privada").textContent = panel.usuario.email;
+        document.getElementById("avatar-privado").textContent = panel.usuario.email.charAt(0).toUpperCase();
+        document.getElementById("cuenta-rol").textContent = perfil.nombre;
+        document.getElementById("metrica-segunda-titulo").textContent = panel.rol === "administrador" ? "Rutas planificadas" : "Pendientes";
+        document.getElementById("metrica-segunda-ayuda").textContent = panel.rol === "administrador" ? "Rutas disponibles en el sistema" : "Por recoger o iniciar";
+        document.getElementById("metrica-tercera-titulo").textContent = panel.rol === "administrador" ? "Conductores activos" : "Completadas";
+        document.getElementById("metrica-tercera-ayuda").textContent = panel.rol === "administrador" ? "Equipo habilitado para conducir" : "Transportes finalizados";
+        document.getElementById("resumen-ayuda").textContent = panel.rol === "conductor" ? "Asignadas a tu cuenta" : panel.rol === "cliente" ? "Todas tus solicitudes" : "Solicitudes de todos los clientes";
         document.getElementById("nav-equipo").hidden = panel.rol !== "administrador";
         document.getElementById("nav-transportes").textContent = panel.rol === "cliente" ? "Mis solicitudes" : panel.rol === "conductor" ? "Mis rutas" : "Transportes";
         document.getElementById("titulo-transportes").textContent = document.getElementById("nav-transportes").textContent;
-        document.getElementById("resumen-titulo").textContent = panel.rol === "cliente" ? "Solicitudes disponibles" : panel.rol === "conductor" ? "Rutas asignadas" : "Solicitudes y rutas";
+        document.getElementById("resumen-titulo").textContent = panel.rol === "cliente" ? "Mis solicitudes" : panel.rol === "conductor" ? "Mis rutas" : "Solicitudes recibidas";
         document.querySelector(".barra-privada").after(estado, mensaje);
         document.body.classList.add("sesion-activa");
         panelSesion.hidden = false;

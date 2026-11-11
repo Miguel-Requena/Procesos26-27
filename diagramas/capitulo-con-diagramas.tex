@@ -1,0 +1,132 @@
+\chapter{Descripción de la aplicación}
+% La aplicación MiApp
+MiApp es un prototipo web de gestión de usuarios. Permite gestionar el acceso y distinguir entre usuarios normales y administradores. El estado descrito corresponde al código disponible a 27 de octubre de 2026; la integración real de correo y Google está pendiente de configuración y validación.
+
+\section{Requisitos}
+% Una lista (requisitos funcionales, no funcionales...) / O algo mas eleborado (stakeholders, técnica personas)
+\subsection{Requisitos funcionales}
+\begin{itemize}
+\item RF-01. Registrar una cuenta con correo y contraseña, evitando correos duplicados.
+\item RF-02. Confirmar la cuenta mediante un enlace de un solo uso y permitir solicitar un nuevo enlace.
+\item RF-03. Iniciar y cerrar sesión, y recuperar la sesión al recargar mientras siga vigente.
+\item RF-04. Permitir el acceso con una cuenta de Google con correo verificado.
+\item RF-05. Distinguir los permisos de usuario y administrador. El administrador puede listar usuarios y consultar su estado.
+\item RF-06. Permitir al usuario eliminar su cuenta y al administrador eliminar otras cuentas. Una cuenta eliminada no debe poder acceder.
+\item RF-07. Mostrar al usuario mensajes ante errores de validación, acceso, red y servicios externos.
+\end{itemize}
+\subsection{Requisitos no funcionales}
+Las contraseñas se almacenan mediante hashes bcrypt. Los permisos se comprueban en el servidor y las cuentas persisten en MongoDB. La aplicación se organiza por capas para facilitar el mantenimiento y dispone de pruebas automatizadas. La configuración sensible se suministra mediante variables de entorno y secretos externos al repositorio.
+
+\section{Arquitectura de la solución}
+La solución sigue una arquitectura por capas. El navegador presenta la interfaz; el cliente HTTP invoca una API REST; la lógica aplica las reglas de negocio y la capa de datos accede a MongoDB.
+
+La Figura~\ref{fig:arquitectura-capas} resume esta organización: el cliente se ejecuta en el navegador y se comunica con el servidor, organizado en API, lógica y datos. La capa de datos accede al servicio de base de datos. El nombre \texttt{mi\_bbdd} del esquema es ilustrativo; en la implementación descrita se utiliza MongoDB Atlas.
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figs/arquitectura-capas.png}
+\caption{Esquema de organización de la aplicación: cliente web, servidor por capas y servicio de base de datos.}
+\label{fig:arquitectura-capas}
+\end{figure}
+
+\begin{description}
+\item[Presentación.] La carpeta \texttt{cliente} contiene la página HTML, los estilos CSS y el módulo JavaScript de presentación que define el comportamiento de la interfaz.
+\item[Comunicación.] \texttt{cliente/rest.js} centraliza las peticiones HTTP.
+\item[API.] \texttt{servidor/api.js} define las rutas y respuestas HTTP con Express.
+\item[Lógica.] \texttt{servidor/logica.js} implementa validaciones, autenticación y autorización.
+\item[Persistencia.] \texttt{datos.js} selecciona el adaptador de datos. MongoDB se utiliza para las cuentas de la aplicación y SQLite para pruebas aisladas.
+\item[Servicios auxiliares.] \texttt{sesiones.js}, \texttt{externos.js} y \texttt{correo.js} gestionan sesiones, acceso con Google y correo de confirmación.
+\end{description}
+El contenedor de Cloud Run sirve tanto el cliente como el servidor, mientras que MongoDB Atlas almacena las cuentas. El código de acceso con Google utiliza Authorization Code con PKCE y el correo se envía mediante SMTP. Ambos servicios necesitan sus credenciales y una comprobación real antes de considerarse completados.
+En la revisión actual, las sesiones duran ocho horas y se almacenan en MongoDB Atlas, junto con el identificador de usuario y la fecha de caducidad. El navegador conserva una cookie de acceso; reiniciar el servidor no elimina una sesión vigente. Esta descripción actualiza la limitación de la versión anterior, que utilizaba memoria del proceso.
+
+\clearpage
+\subsection{Diagrama de despliegue}
+La Figura~\ref{fig:despliegue-transdrakkar} muestra la distribución de TransDrakkar entre los dispositivos de acceso y los servicios que ejecutan la aplicación. Complementa la vista por capas anterior: representa dónde se ejecuta el software y los protocolos que conectan sus nodos.
+
+\begin{center}
+\begin{minipage}{\textwidth}
+\centering
+\includegraphics[width=\textwidth]{figs/despliegue-persistente.png}
+\captionsetup{hypcap=false}
+\captionof{figure}{Diagrama de despliegue de TransDrakkar: navegador, aplicación en Cloud Run, persistencia en Atlas y servicios externos.}
+\label{fig:despliegue-transdrakkar}
+\end{minipage}
+\end{center}
+    
+El usuario accede desde un navegador en un ordenador o teléfono mediante HTTPS. Google Cloud Run ejecuta un contenedor Docker con Node.js y Express que sirve los archivos del cliente y la API REST. La base de datos se aloja fuera del contenedor, en MongoDB Atlas, y la comunicación utiliza TLS. En la evolución del Sprint 2, el almacenamiento contempla usuarios, solicitudes de recogida y rutas; la presencia de estas colecciones no implica que todos los procesos de transporte estén terminados.
+
+Google OAuth/OpenID Connect interviene en el acceso con Google y Gmail SMTP en el envío de los enlaces de confirmación. El diagrama representa las integraciones previstas en el código; su aparición no acredita que estén configuradas y verificadas en producción. Las sesiones se conservan en Atlas y sobreviven al reinicio del servidor hasta su caducidad o invalidación. El máximo de una instancia sigue siendo la configuración de despliegue documentada; no se afirma que el escalado de todo el sistema esté validado, pues otros estados temporales, como OAuth y los límites de acceso, requieren su propia revisión.
+
+\subsection{Diagrama de secuencia: acceso del Sprint 1}
+La Figura~\ref{fig:secuencia-login} representa el inicio de sesión con correo y contraseña, un caso de uso de la gestión de acceso del Sprint 1. Se utiliza la implementación actual para explicar la colaboración entre interfaz, API, lógica y persistencia. El almacenamiento de sesiones en MongoDB es una mejora de la revisión actual; este esquema no atribuye su fecha de implementación al cierre del Sprint 1.
+
+\begin{center}
+\begin{minipage}{\textwidth}
+\centering
+\includegraphics[width=\textwidth,height=0.78\textheight,keepaspectratio]{figs/secuencia-login.png}
+\captionsetup{hypcap=false}
+\captionof{figure}{Inicio de sesión con correo y contraseña y recuperación de una sesión vigente. Caso de uso del Sprint 1 representado con la persistencia de la revisión actual.}
+\label{fig:secuencia-login}
+\end{minipage}
+\end{center}
+
+El usuario introduce sus credenciales y la interfaz envía una petición de acceso a la API. La lógica normaliza y valida los datos, busca la cuenta y compara la contraseña con su hash mediante bcrypt. Una cuenta inexistente o eliminada, una contraseña incorrecta o una cuenta pendiente de confirmar impiden crear la sesión y producen una respuesta de autenticación fallida. La contraseña y su hash no se devuelven al navegador.
+
+Si la cuenta puede acceder, el servidor genera un token aleatorio y guarda en la base de datos su hash SHA-256, el identificador del usuario y la caducidad de ocho horas. El navegador recibe el token en una cookie HttpOnly, con Secure en producción, y la respuesta contiene los datos públicos de la cuenta. La persistencia es invocada por el módulo de sesiones; el diagrama agrupa esos detalles internos para facilitar la lectura.
+
+Al recargar la página, la interfaz consulta la sesión con la cookie. El servidor recupera una sesión no caducada y vuelve a comprobar la cuenta antes de permitir el acceso. Un reinicio de Cloud Run no elimina las sesiones almacenadas en Atlas. Se requiere que la cookie siga disponible, la sesión no haya caducado ni se haya cerrado y la cuenta continúe autorizada. Conservar una cuenta registrada y conservar una sesión autenticada son responsabilidades distintas; ambas disponen de persistencia en el código actual.
+
+\clearpage
+\subsection{Diagrama de secuencia: solicitud de recogida}
+La Figura~\ref{fig:secuencia-recogida} describe el caso de uso de creación de una solicitud de recogida en fábrica, incorporado en el PBI P17 del Sprint 2. Esta vista amplía la descripción de gestión de cuentas de octubre con el comportamiento del código disponible a 4 de noviembre de 2026. Participan el cliente, la interfaz web, la API REST, la lógica de solicitudes y MongoDB Atlas. Las líneas discontinuas representan respuestas y los bloques \texttt{alt} distinguen los resultados alternativos.
+
+\begin{center}
+\begin{minipage}{\textwidth}
+\centering
+\includegraphics[width=\textwidth,height=0.80\textheight,keepaspectratio]{figs/secuencia-recogida.png}
+\captionsetup{hypcap=false}
+\captionof{figure}{Secuencia de creación de una solicitud de recogida, con autorización, validación y prevención de envíos duplicados.}
+\label{fig:secuencia-recogida}
+\end{minipage}
+\end{center}
+
+\begin{sloppypar}
+El recorrido parte de un cliente con sesión iniciada que completa el fabricante, la dirección y el contacto de recogida, la fecha y las líneas de mercancía. La interfaz envía una petición \texttt{POST} a \texttt{/api/solicitudes} con los datos, la cookie de sesión y una cabecera \texttt{Idempotency-Key}. La API comprueba la sesión y consulta la cuenta para verificar que está confirmada, activa y tiene perfil de cliente. El propietario se obtiene de la identidad autenticada; el navegador no decide a qué cuenta se asigna la solicitud.
+\end{sloppypar}
+
+La lógica valida los datos y la fecha y solicita el guardado a través de la capa de persistencia, resumida en el diagrama junto a MongoDB para facilitar la lectura. El servidor fija el identificador, la referencia y el estado inicial \texttt{pendiente\_recogida}. Una creación correcta devuelve \texttt{201 Created}. Si se repite la misma clave con los mismos datos, se recupera la solicitud existente y se responde \texttt{200 OK}; un índice único por cliente y clave evita duplicados incluso con peticiones concurrentes. Reutilizar la clave con datos diferentes produce \texttt{409 Conflict}.
+
+Los datos inválidos generan \texttt{400 Bad Request} y una cuenta sin el perfil requerido recibe \texttt{403 Forbidden}. La precondición del esquema es una sesión válida; la ausencia de autenticación se rechaza antes del caso de uso. La interfaz presenta el resultado y conserva los datos ante errores. Esta operación registra la petición de recogida; la asignación de conductores y la planificación posterior se desarrollan en otros casos de uso.
+
+\clearpage
+\section{Desarrollo del Proyecto}
+% Una tabla resumen de los sprits (rellenar una fila cada sprint): sp1 etiqueta-texto estimacion_SP horas reales dedicadas al proyecto
+Un detalle del desarrollo de cada sprint se puede encontrar en el Anexo A.
+El repositorio refleja trabajo sobre la arquitectura base, gestión de usuarios y permisos, persistencia con MongoDB, despliegue en Google Cloud, normalización de correo e integración de servicios externos. Estos bloques describen la evolución técnica y no sustituyen las fechas ni la distribución real de los sprints en DoneTonic.
+\begin{center}
+\begin{tabular}{|p{0.29\textwidth}|p{0.57\textwidth}|}
+\hline
+Bloque de trabajo & Estado documentado \\\hline
+Arquitectura y usuarios & Código de cliente, API, lógica, sesiones y permisos disponible. \\\hline
+Persistencia y despliegue & Adaptador MongoDB, contenedor y configuración de Cloud Build disponibles; existe una URL de una revisión anterior. \\\hline
+Validación de correo & Normalización y validación implementadas, con pruebas específicas. \\\hline
+Correo y Google & Implementación y pruebas simuladas disponibles; configuración y validación real pendientes. \\\hline
+\end{tabular}
+\end{center}
+Las fechas de los sprints, estimaciones en puntos e inversión real de horas se completarán a partir de los registros de DoneTonic, sin deducirlos de los commits.
+
+\section{MiApp}
+% Descripción de MiApp tipo manual de usuario
+\subsection{Registro y confirmación}
+El usuario introduce correo y contraseña en Crear una cuenta. La contraseña debe tener al menos seis caracteres y un máximo de 72 bytes. En la versión actual del código, la cuenta queda pendiente hasta confirmar el enlace recibido por correo. El enlace caduca a las 24 horas y solo puede utilizarse una vez. El reenvío sustituye el enlace anterior. Si el correo no está configurado, el servidor informa de la indisponibilidad del servicio.
+\subsection{Acceso y sesión}
+El usuario entra con correo y contraseña, o con Google cuando el servicio esté configurado. La aplicación recupera la sesión al recargar si sigue siendo válida y permite cerrarla desde el panel de cuenta. Una cuenta local existente no se vincula automáticamente a Google por coincidencia de correo.
+\subsection{Operaciones según el rol}
+El servidor restringe el listado y la consulta de estados a administradores. Cada usuario puede eliminar su propia cuenta y el administrador puede eliminar otras. Estas reglas están implementadas en la API; las capturas del manual deben mostrar únicamente las operaciones realmente accesibles desde la interfaz de la versión comprobada.
+
+\section{Pruebas y validación}
+El repositorio incluye pruebas de lógica, API, roles, sesiones, persistencia, configuración, correo y OAuth. Cubren, entre otros casos, duplicados, hashes de contraseña, permisos falsificados, eliminación, enlaces caducados o reutilizados y callbacks OAuth inválidos. Las pruebas locales utilizan SQLite temporal y servicios simulados; el flujo de GitHub Actions incorpora MongoDB desechable y una comprobación del contenedor.
+Estas pruebas simuladas no demuestran la recepción de un correo real ni la finalización del consentimiento de Google. Deben adjuntarse resultados de una ejecución identificada antes de afirmar que toda la validación ha sido superada.
+
+\section{Despliegue y estado actual}
+El repositorio contiene un Dockerfile y \texttt{cloudbuild.yaml} para construir y desplegar desde la rama principal. La documentación recoge un despliegue previo en Cloud Run y el uso de Atlas. El hito de correo y Google está pendiente de alta y configuración de proveedores, secretos, despliegue y verificación pública. La guía operativa está en \texttt{DESPLIEGUE-GOOGLE-CLOUD.md} y la dirección de entrega se mantiene en \texttt{entrega.txt}.

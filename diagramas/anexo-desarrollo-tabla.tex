@@ -1,0 +1,79 @@
+\chapter{Anexo A. Desarrollo del Proyecto}
+En este anexo se documenta el desarrollo por sprints. La evidencia técnica se obtiene del repositorio y la planificación se completará con los registros de DoneTonic. No se asignan fechas, horas ni puntos sin disponer de esos registros.
+
+\section{Sprint 1: Arquitectura Base}
+\subsection{Planificación del sprint 1}
+% Objetivo
+El objetivo de este bloque es establecer una base de aplicación por capas que conecte la interfaz con la API, la lógica de negocio y la persistencia. El alcance exacto comprometido en el sprint debe contrastarse con el backlog de DoneTonic.
+% Fechas
+DoneTonic muestra el sprint del 29 de septiembre a las 18:30 al 27 de octubre a las 18:00 de 2026. Las capturas se han obtenido el 27 de octubre y documentan el estado disponible, sin certificar el cierre.
+% Sprint backlog con su estimación
+Las tareas y sus estimaciones se incorporarán desde el sprint backlog, conservando sus identificadores para relacionarlas con los cambios del repositorio.
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth,trim=0 60 0 110,clip]{figs/donetonic-sprint1-planificacion.jpg}
+\caption{Vista parcial del sprint backlog, capturada el 27 de octubre de 2026. Se muestran sus fechas, la carga asignada de 40,5 horas y 2,5 horas registradas; estas últimas no acreditan toda la dedicación real.}
+\label{fig:donetonic-sprint1-backlog}
+\end{figure}
+
+\subsection{Desarrollo del Sprint}
+% Problema - Solución
+% Lo que no debe ser: un diario del desarrolladors
+La separación de responsabilidades permite mantener la interfaz, las peticiones HTTP, las rutas y las reglas de negocio en módulos distintos. La estructura actual contiene estas capas y adaptadores de persistencia. La narración final del sprint debe identificar los problemas que se resolvieron en ese periodo y los cambios que aportaron, utilizando las tareas y commits correspondientes. La estructura actual, por sí sola, no acredita que todas sus funciones pertenecieran al primer sprint.
+
+\subsection{Revisión del Sprint}
+La revisión debe relacionar cada tarea comprometida con el incremento demostrado, sus pruebas y el estado final en DoneTonic. Se documentará qué se terminó y qué quedó pendiente, evitando interpretar el estado actual del código como el resultado histórico del sprint.
+
+La Tabla~\ref{tab:revision-sprint1-pbi} recoge los PBI identificables en las capturas disponibles. La columna Hito relaciona el alcance de cada PBI con los cuatro hitos del enunciado: H1, esqueleto y backend; H2, frontend y sesión; H3, persistencia y roles; H4, servicios externos y cierre. La correspondencia es por contenido y no implica que el PBI se haya trabajado exclusivamente en esa semana.
+
+\begin{center}
+\begin{minipage}{\textwidth}
+\centering
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|p{0.07\textwidth}|p{0.36\textwidth}|p{0.15\textwidth}|p{0.13\textwidth}|p{0.12\textwidth}|}
+\hline
+\textbf{PBI} & \textbf{Descripción} & \textbf{Hito} & \textbf{Estimación (h)} & \textbf{Real (h)} \\ \hline
+P1 & Crear repositorio y estructura base. & H1 & 7 & 1 \\ \hline
+P2 & Configurar flujo de trabajo y CI/CD. & H1 & 2 & 0,5 \\ \hline
+P3 & Configurar entorno y secretos. & H1 y H3 & 1 & 0,5 \\ \hline
+P4 & Implementar gestión básica de usuarios. & H1 & 10 & 1,5 \\ \hline
+P5 & Implementar eliminación, roles y permisos. & H1 y H3 & 1,5 & 0,5 \\ \hline
+P6 & Implementar registro local seguro. & H2 & 2 & 0,5 \\ \hline
+P7 & Implementar inicio, cierre y persistencia de sesión. & H2 & 8 & 2 \\ \hline
+P9 & Implementar persistencia en base de datos. & H3 & 3 & 1 \\ \hline
+P10 & Implementar estructura y comunicación del frontend. & H2 & 1 & 0,5 \\ \hline
+P12 & Implementar pruebas automatizadas. & H1 & 2 & 0,5 \\ \hline
+P13 & Implementar logging, manejo de errores y documentación. & H3 y H4 & 2 & 1 \\ \hline
+P14 & Documentar el sprint 1. & H4 & 1 & 0,5 \\ \hline
+\multicolumn{3}{|l|}{\textbf{Total del sprint}} & \textbf{40,5} & \textbf{10,5} \\ \hline
+\end{tabular}
+\captionsetup{hypcap=false}
+\captionof{table}{Revisión del Sprint 1 por PBI: descripción, hito y comparación de horas estimadas y reales.}
+\label{tab:revision-sprint1-pbi}
+\end{minipage}
+\end{center}
+
+Los doce PBI suman 40,5~h estimadas y 10,5~h reales, según las horas actualizadas por el autor. P3 abarca la configuración inicial de H1 y la gestión de secretos de H3; P5 combina la eliminación básica de H1 con los roles y permisos de H3; P13 reúne el registro de actividad de H3 y el manejo de errores y documentación de H4. P12 se vincula a las pruebas automatizadas exigidas desde H1 y P14 al cierre documental de H4. En P7, H2 exige mantener la sesión entre recargas; la persistencia de datos ante reinicios se trata en H3. Los servicios OAuth y de confirmación por correo de H4 no se asignan a los PBI de registro local: deben relacionarse con sus PBI específicos.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figs/donetonic-sprint1-tablero.jpg}
+\caption{Vista parcial del tablero el 27 de octubre de 2026, después de revisar los estados: 23 tareas hechas, 3 en curso y 1 pendiente.}
+\label{fig:donetonic-sprint1-tablero}
+\end{figure}
+
+\subsection{Retrospectiva}
+% Mostrar el Sprint Burndown
+% Comentar las horas realizadas y compararlas con lo estimado 
+El gráfico registra una reducción desde aproximadamente 40,5 unidades estimadas hasta 13, con el último punto visible en el día 15. No se extrapola esa línea hasta el día de captura. El panel informa de un 67\% completado según su estimación de PBI, mientras el tablero muestra un 85\% de tareas hechas (23 de 27): son indicadores distintos. La retrospectiva final recogerá aciertos, dificultades y una mejora concreta para el siguiente sprint. La comparación entre estimación y dedicación real se completará con los datos registrados; si el gráfico expresa horas o puntos, se indicará la unidad y no se tratarán ambas magnitudes como equivalentes.
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth,trim=25 95 25 184,clip]{figs/donetonic-sprint1-burndown-completo.jpg}
+\caption{Burndown del sprint 1, capturado el 27 de octubre de 2026. El eje horizontal representa días y el vertical la estimación de PBI; la línea oscura muestra el trabajo restante y el área clara la guía ideal.}
+\label{fig:donetonic-sprint1-burndown}
+\end{figure}
+
+\section{Evolución posterior recogida en el repositorio}
+El historial consultado contiene cambios de persistencia a MongoDB y configuración de Cloud Run y Cloud Build el 13 de octubre de 2026, normalización de correo el 15 de octubre e integración de confirmación por correo y Google el 21 de octubre. También recoge un ajuste del entorno de CI para MongoDB. Estas fechas corresponden a commits, no a los límites de sprints.
+El siguiente paso de documentación consiste en relacionar estos cambios con los sprints reales de DoneTonic y repetir para cada uno las secciones de planificación, desarrollo, revisión y retrospectiva. El estado pendiente del hito de servicios externos se recoge en el capítulo de descripción de la aplicación.
