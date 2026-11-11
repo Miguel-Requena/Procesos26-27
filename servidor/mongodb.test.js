@@ -32,11 +32,17 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         await assert.rejects(logica.iniciarSesion(pendiente.email, 'clave-prueba'));
         await logica.registrarUsuario(${JSON.stringify(adminEmail)}, 'clave-admin');
         await usuarios.updateOne({email: ${JSON.stringify(email)}}, {$set: {confirmado: true, rol: 'usuario'}});
-        await usuarios.updateOne({email: ${JSON.stringify(adminEmail)}}, {$set: {confirmado: true, rol: 'administrador'}});`);
+        await usuarios.updateOne({email: ${JSON.stringify(adminEmail)}}, {$set: {confirmado: true, rol: 'administrador'}});
+        await datos.guardarIntentoOAuth('oauth-' + pendiente.id, {tipo:'acceso', verifier:'prueba-persistida'}, Date.now()+60000);
+        await datos.guardarIntentoOAuth('caducado-' + pendiente.id, {tipo:'acceso'}, Date.now()-1);`);
     ejecutar(`const usuario = await logica.iniciarSesion(${JSON.stringify(email)}, 'clave-prueba');
         const admin = await logica.iniciarSesion(${JSON.stringify(adminEmail)}, 'clave-admin');
         assert.equal(admin.rol, 'administrador');
         assert.equal(usuario.rol, 'cliente');
+        const lecturas = await Promise.all([datos.leerIntentoOAuth('oauth-' + usuario.id, true), datos.leerIntentoOAuth('oauth-' + usuario.id, true)]);
+        assert.equal(lecturas.filter(Boolean).length, 1);
+        assert.equal(lecturas.find(Boolean).verifier, 'prueba-persistida');
+        assert.equal(await datos.leerIntentoOAuth('caducado-' + usuario.id), undefined);
         assert.equal((await usuarios.findOne({id: usuario.id})).rol, 'cliente');
         await datos.asignarRol(usuario.id, 'conductor');
         assert.equal((await logica.obtenerPanel('conductor', usuario)).rol, 'conductor');
@@ -44,6 +50,13 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         await datos.asignarRol(usuario.id, 'cliente');
         const asignado = await logica.cambiarPerfilEquipo(usuario.id, 'conductor', admin);
         assert.equal(asignado.rol, 'conductor');
+        const identidadGoogle = { sub: 'mongo-google-' + usuario.id, email: usuario.email, email_verified: true };
+        await assert.rejects(logica.entrarGoogle(identidadGoogle), {estado: 409});
+        await logica.vincularGoogle(identidadGoogle, usuario);
+        assert.equal((await logica.entrarGoogle(identidadGoogle)).id, usuario.id);
+        assert.equal((await logica.entrarGoogle(identidadGoogle)).rol, 'conductor');
+        assert.equal(await datos.vincularGoogle(usuario.id, 'otra-google-' + usuario.id), false);
+        assert.equal(await datos.vincularGoogle(admin.id, identidadGoogle.sub), false);
         await assert.rejects(logica.cambiarPerfilEquipo(admin.id, 'cliente', admin), {estado: 409});
         await manual.db().collection('rutas').insertMany([
             {id:'ruta-' + usuario.id, conductorId:usuario.id, referencia:'Propia', origen:'Yecla', destino:'Rubi', estado:'pendiente', secreto:'interno'},

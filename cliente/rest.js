@@ -33,8 +33,8 @@ window.api = {
     registrar(email, clave) {
         return this.peticion("/registro", { method: "POST", body: JSON.stringify({ email, clave }) });
     },
-    iniciarSesion(email, clave) {
-        return this.peticion("/login", { method: "POST", body: JSON.stringify({ email, clave }) });
+    iniciarSesion(email, clave, vincularGoogle = false) {
+        return this.peticion("/login", { method: "POST", body: JSON.stringify({ email, clave, vincularGoogle }) });
     },
     cerrarSesion() { return this.peticion("/logout", { method: "POST" }); }
 };

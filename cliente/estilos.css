@@ -357,3 +357,15 @@ body:not(.sesion-activa) .intro-acceso h2 { font-size: clamp(32px, 2.9vw, 40px);
     body:not(.sesion-activa) .identidad-texto h1 { font-size: 39px; }
     body:not(.sesion-activa) .intro-acceso h2 { font-size: 35px; }
 }
+
+.acceso-google, #google.acceso-google {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    text-align: center; padding: 13px 15px; margin: 0 0 20px;
+    border: 1px solid #d9dedf; border-radius: 9px; background: #fff;
+    color: #354151; font-size: 12px; font-weight: 650; text-decoration: none;
+    transition: background .2s, border-color .2s;
+}
+.acceso-google:hover, #google.acceso-google:hover { background: #f0f3f6; border-color: #aeb9c6; }
+.google-simbolo { font-family: 'Segoe UI', sans-serif; font-size: 18px; font-weight: 750; color: #386ec5; }
+body:not(.sesion-activa) .cancelar-vinculo { width: 100%; margin-top: 12px; padding: 9px; background: transparent; color: #626c78; font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
+body:not(.sesion-activa) .cancelar-vinculo:hover { background: #eceeea; }

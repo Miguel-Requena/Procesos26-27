@@ -71,6 +71,7 @@ app.post("/api/login", async (req, res) => {
         const { email, clave } = req.body || {};
         externos.comprobarLogin(req.ip, email);
         const usuario = await logica.iniciarSesion(email, clave);
+        await externos.completarVinculoGoogle(req, res, usuario);
         req.usuarioActividad = usuario.id;
         await sesiones.crearSesion(req, res, usuario.id);
         externos.registrarLoginCorrecto(req.ip, email);

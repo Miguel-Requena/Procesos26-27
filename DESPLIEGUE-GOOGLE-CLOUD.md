@@ -49,8 +49,9 @@ Cloud Build mantiene acceso público, identidad e ingress según el servicio ya
 configurado: el YAML no concede permisos públicos ni modifica IAM.
 Para acceder al prototipo el servicio debe permitir acceso público e ingress Todo.
 Configura facturación por solicitudes, CPU 1, memoria 512 MiB, mínimo 0 y máximo 1.
-Las cuentas persisten en Atlas; las sesiones en memoria terminan al reiniciar o
-escalar a cero y requieren volver a iniciar sesión.
+Las cuentas y sesiones persisten en Atlas. Los intentos de Google y las pruebas
+de vinculación se guardan en `intentos_oauth`, con caducidad de 10 minutos e índice
+TTL, y sobreviven al reinicio o escalado a cero de Cloud Run.
 
 ## Registro y administrador
 
@@ -108,8 +109,10 @@ Referencias oficiales: [Google OAuth](https://developers.google.com/identity/pro
 - Verificar que eliminar una cuenta impide ambos tipos de acceso.
 - Verificar roles, persistencia, CI y acceso del revisor; revisar entrega.txt.
 
-Sesiones, state OAuth y límites viven en memoria: el reinicio obliga a repetir
-el acceso. Mantener máximo una instancia. Los tokens de confirmación se guardan
-como SHA-256 en la base y sobreviven al reinicio. El reenvío sustituye el anterior.
+Sesiones y state OAuth persisten en Atlas; los tokens de sesión y las claves de
+los intentos OAuth se almacenan como SHA-256. El state y las pruebas de vinculación
+son de un solo uso. Los límites de envío y login siguen siendo por proceso:
+mantener máximo una instancia. Los tokens de confirmación se guardan como SHA-256
+en la base y sobreviven al reinicio. El reenvío sustituye el anterior.
 Los logs de aplicación omiten tokens; los de infraestructura pueden incluir
 queries OAuth o de confirmación: limita su acceso y evita compartir esos enlaces.
