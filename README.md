@@ -1,6 +1,9 @@
 # Gestión de usuarios — Procesos26-27
 
 Aplicación por capas con Node.js 24, Express, bcrypt y MongoDB Atlas.
+
+**Acceso público:** [Abrir Transdrakkar](https://procesos26-27-gseerr4ika-no.a.run.app).
+
 `cliente/presentacion.js` gestiona el DOM, `cliente/rest.js` realiza HTTP,
 `servidor/api.js` expone rutas, `logica.js` aplica reglas y `datos.js` selecciona
 persistencia. SQLite se reserva para pruebas aisladas.
@@ -17,7 +20,8 @@ npm.cmd start
 
 También puedes entrar en `servidor` y ejecutar allí `npm.cmd ci` y `npm.cmd start`.
 
-Abre http://localhost:3000. Requiere Node.js 24. El entorno prevalece sobre `.env`.
+Para desarrollo local, abre http://localhost:3000 después de iniciar el servidor.
+Requiere Node.js 24. El entorno prevalece sobre `.env`.
 En producción usa NODE_ENV=production para cookies Secure y TLS a MongoDB.
 
 ## Registro, confirmación y Google
@@ -94,7 +98,7 @@ acreditan recepción real del correo ni consentimiento de Google.
 
 ## Despliegue y entrega
 
-URL: https://procesos26-27-gseerr4ika-no.a.run.app
+URL: [Transdrakkar · Área privada](https://procesos26-27-gseerr4ika-no.a.run.app).
 
 Cloud Run sirve cliente y servidor; Atlas guarda las cuentas. Cloud Build
 compila y despliega commits de main mediante cloudbuild.yaml. Consulta la
