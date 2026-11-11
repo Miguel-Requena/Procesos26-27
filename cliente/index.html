@@ -18,10 +18,31 @@
     <main class="acceso-layout">
         <aside class="identidad" aria-labelledby="titulo-marca">
             <div class="identidad-superior"><span class="etiqueta">CONECTAMOS DESTINOS</span><span aria-hidden="true">↗</span></div>
-            <img class="logo" src="imagenes/transdrakkar-logo.jpg" alt="Transdrakkar, barco drakkar blanco sobre fondo rojo" width="816" height="484">
+            <span class="identidad-firma">TRANS<strong>DRAKKAR</strong><i></i></span>
             <div class="identidad-texto">
                 <h1 id="titulo-marca">Tu mobiliario.<br>Nuestro compromiso.</h1>
                 <p>Un espacio para conectar clientes, equipo y transporte.</p>
+            </div>
+            <div class="ruta-escena" role="img" aria-label="Camión Transdrakkar en ruta">
+                <span class="ruta-leyenda">SIEMPRE EN MOVIMIENTO <span aria-hidden="true">→</span></span>
+                <div class="ruta-carretera" aria-hidden="true"></div>
+                <svg class="camion-marca" viewBox="0 0 280 136" aria-hidden="true">
+                    <ellipse cx="139" cy="123" rx="126" ry="7" fill="#000" opacity=".22"/>
+                    <g class="camion-carroceria">
+                        <rect x="12" y="18" width="178" height="88" rx="5" fill="#ed1c2b"/>
+                        <path d="M16 24H185" stroke="#fff" opacity=".25"/>
+                        <image href="imagenes/transdrakkar-logo.jpg" x="43" y="27" width="114" height="68"/>
+                        <path d="M196 48H234L261 80V108H196Z" fill="#f4f3ef"/>
+                        <path d="M205 56H230L249 80H205Z" fill="#354954"/>
+                        <path d="M234 57L250 79H237Z" fill="#77909b"/>
+                        <path d="M198 87H260V99H198Z" fill="#d91626"/>
+                        <rect x="207" y="83" width="11" height="3" rx="1.5" fill="#a7adb1"/>
+                        <rect x="255" y="92" width="7" height="8" rx="2" fill="#fff1bb"/>
+                        <path d="M10 108H266" stroke="#a6afb3" stroke-width="7"/>
+                    </g>
+                    <g fill="#1a2026" stroke="#d2d6d6" stroke-width="4"><circle cx="50" cy="111" r="13"/><circle cx="82" cy="111" r="13"/><circle cx="231" cy="111" r="13"/></g>
+                    <g fill="#89949c"><circle cx="50" cy="111" r="4"/><circle cx="82" cy="111" r="4"/><circle cx="231" cy="111" r="4"/></g>
+                </svg>
             </div>
             <div class="sedes" aria-label="Nuestras sedes"><span>Yecla</span><i aria-hidden="true"></i><span>Rubí · Barcelona</span><i aria-hidden="true"></i><span>Palma de Mallorca</span></div>
             <div class="identidad-pie"><span>TRANSDRAKKAR</span><span>DE ORIGEN A DESTINO.</span></div>
@@ -45,8 +66,7 @@
                 </form>
             </section>
             <section id="seccion-login" aria-labelledby="titulo-login">
-                <h2 id="titulo-login">Iniciar sesión</h2>
-                <p class="descripcion-formulario">Introduce tus datos de acceso.</p>
+                <h2 id="titulo-login" class="solo-lectores">Iniciar sesión</h2>
                 <a id="google" href="/api/oauth/google" hidden>Continuar con Google</a>
                 <form id="login">
                     <label for="login-email">Correo electrónico</label>
@@ -68,18 +88,21 @@
             <aside class="navegacion-privada" aria-label="Navegación del área privada">
                 <a class="marca" href="/">TRANS<span>DRAKKAR</span></a>
                 <span class="nav-subtitulo">TU ÁREA DE TRANSPORTE</span>
-                <nav><a href="#panel-titulo" class="nav-inicio">⌂ <span>Vista general</span></a><a href="#transportes">↗ <span id="nav-transportes">Transportes</span></a><a href="#cuentas-equipo" id="nav-equipo" hidden>◎ <span>Perfiles del equipo</span></a></nav>
+                <nav><a href="#panel-titulo" class="nav-inicio"><svg class="icono-nav" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3Z"/><path d="M9 20v-7h6v7"/></svg><span>Vista general</span></a><a href="#transportes"><svg class="icono-nav" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="12" height="12" rx="1"/><path d="M14 9h4l4 4v4h-8"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg><span id="nav-transportes">Transportes</span></a><a href="#cuentas-equipo" id="nav-equipo" hidden><svg class="icono-nav" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 4v3"/></svg><span>Perfiles del equipo</span></a></nav>
                 <div class="nav-sedes"><span class="antetitulo">CONECTAMOS DESTINOS</span><p></p><span class="nav-linea" aria-hidden="true">● ───────── ●</span></div>
                 <button id="cerrar-sesion" type="button">Cerrar sesión <span aria-hidden="true">↗</span></button>
             </aside>
             <div class="contenido-privado">
-            <div class="barra-privada"><span>ÁREA PRIVADA <span aria-hidden="true">/</span> VISTA GENERAL</span><span id="cuenta-privada"></span></div>
+            <div class="barra-privada"><span>ÁREA PRIVADA <span aria-hidden="true">/</span> VISTA GENERAL</span><span class="cuenta-identidad"><span id="avatar-privado" aria-hidden="true">T</span><span><strong id="cuenta-privada"></strong><small id="cuenta-rol"></small></span></span></div>
             <div class="bienvenida-privada"><div>
             <span id="perfil-etiqueta" class="antetitulo"></span>
             <h2 id="panel-titulo">Tu espacio Transdrakkar</h2>
-            <p id="panel-descripcion"></p></div><span class="sello-privado" aria-hidden="true">↗</span></div>
-            <div class="resumen-privado" aria-label="Resumen de actividad"><article><span id="resumen-titulo">Transportes disponibles</span><strong id="resumen-total">—</strong><small>Según los permisos de tu cuenta</small></article><article class="tarjeta-red"><span>NUESTRA RED</span><strong>De origen<br>a destino.</strong><small>Yecla · Rubí · Palma de Mallorca</small></article></div>
-            <div id="acciones-cliente" hidden><button id="abrir-solicitud" type="button">Nueva solicitud <span aria-hidden="true">＋</span></button><span>Pide la recogida de mercancía en fábrica.</span></div>
+            <p id="panel-descripcion"></p></div><div id="acciones-cliente" hidden><button id="abrir-solicitud" type="button">Nueva solicitud <span aria-hidden="true">＋</span></button></div></div>
+            <div class="resumen-privado" aria-label="Resumen de actividad">
+                <article><span id="resumen-titulo">Transportes</span><strong id="resumen-total">—</strong><small id="resumen-ayuda">Actividad de tu cuenta</small></article>
+                <article><span id="metrica-segunda-titulo">Pendientes</span><strong id="metrica-segunda">—</strong><small id="metrica-segunda-ayuda">Por recoger o iniciar</small></article>
+                <article><span id="metrica-tercera-titulo">Completadas</span><strong id="metrica-tercera">—</strong><small id="metrica-tercera-ayuda">Transportes finalizados</small></article>
+            </div>
             <section id="nueva-solicitud" hidden aria-labelledby="titulo-nueva-solicitud">
                 <div class="formulario-cabecera"><div><span class="antetitulo">UN NUEVO DESTINO</span><h3 id="titulo-nueva-solicitud" tabindex="-1">Solicita una recogida</h3><p>Indica qué mercancía debemos recoger. En la base de Yecla organizaremos los camiones.</p></div><button id="cancelar-solicitud" type="button">Cerrar formulario</button></div>
                 <form id="formulario-solicitud">
@@ -101,10 +124,9 @@
                     <div class="solicitud-pie"><p>Se enviará como <strong>pendiente de recogida</strong>.</p><button id="enviar-solicitud" type="submit">Enviar solicitud <span aria-hidden="true">↗</span></button></div>
                 </form>
             </section>
-            <ul id="panel-funciones" class="panel-funciones"></ul>
+            <ul id="panel-funciones" class="panel-funciones" hidden></ul>
             <section id="transportes" aria-labelledby="titulo-transportes">
-                <h3 id="titulo-transportes">Transportes</h3>
-                <button id="actualizar-panel" type="button">Actualizar datos</button>
+                <div class="seccion-barra"><div><span class="antetitulo">ACTIVIDAD</span><h3 id="titulo-transportes">Transportes</h3></div><button id="actualizar-panel" type="button"><span aria-hidden="true">↻</span> Actualizar</button></div>
                 <p id="estado-panel" role="status"></p>
                 <div id="lista-transportes"></div>
             </section>
@@ -113,6 +135,7 @@
                 <p class="ayuda">Habilita como conductores las cuentas confirmadas del equipo o devuélvelas al perfil de cliente.</p>
                 <div id="lista-cuentas"></div>
             </section>
+            <aside class="red-discreta" aria-label="Nuestra red de transporte"><div><span class="antetitulo">CONECTAMOS DESTINOS</span><p>De origen a destino.</p><span>Yecla <i>→</i> Rubí <i>→</i> Palma de Mallorca</span></div><div id="camion-panel" aria-hidden="true"></div></aside>
             <p class="ayuda">Las fechas y la planificación de transportes se confirman con el equipo.</p>
             </div>
         </section>

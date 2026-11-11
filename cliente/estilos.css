@@ -164,3 +164,110 @@ select { width: 100%; min-height: 46px; padding: 12px; border: 1px solid #d9d5d2
 select:focus-visible { outline: 3px solid #ed1c2b88; outline-offset: 3px; }
 .linea-mueble { grid-template-columns: minmax(0, 1fr) 90px 115px auto; }
 @media (max-width: 700px) { .recogida-datos > fieldset { display: block; } .linea-mueble { grid-template-columns: 90px minmax(0, 1fr); } .linea-mueble > div:first-child { grid-column: 1 / -1; } select { font-size: 16px; } }
+
+/* Acceso: fotografía editorial y una ruta de marca en movimiento. */
+body:not(.sesion-activa) { background: #f8f7f4; }
+body:not(.sesion-activa) .cabecera { padding-top: 23px; padding-bottom: 23px; }
+body:not(.sesion-activa) .acceso-layout { max-width: 1240px; margin: 28px auto; gap: clamp(36px, 6vw, 84px); grid-template-columns: 1.12fr 1fr; }
+.identidad { position: relative; isolation: isolate; min-height: 570px; padding: 30px 34px 25px; background: #252e34; border-radius: 20px; box-shadow: 0 20px 50px #212a3217; }
+.identidad::before { content: ''; position: absolute; inset: -6px; z-index: -2; background: url('imagenes/carretera-atardecer.jpg') center 63% / cover no-repeat; filter: blur(2px); }
+.identidad::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, #121d29a3 0%, #16222db8 45%, #101923ed 100%); }
+.identidad-superior { color: #e1e6e9; }
+.identidad-superior .etiqueta { font-size: 9px; letter-spacing: 2.2px; }
+.identidad-firma { display: flex; align-items: center; margin: 43px 0 23px; font-size: 15px; font-weight: 800; letter-spacing: -.5px; }
+.identidad-firma strong { font-weight: 800; }
+.identidad-firma i { width: 6px; height: 6px; background: #f33141; border-radius: 50%; margin-left: 8px; }
+.identidad-texto h1 { font-size: clamp(33px, 3.3vw, 45px); line-height: 1.12; margin: 0 0 17px; letter-spacing: -1.7px; }
+.identidad-texto p { color: #d1d7dc; font-size: 13px; max-width: 290px; margin-bottom: 0; }
+.ruta-escena { position: relative; height: 140px; margin: 14px 0 22px; overflow: hidden; }
+.ruta-leyenda { position: absolute; top: 12px; left: 0; right: 0; display: flex; justify-content: space-between; font-size: 8px; letter-spacing: 1.8px; color: #b1bbc4; }
+.ruta-leyenda span { color: #ee4856; font-size: 16px; line-height: .6; }
+.ruta-carretera { position: absolute; bottom: 5px; width: 100%; height: 22px; border-top: 1px solid #ffffff20; border-bottom: 1px solid #ffffff12; transform: skewX(-25deg); }
+.ruta-carretera::after { content: ''; position: absolute; top: 10px; left: -48px; width: calc(100% + 96px); height: 1px; background: repeating-linear-gradient(90deg, #ffffff60 0 20px, transparent 20px 48px); animation: route-defile 1.8s linear infinite; }
+.camion-marca { position: absolute; width: 210px; height: 102px; bottom: 15px; left: 20%; filter: drop-shadow(0 8px 10px #0003); animation: camion-avance 7s ease-in-out infinite alternate; }
+.camion-carroceria { animation: camion-suspension 1.1s ease-in-out infinite alternate; }
+.identidad .sedes { font-size: 9px; color: #dce1e5; gap: 9px; }
+.identidad .sedes i { background: #ed4a57; }
+.identidad-pie { color: #aeb8c0; margin-top: auto; padding-top: 19px; border-color: #ffffff24; font-size: 7px; }
+body:not(.sesion-activa) .zona-acceso { padding: 16px 0; max-width: 410px; }
+.intro-acceso h2 { font-size: clamp(29px, 2.8vw, 36px); }
+.intro-acceso > p { line-height: 1.6; }
+#estado:empty { display: none; }
+.selector-acceso { margin: 27px 0 25px; background: #eeece8; border: 1px solid #e7e4df; }
+#login { gap: 11px; }
+#login input { min-height: 49px; border-color: #dfdcd7; border-radius: 9px; }
+#login button { min-height: 49px; border-radius: 9px; box-shadow: 0 5px 14px #d916261a; }
+.solo-lectores { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+@keyframes route-defile { to { transform: translateX(-48px); } }
+@keyframes camion-avance { from { transform: translateX(-12px); } to { transform: translateX(18px); } }
+@keyframes camion-suspension { from { transform: translateY(0); } to { transform: translateY(1px); } }
+@media (max-width: 900px) { body:not(.sesion-activa) .acceso-layout { gap: 32px; } .identidad { padding: 26px; } .identidad-texto h1 { font-size: 34px; } .camion-marca { left: 10%; } }
+@media (max-width: 640px) { body:not(.sesion-activa) .acceso-layout { grid-template-columns: 1fr; margin: 20px auto; gap: 30px; padding: 0 20px; } .identidad { min-height: 0; padding: 24px; border-radius: 16px; } .identidad-firma { margin: 24px 0 16px; } .identidad-texto h1 { font-size: 34px; } .identidad-texto p { margin-bottom: 0; } .ruta-escena { height: 113px; margin: 7px 0 16px; } .camion-marca { width: 180px; height: 87px; left: 22%; bottom: 14px; } .ruta-leyenda { top: 5px; } body:not(.sesion-activa) .zona-acceso { max-width: none; padding: 0; } }
+@media (prefers-reduced-motion: reduce) { .camion-marca, .camion-carroceria, .ruta-carretera::after { animation: none; } }
+
+/* Panel privado: actividad primero, marca en segundo plano. */
+.sesion-activa { background: #f3f4f6; }
+.sesion-activa .contenido-privado { max-width: 1450px; padding: 0 clamp(24px, 4vw, 60px) 30px; }
+.sesion-activa .barra-privada { min-height: 82px; font-size: 9px; }
+.cuenta-identidad { display: flex; align-items: center; gap: 11px; min-width: 0; }
+#avatar-privado { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; color: #a61625; background: #f6e5e7; font-size: 14px; font-weight: 750; letter-spacing: 0; }
+.cuenta-identidad > span:last-child { min-width: 0; }
+#cuenta-privada { display: block; font-size: 11px; font-weight: 600; color: #3e4651; overflow-wrap: anywhere; }
+#cuenta-rol { display: block; margin-top: 4px; font-size: 10px; letter-spacing: 0; color: #777f8b; }
+.sesion-activa .bienvenida-privada { margin: 30px 0 25px; align-items: center; }
+.sesion-activa #panel-titulo { font-size: clamp(26px, 2.6vw, 36px); letter-spacing: -1.2px; margin: 9px 0; max-width: 650px; }
+.sesion-activa #panel-descripcion { font-size: 13px; line-height: 1.7; margin: 0; }
+.sesion-activa #acciones-cliente { flex-shrink: 0; margin: 0; }
+.sesion-activa #acciones-cliente button { min-height: 46px; border-radius: 9px; font-size: 12px; }
+.sesion-activa .resumen-privado { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 25px; }
+.sesion-activa .resumen-privado article { position: relative; padding: 20px 23px; border-radius: 12px; box-shadow: 0 3px 9px #20232903; }
+.sesion-activa .resumen-privado article:first-child::before { content: ''; position: absolute; top: 21px; right: 23px; height: 7px; width: 7px; border-radius: 50%; background: var(--rojo); box-shadow: 0 0 0 5px #d916260a; }
+.sesion-activa .resumen-privado article > span { font-size: 11px; font-weight: 600; color: #626a77; }
+.sesion-activa .resumen-privado strong { font-size: 35px; font-weight: 720; margin: 10px 0 5px; letter-spacing: -1px; }
+.sesion-activa .resumen-privado small { font-size: 10px; color: #818794; line-height: 1.6; }
+.sesion-activa .navegacion-privada { padding-top: 31px; background: #20252c; }
+.sesion-activa .navegacion-privada nav { margin-top: 40px; gap: 7px; }
+.sesion-activa .navegacion-privada nav a { position: relative; padding: 12px 14px; font-size: 12px; border: 1px solid transparent; }
+.sesion-activa .navegacion-privada nav .nav-inicio { background: #ffffff09; border-color: #ffffff09; }
+.sesion-activa .navegacion-privada nav .nav-inicio::before { content: ''; position: absolute; left: -1px; top: 11px; bottom: 11px; width: 3px; border-radius: 2px; background: #ed3041; }
+.sesion-activa .nav-sedes { padding: 30px 8px; }
+.sesion-activa .nav-sedes .antetitulo { color: #b0b6bf; }
+.sesion-activa .navegacion-privada #cerrar-sesion { font-size: 11px; }
+.sesion-activa #transportes, .sesion-activa #cuentas-equipo { margin: 22px 0; padding: 24px; border-radius: 12px; }
+.seccion-barra { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.sesion-activa .seccion-barra h3 { margin: 7px 0 0; font-size: 19px; }
+.seccion-barra .antetitulo { font-size: 8px; letter-spacing: 1.5px; color: #7d8490; }
+.sesion-activa #actualizar-panel { font-size: 11px; border-radius: 8px; }
+#actualizar-panel span { margin-right: 6px; font-size: 15px; }
+.sesion-activa #estado-panel { margin: 13px 0; font-size: 10px; color: #727c8a; }
+#lista-transportes > section + section { margin-top: 26px; padding-top: 16px; border-top: 1px solid #eceef1; }
+#lista-transportes > section > h4 { font-size: 12px; color: #5e6775; margin: 17px 0 12px; }
+#lista-transportes > section:only-child > h4 { display: none; }
+.sesion-activa .ficha-transporte { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 14px; border: 1px solid #e7eaf0; background: #fcfcfd; border-radius: 10px; padding: 17px 19px; margin: 10px 0; }
+.sesion-activa .ficha-transporte h4 { margin: 0; font-size: 13px; align-self: center; overflow-wrap: anywhere; }
+.sesion-activa .ficha-transporte p { margin: 0; font-size: 12px; color: #5b6573; grid-column: 1 / -1; }
+.sesion-activa .ficha-transporte .fecha-transporte { font-size: 10px; color: #818995; }
+.insignia-estado { align-self: start; justify-self: end; border-radius: 20px; padding: 5px 9px; font-size: 10px; line-height: 1.5; color: #596575; background: #eaf0f5; text-align: center; }
+.estado-pendiente { color: #8a6016; background: #fff2d9; }
+.estado-completado { color: #287052; background: #e5f4ec; }
+.estado-en-curso { color: #335fa0; background: #e8effc; }
+.estado-vacio { text-align: center; padding: 22px 20px 26px; background: linear-gradient(180deg, #f8f9fb, #fff); border: 1px dashed #dfe3e9; border-radius: 10px; }
+.estado-vacio .camion-vacio { position: static; display: block; width: 105px; height: 52px; margin: 0 auto 16px; animation: none; filter: none; }
+.estado-vacio .camion-carroceria { animation: none; }
+.estado-vacio > strong { display: block; font-size: 15px; font-weight: 650; }
+.sesion-activa .estado-vacio p { max-width: 390px; margin: 9px auto 0; font-size: 12px; line-height: 1.8; color: #747e8b; }
+.estado-vacio button { margin-top: 18px; font-size: 11px; border-radius: 8px; padding: 11px 16px; }
+.sesion-activa .cuenta-equipo { background: #fafbfc; border: 1px solid #edf0f3; border-radius: 9px; padding: 15px; }
+.cuenta-equipo strong { display: block; font-size: 12px; color: #374151; overflow-wrap: anywhere; }
+.perfil-cuenta { display: block; margin-top: 5px; font-size: 10px; color: #78818d; }
+.red-discreta { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 23px 28px; margin: 24px 0 18px; border-radius: 12px; background: #252d36; color: white; overflow: hidden; }
+.red-discreta .antetitulo { color: #aab5c2; font-size: 8px; }
+.sesion-activa .red-discreta p { margin: 7px 0 8px; font-size: 20px; font-weight: 650; letter-spacing: -.5px; }
+.red-discreta div > span:last-child { color: #c8d0da; font-size: 10px; }
+.red-discreta i { color: #ed6672; font-style: normal; margin: 0 10px; }
+#camion-panel { width: 200px; height: 88px; flex-shrink: 0; position: relative; border-bottom: 1px dashed #697687; }
+#camion-panel .camion-marca { width: 170px; height: 83px; left: 3px; bottom: 1px; }
+@media (max-width: 1050px) { .sesion-activa .bienvenida-privada { align-items: flex-start; flex-wrap: wrap; gap: 18px; } .sesion-activa .resumen-privado { gap: 10px; } .sesion-activa .resumen-privado article { padding: 18px; } }
+@media (max-width: 700px) { .sesion-activa .contenido-privado { padding: 0 20px 25px; } .sesion-activa .navegacion-privada { padding: 20px; } .sesion-activa .navegacion-privada nav { margin-top: 0; } .sesion-activa .barra-privada { gap: 16px; } .sesion-activa .bienvenida-privada { margin-top: 24px; } .sesion-activa #panel-titulo { font-size: 28px; } .sesion-activa .resumen-privado article { padding: 16px 12px; } .sesion-activa .resumen-privado article:first-child::before { display: none; } .sesion-activa .resumen-privado strong { font-size: 29px; } .sesion-activa .resumen-privado article > span { font-size: 10px; line-height: 1.5; } .sesion-activa .resumen-privado small { font-size: 9px; } .sesion-activa #transportes, .sesion-activa #cuentas-equipo { padding: 18px; } .red-discreta { padding: 20px; } #camion-panel { width: 115px; height: 64px; } #camion-panel .camion-marca { width: 105px; height: 52px; bottom: 1px; left: 0; animation: none; } .red-discreta i { margin: 0 3px; } }
+@media (max-width: 400px) { .sesion-activa .resumen-privado { grid-template-columns: 1fr; } .sesion-activa .resumen-privado article { display: grid; grid-template-columns: 1fr auto; gap: 5px 10px; padding: 16px; } .sesion-activa .resumen-privado strong { grid-column: 2; grid-row: 1 / 3; margin: 0; } .red-discreta { flex-wrap: wrap; } .sesion-activa .ficha-transporte { grid-template-columns: 1fr; } .insignia-estado { justify-self: start; } }
+.icono-nav { width: 17px; height: 17px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }

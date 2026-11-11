@@ -1,0 +1,42 @@
+@startuml
+title TransDrakkar - Crear solicitud de recogida
+hide footbox
+autonumber
+actor Cliente
+boundary "Interfaz web" as UI
+control "API REST" as API
+control "Logica de solicitudes" as Logica
+database "MongoDB Atlas" as BD
+note over Cliente,API : Precondicion: cliente con sesion iniciada
+Cliente -> UI : Completar y enviar formulario
+UI -> API : POST /api/solicitudes\nDatos + cookie + Idempotency-Key
+API -> API : Comprobar sesion
+API -> BD : Consultar cuenta actual
+BD --> API : Cuenta y perfil
+alt Cuenta confirmada, activa y perfil cliente
+ API -> Logica : Crear solicitud para el cliente autenticado
+ Logica -> Logica : Validar datos, fecha y clave
+ alt Datos validos
+  Logica -> BD : Guardar o recuperar por cliente y clave\nIndice unico evita duplicados
+  alt Solicitud nueva
+   BD --> Logica : Solicitud creada
+   Logica --> API : Solicitud con estado pendiente_recogida
+   API --> UI : 201 Created + solicitud
+  else Reintento con mismos datos
+   BD --> Logica : Solicitud existente
+   Logica --> API : Solicitud ya guardada
+   API --> UI : 200 OK + solicitud
+  else Misma clave con otros datos
+   BD --> Logica : Conflicto
+   Logica --> API : Clave reutilizada
+   API --> UI : 409 Conflict
+  end
+ else Datos invalidos
+  Logica --> API : Error de validacion
+  API --> UI : 400 Bad Request
+ end
+else Sin permisos
+ API --> UI : 403 Forbidden
+end
+UI --> Cliente : Mostrar resultado o error
+@enduml

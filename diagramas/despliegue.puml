@@ -1,0 +1,29 @@
+@startuml
+title TransDrakkar - Diagrama de despliegue
+skinparam componentStyle uml2
+skinparam shadowing false
+node "Dispositivo del usuario\nPC o movil" as dispositivo {
+ artifact "Navegador web\nHTML, CSS y JavaScript" as navegador
+}
+cloud "Google Cloud" {
+ node "Cloud Run\nContenedor Docker - max. 1 instancia" as run {
+  artifact "TransDrakkar\nNode.js 24 + Express\nCliente web y API REST" as app
+ }
+}
+cloud "MongoDB Atlas" {
+ database "procesos26_27\nUsuarios, solicitudes, rutas y sesiones" as bd
+}
+cloud "Servicios externos" {
+ node "Google OAuth / OpenID Connect" as google
+ node "Gmail SMTP" as gmail
+}
+navegador -- app : HTTPS
+app -- bd : Protocolo MongoDB sobre TLS
+app -- google : HTTPS
+navegador -- google : HTTPS / consentimiento
+app --> gmail : SMTP con TLS
+note bottom of bd
+Sesiones persistentes: caducidad de 8 horas.
+Un reinicio del servidor no las elimina.
+end note
+@enduml
