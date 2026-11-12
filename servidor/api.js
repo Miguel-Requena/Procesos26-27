@@ -138,6 +138,11 @@ for (const tipo of ["solicitudes", "rutas"]) {
     });
 }
 
+app.post("/api/solicitudes/:id/cancelacion", exigirSesion, async (req, res) => {
+    try { res.json({ solicitud: await logica.cancelarSolicitud(req.params.id, req.usuario) }); }
+    catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo cancelar la solicitud" }); }
+});
+
 app.use("/api/usuarios", exigirSesion);
 app.patch("/api/usuarios/:id/perfil", async (req, res) => {
     try { res.json({ usuario: await logica.cambiarPerfilEquipo(req.params.id, req.body?.rol, req.usuario) }); }

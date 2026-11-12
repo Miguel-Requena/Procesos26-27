@@ -126,6 +126,17 @@ async function consultarTransportes(tipo, propietarioId, id) {
         _id: 0, id: 1, referencia: 1, origen: 1, destino: 1, fecha: 1, estado: 1
     } }).sort({ id: 1 }).toArray());
 }
+async function detalleSolicitud(clienteId, id) {
+    return ejecutar(() => db.collection("solicitudes").findOne({ id, clienteId }));
+}
+async function cancelarSolicitud(clienteId, id, fecha) {
+    return ejecutar(() => db.collection("solicitudes").findOneAndUpdate(
+        { id, clienteId, estado: { $in: ["pendiente", "pendiente_recogida"] } },
+        [{ $set: { estado: "cancelada", canceladaEn: fecha,
+            historial: { $concatArrays: [{ $ifNull: ["$historial", []] },
+                [{ estado: "cancelada", estadoAnterior: "$estado", fecha }]] } } }],
+        { returnDocument: "after" }));
+}
 async function buscarSolicitudEnvio(clienteId, claveEnvio) {
     return ejecutar(() => db.collection("solicitudes").findOne({ clienteId, claveEnvio }, { projection: { _id: 0 } }));
 }
@@ -170,4 +181,4 @@ async function crearSolicitud(registro) {
 }
 async function limpiar() { throw new Error("No se permite limpiar la base MongoDB de la aplicación"); }
 async function cerrar() { await client.close(); }
-module.exports = { guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };
+module.exports = { detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };

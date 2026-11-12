@@ -121,7 +121,7 @@ No marcar el hito como terminado hasta completar la comprobación pública.
 
 El registro con contraseña y el alta mediante Google crean cuentas de **cliente**. Las cuentas antiguas con rol `usuario` se migran a `cliente` al inicializar el almacenamiento; los administradores se conservan. Hay tres paneles protegidos: `/api/panel/cliente`, `/api/panel/conductor` y `/api/panel/administrador`. Cada uno admite únicamente su perfil. El servidor consulta la cuenta en cada petición: cambiar HTML, cabeceras o el rol enviado al login no concede permisos.
 
-Los paneles muestran el espacio de cada perfil; las solicitudes, rutas y entregas se implementarán en los siguientes PBIs. No muestran datos operativos compartidos.
+Los paneles muestran los datos autorizados de cada perfil. P17 implementa el alta de recogidas y P18 su consulta y cancelación por el cliente. La planificación de rutas y la actualización de entregas corresponden a los siguientes PBIs.
 
 Para asignar un perfil al equipo, primero debe registrar y confirmar su cuenta. Desde una terminal de confianza en la raíz del proyecto, con el `.env` habitual:
 
@@ -149,4 +149,24 @@ El panel de cliente ofrece **Nueva solicitud** para pedir una recogida en fábri
 
 La clave se conserva al reintentar sin modificar los datos y se renueva tras el éxito o al cambiar el contenido. Un índice único de MongoDB por cliente y clave impide duplicados incluso en peticiones concurrentes; reutilizar una clave con otros datos responde 409. La clave y su huella persisten y no se exponen en la respuesta pública. Clientes diferentes pueden utilizar la misma clave. Una nueva clave permite una solicitud independiente con el mismo contenido. La prevención cubre doble envío y reintentos del formulario, no identifica automáticamente solicitudes parecidas ni recupera un borrador tras recargar la página.
 
-MongoDB guarda todos los datos en `solicitudes`. SQLite replica el alta de resumen y detalles en una transacción exclusivamente para pruebas. Los listados mantienen la proyección reducida y el aislamiento de P16; el detalle ampliado y la cancelación se abordarán en P18. El formulario conserva los datos ante errores y avisa del resultado sin insertar ejemplos en la base habitual.
+MongoDB guarda todos los datos en `solicitudes`. SQLite replica el alta de resumen y detalles en una transacción exclusivamente para pruebas. Los listados mantienen la proyección reducida y el aislamiento de P16; el detalle ampliado y la cancelación se implementan en P18. El formulario conserva los datos ante errores y avisa del resultado sin insertar ejemplos en la base habitual.
+
+### P18: consulta y cancelación de solicitudes (T44 y T45)
+
+El cliente dispone de **Ver detalle** en sus solicitudes, con referencia, origen,
+destino (o pendiente de planificación), fecha, estado, datos de recogida, mercancía,
+observaciones e historial. **Actualizar detalle** vuelve a consultar el estado.
+
+`POST /api/solicitudes/:id/cancelacion` permite cancelar únicamente al cliente
+propietario y solo desde `pendiente_recogida` o el estado legado `pendiente`.
+La confirmación de la interfaz no sustituye la validación del servidor: MongoDB
+actualiza estado e historial atómicamente con filtro de propietario y estado.
+Planificadas, asignadas, en tránsito, finalizadas y canceladas responden 409.
+La cancelación conserva el registro y sus datos, guarda `canceladaEn` y añade el
+estado anterior al historial. El listado y los indicadores se actualizan al terminar.
+
+Las consultas ajenas o inexistentes devuelven 404. Otros perfiles no pueden
+cancelar; la consulta administrativa previa de P16 mantiene su resumen. El detalle
+completo del cliente excluye identificadores de propietario y datos internos.
+La consulta y cancelación persisten en Atlas y sobreviven a reinicios de Cloud Run.
+Véase [alcance, criterios y pruebas de P18](documentacion/P18-consulta-cancelacion.md).

@@ -129,6 +129,11 @@ async function consultarTransportes(tipo, actor, id) {
     const rol = tipo === "solicitudes" ? "cliente" : tipo === "rutas" ? "conductor" : undefined;
     if (!rol || ![rol, "administrador"].includes(usuario.rol)) throw errorAcceso("No tienes permiso para consultar estos registros", 403);
     if (id !== undefined && (typeof id !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(id))) throw errorAcceso("Registro no encontrado", 404);
+    if (tipo === "solicitudes" && id !== undefined && usuario.rol === "cliente") {
+        const solicitud = await datos.detalleSolicitud(usuario.id, id);
+        if (!solicitud) throw errorAcceso("Registro no encontrado", 404);
+        return require("./solicitudes").publica(solicitud);
+    }
     const registros = await datos.consultarTransportes(tipo, usuario.rol === "administrador" ? undefined : usuario.id, id);
     if (id !== undefined && !registros.length) throw errorAcceso("Registro no encontrado", 404);
     return id === undefined ? registros : registros[0];
@@ -137,6 +142,15 @@ async function consultarTransportes(tipo, actor, id) {
 async function listarUsuarios(actor) {
     await exigirAdministrador(actor);
     return (await datos.listar()).map(publico);
+}
+async function cancelarSolicitud(id, actor) {
+    const usuario = await usuarioAutorizado(actor);
+    if (usuario.rol !== "cliente") throw errorAcceso("Solo el cliente propietario puede cancelar una solicitud", 403);
+    if (typeof id !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(id)) throw errorAcceso("Registro no encontrado", 404);
+    if (!await datos.detalleSolicitud(usuario.id, id)) throw errorAcceso("Registro no encontrado", 404);
+    const solicitud = await datos.cancelarSolicitud(usuario.id, id, new Date().toISOString());
+    if (!solicitud) throw errorAcceso("Solo se pueden cancelar solicitudes pendientes. Actualiza el detalle para consultar su estado actual.", 409);
+    return require("./solicitudes").publica(solicitud);
 }
 
 async function obtenerUsuarioSesion(id) {
@@ -185,11 +199,13 @@ async function crearSolicitud(entrada, claveEnvio, actor) {
     const id = require("node:crypto").randomUUID();
     const registro = { ...contenido, id, referencia: `TD-${id.slice(0, 8).toUpperCase()}`, clienteId: usuario.id,
         estado: "pendiente_recogida", creadaEn: new Date().toISOString(), claveEnvio, huella: firma };
+    registro.historial = [{ estado: registro.estado, fecha: registro.creadaEn }];
     const resultado = await datos.crearSolicitud(registro);
     return { solicitud: contrato.publica(resultado.registro), creada: resultado.creada };
 }
 
 module.exports = {
+    cancelarSolicitud,
     crearSolicitud,
     cambiarPerfilEquipo, consultarTransportes,
     obtenerPanel,

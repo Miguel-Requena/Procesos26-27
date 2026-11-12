@@ -25,6 +25,8 @@ window.api = {
     listarUsuarios() { return this.peticion("/usuarios"); },
     cambiarPerfil(id, rol) { return this.peticion(`/usuarios/${encodeURIComponent(id)}/perfil`, { method: "PATCH", body: JSON.stringify({ rol }) }); },
     consultarTransportes(tipo) { return this.peticion(`/${tipo}`); },
+    detalleSolicitud(id) { return this.peticion(`/solicitudes/${encodeURIComponent(id)}`); },
+    cancelarSolicitud(id) { return this.peticion(`/solicitudes/${encodeURIComponent(id)}/cancelacion`, { method: "POST" }); },
     servicios() { return this.peticion("/servicios"); },
     confirmar(token) { return this.peticion("/confirmacion", { method: "POST", body: JSON.stringify({ token }) }); },
     reenviar(email) { return this.peticion("/confirmacion/reenviar", { method: "POST", body: JSON.stringify({ email }) }); },

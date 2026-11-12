@@ -138,6 +138,13 @@
                 <p class="ayuda">Habilita como conductores las cuentas confirmadas del equipo o devuélvelas al perfil de cliente.</p>
                 <div id="lista-cuentas"></div>
             </section>
+            <dialog id="detalle-solicitud" aria-labelledby="titulo-detalle-solicitud">
+                <div class="seccion-barra"><div><span class="antetitulo">MI SOLICITUD</span><h3 id="titulo-detalle-solicitud" tabindex="-1">Detalle de la solicitud</h3></div><button id="cerrar-detalle-solicitud" class="boton-secundario" type="button">Cerrar</button></div>
+                <p id="estado-detalle-solicitud" role="status" aria-live="polite"></p>
+                <div id="contenido-detalle-solicitud"></div>
+                <div class="detalle-acciones"><button id="actualizar-detalle-solicitud" class="boton-secundario" type="button">Actualizar detalle</button><button id="solicitar-cancelacion" type="button" hidden>Cancelar solicitud</button></div>
+                <div id="confirmar-cancelacion" hidden><h4>¿Cancelar esta solicitud?</h4><p>Se conservarán sus datos y su historial. Esta acción no se puede deshacer.</p><div class="detalle-acciones"><button id="mantener-solicitud" class="boton-secundario" type="button">Mantener solicitud</button><button id="confirmar-cancelacion-boton" type="button">Sí, cancelar solicitud</button></div></div>
+            </dialog>
             <aside class="red-discreta" aria-label="Nuestra red de transporte"><div><span class="antetitulo">CONECTAMOS DESTINOS</span><p>De origen a destino.</p><span>Yecla <i>→</i> Rubí <i>→</i> Palma de Mallorca</span></div><div id="camion-panel" aria-hidden="true"></div></aside>
             <p class="ayuda">Las fechas y la planificación de transportes se confirman con el equipo.</p>
             </div>
