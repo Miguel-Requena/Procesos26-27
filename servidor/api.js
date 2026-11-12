@@ -143,6 +143,19 @@ app.post("/api/solicitudes/:id/cancelacion", exigirSesion, async (req, res) => {
     catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo cancelar la solicitud" }); }
 });
 
+app.get("/api/administracion/solicitudes", exigirSesion, async (req, res) => {
+    try { res.json({ solicitudes: await logica.consultarSolicitudesAdministracion(req.query, req.usuario) }); }
+    catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudieron consultar las solicitudes" }); }
+});
+app.get("/api/administracion/solicitudes/:id", exigirSesion, async (req, res) => {
+    try { res.json({ registro: await logica.consultarSolicitudesAdministracion({}, req.usuario, req.params.id) }); }
+    catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo consultar la solicitud" }); }
+});
+app.post("/api/administracion/solicitudes/:id/revision", exigirSesion, async (req, res) => {
+    try { res.json({ solicitud: await logica.revisarSolicitud(req.params.id, req.body, req.usuario) }); }
+    catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo revisar la solicitud" }); }
+});
+
 app.use("/api/usuarios", exigirSesion);
 app.patch("/api/usuarios/:id/perfil", async (req, res) => {
     try { res.json({ usuario: await logica.cambiarPerfilEquipo(req.params.id, req.body?.rol, req.usuario) }); }

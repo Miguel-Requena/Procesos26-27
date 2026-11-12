@@ -93,6 +93,22 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         assert.equal(cancelada.historial.length,2);
         assert.equal(cancelada.historial[1].estadoAnterior,'pendiente_recogida');
         assert.equal((await datos.buscarSolicitudEnvio(usuario.id,'mongo-envio-12345678')).estado,'cancelada');
+        const paraRevisar = (await logica.crearSolicitud(entrada,'mongo-p19-12345678',usuario)).solicitud;
+        const sedeAsignada = await logica.revisarSolicitud(paraRevisar.id,{accion:'asignar_sede',revision:0,sedeOperativa:'Rubí'},admin);
+        assert.equal(sedeAsignada.revision,1);
+        assert.equal(sedeAsignada.historial.at(-1).responsableId,admin.id);
+        const motivo = '$estado: sin capacidad en la fecha solicitada';
+        const revisiones = await Promise.allSettled([
+            logica.revisarSolicitud(paraRevisar.id,{accion:'rechazar',revision:1,motivo},admin),
+            logica.revisarSolicitud(paraRevisar.id,{accion:'rechazar',revision:1,motivo},admin)]);
+        assert.equal(revisiones.filter(r=>r.status==='fulfilled').length,1);
+        assert.equal(revisiones.find(r=>r.status==='rejected').reason.estado,409);
+        const revisada = await logica.consultarTransportes('solicitudes',usuario,paraRevisar.id);
+        assert.equal(revisada.motivoRechazo,motivo);
+        assert.equal(revisada.historial.at(-1).motivo,motivo);
+        assert.equal(revisada.historial.at(-1).responsableId,undefined);
+        const filtradas = await logica.consultarSolicitudesAdministracion({estado:'rechazada',desde:entrada.fecha,hasta:entrada.fecha},admin);
+        assert.ok(filtradas.some(s=>s.id===paraRevisar.id));
         assert.equal(await logica.comprobarUsuarioActivo(usuario.id, admin), true);
         assert.equal(Object.hasOwn((await logica.listarUsuarios(admin))[0], 'clave'), false);
         const intentos = await Promise.allSettled([logica.registrarUsuario(${JSON.stringify(duplicado)}, 'clave-prueba'),
@@ -109,5 +125,9 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         assert.equal((await datos.buscarSolicitudEnvio(anterior.id,'mongo-envio-12345678')).observaciones,'Con ascensor');
         assert.equal((await datos.buscarSolicitudEnvio(anterior.id,'mongo-envio-12345678')).estado,'cancelada');
         assert.equal((await datos.buscarSolicitudEnvio(anterior.id,'mongo-envio-12345678')).historial.length,2);
+        const revisada = await datos.buscarSolicitudEnvio(anterior.id,'mongo-p19-12345678');
+        assert.equal(revisada.estado,'rechazada');
+        assert.equal(revisada.sedeOperativa,'Rubí');
+        assert.equal(revisada.historial.length,3);
         await logica.eliminarUsuario(admin.id, admin);`);
 });

@@ -129,9 +129,9 @@ db.exec(`CREATE TABLE IF NOT EXISTS solicitudes_detalles (
     UNIQUE(clienteId, claveEnvio));`);
 db.exec("CREATE TABLE IF NOT EXISTS historial_solicitudes (id TEXT PRIMARY KEY, contenido TEXT NOT NULL)");
 function detalleSolicitud(clienteId, id) {
-    const resumen = db.prepare("SELECT id,referencia,origen,destino,fecha,estado FROM transportes WHERE tipo='solicitudes' AND id=? AND propietarioId=?").get(id, clienteId);
+    const resumen = db.prepare("SELECT id,referencia,origen,destino,fecha,estado FROM transportes WHERE tipo='solicitudes' AND id=?" + (clienteId === undefined ? "" : " AND propietarioId=?")).get(...(clienteId === undefined ? [id] : [id, clienteId]));
     if (!resumen) return undefined;
-    const detalle = db.prepare("SELECT contenido FROM solicitudes_detalles WHERE id=? AND clienteId=?").get(id, clienteId);
+    const detalle = db.prepare("SELECT contenido FROM solicitudes_detalles WHERE id=?").get(id);
     const historial = db.prepare("SELECT contenido FROM historial_solicitudes WHERE id=?").get(id);
     return { ...(detalle ? JSON.parse(detalle.contenido) : {}), ...resumen, ...(historial ? JSON.parse(historial.contenido) : {}) };
 }
@@ -141,13 +141,41 @@ function cancelarSolicitud(clienteId, id, fecha) {
         const anterior = detalleSolicitud(clienteId, id);
         const cambio = db.prepare("UPDATE transportes SET estado='cancelada' WHERE tipo='solicitudes' AND id=? AND propietarioId=? AND estado IN ('pendiente','pendiente_recogida')").run(id, clienteId);
         if (!cambio.changes) { db.exec("COMMIT"); return undefined; }
-        const registro = { ...anterior, estado: "cancelada", canceladaEn: fecha,
+        const registro = { ...anterior, estado: "cancelada", canceladaEn: fecha, revision: (anterior.revision || 0) + 1,
             historial: [...(anterior.historial || []), { estado: "cancelada", estadoAnterior: anterior.estado, fecha }] };
-        db.prepare("INSERT INTO historial_solicitudes VALUES (?,?) ON CONFLICT(id) DO UPDATE SET contenido=excluded.contenido").run(id, JSON.stringify({ historial: registro.historial, canceladaEn: fecha }));
+        db.prepare("INSERT INTO historial_solicitudes VALUES (?,?) ON CONFLICT(id) DO UPDATE SET contenido=excluded.contenido").run(id, JSON.stringify({ historial: registro.historial, canceladaEn: fecha, revision: registro.revision, sedeOperativa: registro.sedeOperativa, motivoRechazo: registro.motivoRechazo }));
         const guardada = db.prepare("SELECT contenido FROM solicitudes_detalles WHERE id=? AND clienteId=?").get(id, clienteId);
         if (guardada) db.prepare("UPDATE solicitudes_detalles SET contenido=? WHERE id=? AND clienteId=?").run(JSON.stringify({ ...JSON.parse(guardada.contenido), ...registro }), id, clienteId);
         db.exec("COMMIT");
         return registro;
+    } catch (error) { db.exec("ROLLBACK"); throw error; }
+}
+function listarSolicitudesAdministracion(filtros) {
+    const clausulas = ["tipo='solicitudes'"], valores = [];
+    for (const [campo, operador, valor] of [["estado", "=", filtros.estado], ["fecha", ">=", filtros.desde], ["fecha", "<=", filtros.hasta]]) {
+        if (valor) { clausulas.push(`${campo}${operador}?`); valores.push(valor); }
+    }
+    return db.prepare(`SELECT id,referencia,origen,destino,fecha,estado FROM transportes WHERE ${clausulas.join(" AND ")} ORDER BY fecha,id`).all(...valores).map(fila => {
+        const registro = detalleSolicitud(undefined, fila.id);
+        return { ...fila, sedeOperativa: registro.sedeOperativa, motivoRechazo: registro.motivoRechazo, revision: registro.revision || 0 };
+    });
+}
+function revisarSolicitud(id, cambio, responsableId, fecha) {
+    db.exec("BEGIN IMMEDIATE");
+    try {
+        const anterior = detalleSolicitud(undefined, id);
+        const permitidos = cambio.accion === "asignar_sede" ? ["pendiente", "pendiente_recogida", "aceptada"] : ["pendiente", "pendiente_recogida"];
+        if (!anterior || !permitidos.includes(anterior.estado) || (anterior.revision || 0) !== cambio.revision) { db.exec("COMMIT"); return undefined; }
+        const estado = cambio.accion === "aceptar" ? "aceptada" : cambio.accion === "rechazar" ? "rechazada" : anterior.estado;
+        const evento = { accion: cambio.accion, estadoAnterior: anterior.estado, estado, fecha, responsable: "Administración", responsableId,
+            ...(cambio.sedeOperativa ? { sede: cambio.sedeOperativa, sedeAnterior: anterior.sedeOperativa || null } : {}), ...(cambio.motivoRechazo ? { motivo: cambio.motivoRechazo } : {}) };
+        const metadatos = { revision: cambio.revision + 1, historial: [...(anterior.historial || []), evento],
+            sedeOperativa: cambio.sedeOperativa || anterior.sedeOperativa, motivoRechazo: cambio.motivoRechazo || anterior.motivoRechazo };
+        db.prepare("UPDATE transportes SET estado=? WHERE tipo='solicitudes' AND id=?").run(estado, id);
+        db.prepare("INSERT INTO historial_solicitudes VALUES (?,?) ON CONFLICT(id) DO UPDATE SET contenido=excluded.contenido").run(id, JSON.stringify(metadatos));
+        const guardada = db.prepare("SELECT contenido FROM solicitudes_detalles WHERE id=?").get(id);
+        if (guardada) db.prepare("UPDATE solicitudes_detalles SET contenido=? WHERE id=?").run(JSON.stringify({ ...JSON.parse(guardada.contenido), ...metadatos, estado }), id);
+        db.exec("COMMIT"); return { ...anterior, ...metadatos, estado };
     } catch (error) { db.exec("ROLLBACK"); throw error; }
 }
 function buscarSolicitudEnvio(clienteId, claveEnvio) {
@@ -192,5 +220,5 @@ function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     return buscarPorId(id);
 }
 function cerrar() { db.close(); }
-module.exports = { detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
+module.exports = { listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
     ...(process.env.NODE_ENV === "test" ? { configurarCuentaPrueba, configurarTransportePrueba } : {}) };

@@ -170,3 +170,17 @@ cancelar; la consulta administrativa previa de P16 mantiene su resumen. El detal
 completo del cliente excluye identificadores de propietario y datos internos.
 La consulta y cancelación persisten en Atlas y sobreviven a reinicios de Cloud Run.
 Véase [alcance, criterios y pruebas de P18](documentacion/P18-consulta-cancelacion.md).
+
+### P19: revisión administrativa (T54 y T55)
+
+Administración dispone de filtros por estado y rango de fecha solicitada, detalle
+completo y revisión de solicitudes. Puede asignar sede operativa (Yecla, Rubí o
+Palma de Mallorca) y aceptar o rechazar una pendiente. El rechazo exige motivo,
+visible al cliente en su detalle. Cada cambio guarda fecha y responsable.
+
+Los endpoints `/api/administracion/solicitudes`, `/:id` y `/:id/revision` son
+exclusivos de administración. Las mutaciones validan estado y versión en una
+operación atómica en MongoDB; una revisión antigua o un conflicto con cancelación
+responde 409 y recarga el detalle. Las solicitudes posteriores a pendiente no se
+pueden aceptar/rechazar; la sede aún se puede asignar en estado aceptado.
+Véase [criterios, API y pruebas de P19](documentacion/P19-revision-administrativa.md).

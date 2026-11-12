@@ -42,6 +42,7 @@ for (const enlace of enlacesPrivados) enlace.addEventListener("click", () => act
 let versionPanel = 0;
 let versionDatos = 0;
 let rolActual;
+let filtrosAdministracion = {};
 const camionPanel = document.querySelector(".camion-marca").cloneNode(true);
 document.getElementById("camion-panel").append(camionPanel);
 function grupoEstado(valor) {
@@ -49,7 +50,8 @@ function grupoEstado(valor) {
     if (["completada", "completado", "entregado", "entregada", "finalizada", "finalizado"].includes(texto)) return "completado";
     if (["pendiente", "pendiente_recogida", "asignada", "asignado"].includes(texto)) return "pendiente";
     if (["en_curso", "en_transito", "en_reparto"].includes(texto)) return "en-curso";
-    if (texto === "cancelada") return "cancelada";
+    if (["cancelada", "rechazada"].includes(texto)) return "cancelada";
+    if (texto === "aceptada") return "completado";
     return "otro";
 }
 function etiquetaEstado(valor) {
@@ -77,7 +79,7 @@ async function cargarDatosPanel() {
     try {
         const [cuentas, ...respuestas] = await Promise.all([
             rol === "administrador" ? window.api.listarUsuarios() : null,
-            ...tipos.map(tipo => window.api.consultarTransportes(tipo))
+            ...tipos.map(tipo => rol === "administrador" && tipo === "solicitudes" ? window.api.listarSolicitudesAdministracion(filtrosAdministracion) : window.api.consultarTransportes(tipo))
         ]);
         if (version !== versionPanel || carga !== versionDatos) return;
         if (cuentas) {
@@ -133,6 +135,10 @@ async function cargarDatosPanel() {
                 encabezado.textContent = rol === "cliente" ? "Tu próximo transporte empieza aquí" : tipos[i] === "rutas" ? "Todavía no hay rutas asignadas" : "No hay solicitudes por ahora";
                 const ayuda = document.createElement("p");
                 ayuda.textContent = rol === "cliente" ? "Crea tu primera solicitud e indica dónde debemos recoger tu mercancía." : rol === "conductor" ? "Cuando te asignen una ruta, podrás consultar aquí su recorrido y sus detalles." : "La actividad del equipo aparecerá aquí cuando esté disponible.";
+                if (rol === "administrador" && tipos[i] === "solicitudes" && Object.keys(filtrosAdministracion).length) {
+                    encabezado.textContent = "No hay solicitudes que coincidan con los filtros";
+                    ayuda.textContent = "Prueba otras fechas o limpia los filtros para consultar todas las solicitudes.";
+                }
                 vacio.append(icono, encabezado, ayuda);
                 if (rol === "cliente") {
                     const boton = document.createElement("button");
@@ -160,7 +166,7 @@ async function cargarDatosPanel() {
                 insignia.className = `insignia-estado estado-${grupoEstado(registro.estado)}`;
                 insignia.textContent = etiquetaEstado(registro.estado);
                 ficha.append(nombre, insignia, detalle, datos);
-                if (rol === "cliente") {
+                if (tipos[i] === "solicitudes" && ["cliente", "administrador"].includes(rol)) {
                     detalle.textContent = `${registro.origen || "Origen pendiente"} → ${registro.destino || "Destino pendiente de planificación"}`;
                     const ver = document.createElement("button");
                     ver.type = "button"; ver.className = "boton-secundario ver-solicitud";
@@ -177,7 +183,10 @@ async function cargarDatosPanel() {
         const registros = respuestas.flatMap((respuesta, i) => respuesta[tipos[i]]);
         document.getElementById("metrica-segunda").textContent = rol === "administrador" ? respuestas[1].rutas.length : registros.filter(item => grupoEstado(item.estado) === "pendiente").length;
         document.getElementById("metrica-tercera").textContent = rol === "administrador" ? cuentas.usuarios.filter(cuenta => cuenta.activo && cuenta.rol === "conductor").length : registros.filter(item => grupoEstado(item.estado) === "completado").length;
-        if (rol === "administrador") document.getElementById("resumen-total").textContent = respuestas[0].solicitudes.length;
+        if (rol === "administrador") {
+            document.getElementById("resumen-total").textContent = respuestas[0].solicitudes.length;
+            document.getElementById("resumen-ayuda").textContent = Object.keys(filtrosAdministracion).length ? "Según los filtros de estado y fecha" : "Solicitudes de todos los clientes";
+        }
         estadoPanel.textContent = "Datos actualizados.";
     } catch (error) {
         if (version !== versionPanel || carga !== versionDatos) return;
@@ -192,7 +201,8 @@ const dialogoSolicitud = document.getElementById("detalle-solicitud");
 const estadoDetalle = document.getElementById("estado-detalle-solicitud");
 const contenidoDetalle = document.getElementById("contenido-detalle-solicitud");
 const confirmarCancelacion = document.getElementById("confirmar-cancelacion");
-let idDetalleSolicitud, versionDetalle = 0, cancelandoSolicitud = false;
+let idDetalleSolicitud, versionDetalle = 0, cancelandoSolicitud = false, revisandoSolicitud = false;
+const formularioRevision = document.getElementById("revision-administrativa");
 function cerrarDetalleSolicitud() {
     versionDetalle++;
     idDetalleSolicitud = undefined;
@@ -202,6 +212,7 @@ function cerrarDetalleSolicitud() {
 }
 function controlesDetalle(cargando) {
     for (const id of ["actualizar-detalle-solicitud", "solicitar-cancelacion", "confirmar-cancelacion-boton", "mantener-solicitud"]) document.getElementById(id).disabled = cargando;
+    for (const campo of formularioRevision.querySelectorAll("button, input, select, textarea")) campo.disabled = cargando;
     contenidoDetalle.setAttribute("aria-busy", String(cargando));
 }
 function mostrarDetalleSolicitud(registro) {
@@ -221,6 +232,8 @@ function mostrarDetalleSolicitud(registro) {
     campo("Destino", registro.destino || "Pendiente de planificación en la base de Yecla");
     campo("Fecha solicitada", registro.fecha);
     campo("Fabricante", registro.fabricante);
+    campo("Sede operativa", registro.sedeOperativa || "Sin asignar");
+    if (registro.motivoRechazo) campo("Motivo del rechazo", registro.motivoRechazo);
     campo("Contacto de recogida", registro.contactoRecogida ? `${registro.contactoRecogida.nombre} · ${registro.contactoRecogida.telefono}` : null);
     campo("Observaciones", registro.observaciones || "Sin observaciones");
     contenidoDetalle.append(datos);
@@ -243,22 +256,32 @@ function mostrarDetalleSolicitud(registro) {
     if (!historial.children.length) { const fila = document.createElement("li"); fila.textContent = "Sin cambios registrados."; historial.append(fila); }
     contenidoDetalle.append(historial);
     const pendiente = ["pendiente", "pendiente_recogida"].includes(registro.estado);
-    document.getElementById("solicitar-cancelacion").hidden = !pendiente;
-    if (!pendiente) { const nota = document.createElement("p"); nota.className = "ayuda"; nota.textContent = registro.estado === "cancelada" ? "Solicitud cancelada. Sus datos y su historial se conservan." : "Esta solicitud ya no está pendiente y no se puede cancelar."; contenidoDetalle.append(nota); }
+    formularioRevision.hidden = rolActual !== "administrador" || !["pendiente", "pendiente_recogida", "aceptada"].includes(registro.estado);
+    formularioRevision.dataset.revision = registro.revision || 0;
+    document.getElementById("revision-sede").value = registro.sedeOperativa || "";
+    document.getElementById("revision-motivo").value = "";
+    document.getElementById("revision-motivo").setCustomValidity("");
+    for (const boton of formularioRevision.querySelectorAll('button[value="aceptar"], button[value="rechazar"]')) boton.hidden = !pendiente;
+    document.getElementById("revision-motivo").hidden = !pendiente;
+    document.querySelector('label[for="revision-motivo"]').hidden = !pendiente;
+    document.getElementById("solicitar-cancelacion").hidden = !pendiente || rolActual !== "cliente";
+    if (!pendiente && rolActual === "cliente") { const nota = document.createElement("p"); nota.className = "ayuda"; nota.textContent = registro.estado === "cancelada" ? "Solicitud cancelada. Sus datos y su historial se conservan." : "Esta solicitud ya no está pendiente y no se puede cancelar."; contenidoDetalle.append(nota); }
     dialogoSolicitud.scrollTop = 0;
     document.getElementById("titulo-detalle-solicitud").focus({ preventScroll: true });
 }
 function etiquetaHistorial(evento) {
-    return evento.estadoAnterior ? `${etiquetaEstado(evento.estadoAnterior)} → ${etiquetaEstado(evento.estado)}` : etiquetaEstado(evento.estado);
+    const transicion = evento.accion === "asignar_sede" ? `Sede operativa: ${evento.sede}` : evento.estadoAnterior ? `${etiquetaEstado(evento.estadoAnterior)} → ${etiquetaEstado(evento.estado)}` : etiquetaEstado(evento.estado);
+    return `${transicion}${evento.responsable ? " · " + evento.responsable : ""}${evento.responsableId ? " #" + evento.responsableId : ""}${evento.motivo ? " · " + evento.motivo : ""}`;
 }
 async function cargarDetalleSolicitud() {
     const version = versionPanel, peticion = ++versionDetalle, id = idDetalleSolicitud;
-    if (!id || rolActual !== "cliente") return;
+    if (!id || !["cliente", "administrador"].includes(rolActual)) return;
     confirmarCancelacion.hidden = true;
+    formularioRevision.hidden = true;
     document.getElementById("solicitar-cancelacion").hidden = true;
     contenidoDetalle.replaceChildren(); controlesDetalle(true); estadoDetalle.textContent = "Cargando solicitud…";
     try {
-        const { registro } = await window.api.detalleSolicitud(id);
+        const { registro } = await (rolActual === "administrador" ? window.api.detalleSolicitudAdministracion(id) : window.api.detalleSolicitud(id));
         if (version !== versionPanel || peticion !== versionDetalle) return;
         mostrarDetalleSolicitud(registro); estadoDetalle.textContent = "Detalle actualizado.";
     } catch (error) {
@@ -268,6 +291,7 @@ async function cargarDetalleSolicitud() {
 }
 function abrirDetalleSolicitud(id) {
     idDetalleSolicitud = id;
+    document.getElementById("etiqueta-detalle").textContent = rolActual === "administrador" ? "REVISIÓN / ADMINISTRACIÓN" : "MI SOLICITUD";
     document.getElementById("titulo-detalle-solicitud").textContent = "Detalle de la solicitud";
     if (!dialogoSolicitud.open) dialogoSolicitud.showModal();
     cargarDetalleSolicitud();
@@ -308,10 +332,47 @@ document.getElementById("confirmar-cancelacion-boton").addEventListener("click",
     }
 });
 
+document.getElementById("filtros-administracion").addEventListener("submit", evento => {
+    evento.preventDefault();
+    if (rolActual !== "administrador") return;
+    filtrosAdministracion = Object.fromEntries([["estado", "filtro-estado"], ["desde", "filtro-desde"], ["hasta", "filtro-hasta"]].map(([clave, id]) => [clave, document.getElementById(id).value]).filter(([,valor]) => valor));
+    cargarDatosPanel();
+});
+document.getElementById("limpiar-filtros").addEventListener("click", () => {
+    document.getElementById("filtros-administracion").reset(); filtrosAdministracion = {};
+    if (rolActual === "administrador") cargarDatosPanel();
+});
+document.getElementById("revision-motivo").addEventListener("input", evento => evento.target.setCustomValidity(""));
+formularioRevision.addEventListener("submit", async evento => {
+    evento.preventDefault();
+    if (revisandoSolicitud || rolActual !== "administrador" || !idDetalleSolicitud) return;
+    const accion = evento.submitter?.value;
+    const motivo = document.getElementById("revision-motivo");
+    if (accion === "rechazar" && !motivo.value.trim()) { estadoDetalle.textContent = "Indica el motivo del rechazo que verá el cliente."; motivo.focus(); return; }
+    const sede = document.getElementById("revision-sede").value;
+    const datos = { accion, revision: Number(formularioRevision.dataset.revision), ...(sede ? { sedeOperativa: sede } : {}), ...(accion === "rechazar" ? { motivo: motivo.value } : {}) };
+    const version = versionPanel, peticion = versionDetalle, id = idDetalleSolicitud;
+    revisandoSolicitud = true; controlesDetalle(true); estadoDetalle.textContent = "Guardando revisión…";
+    try {
+        const { solicitud } = await window.api.revisarSolicitud(id, datos);
+        if (version !== versionPanel) return;
+        await cargarDatosPanel();
+        if (version !== versionPanel || peticion !== versionDetalle) return;
+        mostrarDetalleSolicitud(solicitud); estadoDetalle.textContent = "Revisión guardada. El cliente puede consultar el resultado.";
+    } catch (error) {
+        if (version !== versionPanel || peticion !== versionDetalle) return;
+        if (error.estado === 409) { await cargarDatosPanel(); if (version !== versionPanel || peticion !== versionDetalle) return; await cargarDetalleSolicitud(); }
+        if (version === versionPanel && id === idDetalleSolicitud) estadoDetalle.textContent = error.message;
+    } finally { revisandoSolicitud = false; if (version === versionPanel && id === idDetalleSolicitud) controlesDetalle(false); }
+});
+
 document.getElementById("actualizar-panel").addEventListener("click", cargarDatosPanel);
 async function mostrarUsuario(usuario) {
     const version = ++versionPanel;
     rolActual = undefined;
+    filtrosAdministracion = {};
+    document.getElementById("filtros-administracion").reset();
+    document.getElementById("filtros-administracion").hidden = true;
     document.getElementById("acciones-cliente").hidden = true;
     cerrarDetalleSolicitud();
     restablecerSolicitud();
@@ -356,6 +417,7 @@ async function mostrarUsuario(usuario) {
         document.body.classList.add("sesion-activa");
         panelSesion.hidden = false;
         rolActual = panel.rol;
+        document.getElementById("filtros-administracion").hidden = panel.rol !== "administrador";
         document.getElementById("acciones-cliente").hidden = panel.rol !== "cliente";
         await cargarDatosPanel();
     } catch (error) {

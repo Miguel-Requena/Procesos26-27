@@ -391,3 +391,16 @@ body:not(.sesion-activa) .cancelar-vinculo:hover { background: #eceeea; }
 #confirmar-cancelacion h4 { margin-top: 0; }
 #confirmar-cancelacion p { font-size: 12px; line-height: 1.7; }
 @media (max-width: 640px) { #detalle-solicitud { padding: 20px; max-height: calc(100dvh - 24px); } .datos-solicitud { grid-template-columns: 1fr; gap: 4px; padding: 16px; } .datos-solicitud dd { margin-bottom: 12px; } .detalle-acciones button { flex: 1; } }
+
+/* P19: filtros y revisión administrativa. */
+.filtros-administracion { grid-template-columns: minmax(150px, 1.3fr) repeat(2, minmax(135px, 1fr)) auto auto; align-items: end; gap: 12px; margin: 22px 0 18px; padding: 18px; background: #f7f8fa; border-radius: 10px; }
+.filtros-administracion label { display: block; font-size: 10px; margin: 0 0 7px; }
+.filtros-administracion input, .filtros-administracion select { font-size: 12px; min-height: 43px; padding: 10px; }
+.filtros-administracion > button { font-size: 11px; margin: 0; min-height: 43px; padding: 10px 13px; }
+.revision-administrativa { margin-top: 24px; padding: 20px; border: 1px solid #dfe4eb; border-radius: 10px; background: #f7f8fa; }
+#detalle-solicitud .revision-administrativa h4 { margin: 0 0 8px; }
+.revision-administrativa .detalle-acciones { margin-top: 12px; }
+.revision-administrativa .boton-rechazar { background: #fff; border: 1px solid #e5b8bf; color: #a31c30; }
+.revision-administrativa .boton-rechazar:hover { background: #fff0f1; }
+@media (max-width: 1200px) { .filtros-administracion { grid-template-columns: repeat(2, minmax(0, 1fr)); } .filtros-administracion > div:first-child { grid-column: 1 / -1; } }
+@media (max-width: 640px) { .filtros-administracion { padding: 14px; gap: 12px; } .filtros-administracion input, .filtros-administracion select { font-size: 16px; min-width: 0; } .filtros-administracion > div { min-width: 0; } .revision-administrativa { padding: 16px; } }

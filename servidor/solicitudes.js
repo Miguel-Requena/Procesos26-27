@@ -40,9 +40,43 @@ function comprobarReintento(registro, firma) {
     if (registro.huella !== firma) throw Object.assign(new Error("Este envío ya se utilizó con otros datos. Actualiza el formulario antes de enviar una nueva solicitud."), { estado: 409 });
     return { registro, creada: false };
 }
-function publica(registro) {
-    const { id, referencia, fabricante, origen, destino, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn, canceladaEn, historial } = registro;
-    return { id, referencia, fabricante, origen, destino, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn, canceladaEn,
-        historial: historial?.map(({ estado, estadoAnterior, fecha }) => ({ estado, estadoAnterior, fecha })) };
+function publica(registro, administracion = false) {
+    const { id, referencia, fabricante, origen, destino, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn, canceladaEn, historial, sedeOperativa, motivoRechazo, revision = 0 } = registro;
+    return { id, referencia, fabricante, origen, destino, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn, canceladaEn, sedeOperativa, motivoRechazo, ...(administracion ? { revision } : {}),
+        historial: historial?.map(({ estado, estadoAnterior, fecha, responsable, responsableId, accion, sede, sedeAnterior, motivo }) => ({ estado, estadoAnterior, fecha, responsable, accion, sede, sedeAnterior, motivo, ...(administracion ? { responsableId } : {}) })) };
 }
 module.exports = { validarSolicitud, hoyMadrid, huella, comprobarReintento, publica };
+
+const estados = ["pendiente", "pendiente_recogida", "aceptada", "rechazada", "planificada", "asignada", "en_transito", "en_curso", "completada", "cancelada"];
+const sedes = ["Yecla", "Rubí", "Palma de Mallorca"];
+function filtrosAdministracion(entrada) {
+    if (Object.keys(entrada).some(k => !["estado", "desde", "hasta"].includes(k))) throw invalido("Filtro no válido.");
+    const salida = {};
+    if (entrada.estado !== undefined && entrada.estado !== "") {
+        if (!estados.includes(entrada.estado)) throw invalido("Selecciona un estado válido.");
+        salida.estado = entrada.estado;
+    }
+    for (const campo of ["desde", "hasta"]) {
+        const valor = entrada[campo];
+        if (valor === undefined || valor === "") continue;
+        if (typeof valor !== "string" || !/^20\d{2}-\d{2}-\d{2}$/.test(valor) || !Number.isFinite(Date.parse(valor)) || new Date(valor).toISOString().slice(0,10) !== valor) throw invalido("Introduce fechas válidas para el filtro.");
+        salida[campo] = valor;
+    }
+    if (salida.desde && salida.hasta && salida.desde > salida.hasta) throw invalido("La fecha inicial no puede ser posterior a la final.");
+    return salida;
+}
+function revisionAdministrativa(entrada) {
+    if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) throw invalido("Introduce una revisión válida.");
+    if (!["asignar_sede", "aceptar", "rechazar"].includes(entrada.accion)) throw invalido("Acción de revisión no válida.");
+    if (!Number.isSafeInteger(entrada.revision) || entrada.revision < 0) throw invalido("Actualiza el detalle antes de revisar la solicitud.");
+    const resultado = { accion: entrada.accion, revision: entrada.revision };
+    if (entrada.sedeOperativa !== undefined) {
+        if (!sedes.includes(entrada.sedeOperativa)) throw invalido("Selecciona Yecla, Rubí o Palma de Mallorca.");
+        resultado.sedeOperativa = entrada.sedeOperativa;
+    }
+    if (entrada.accion === "asignar_sede" && !resultado.sedeOperativa) throw invalido("Selecciona una sede operativa.");
+    if (entrada.accion === "rechazar") resultado.motivoRechazo = texto(entrada.motivo, "Motivo del rechazo", 1000);
+    return resultado;
+}
+module.exports.filtrosAdministracion = filtrosAdministracion;
+module.exports.revisionAdministrativa = revisionAdministrativa;
