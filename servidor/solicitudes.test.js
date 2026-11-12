@@ -15,6 +15,7 @@ test.before(async () => {
 test.after(() => new Promise(resolve => servidor.close(resolve)));
 test.beforeEach(() => logica.limpiarUsuarios());
 const contenido = () => ({ fabricante: "Muebles de Yecla", origen: "Calle Uno 1, Yecla, 30510", fecha: "2099-12-15",
+    destinatario:'Tienda destino',destino:'Calle Destino 10',localidadEntrega:'Rubí',codigoPostalEntrega:'08191',contactoEntrega:{nombre:'Eva',telefono:'623456789'},
     contactoRecogida: { nombre: "Ana", telefono: "+34 612 345 678" },
     mobiliario: [{ descripcion: "Sofá", cantidad: 2, unidad: "unidades" }, { descripcion: "Sillas", cantidad: 8, unidad: "cajas" }], observaciones: "Segunda planta, con ascensor" });
 async function cuenta(email, rol = "cliente") {
@@ -27,12 +28,13 @@ function enviar(cookie, entrada = contenido(), clave = "envio-prueba-12345678") 
 }
 test("el alta asigna propietario y estado desde sesión, persiste todo y mantiene las consultas aisladas", async () => {
     const ana = await cuenta("ana@example.com"), otra = await cuenta("otra@example.com");
-    const res = await enviar(ana.cookie, { ...contenido(), clienteId: otra.usuario.id, estado: "aceptada", id: "inventado" });
+    const res = await enviar(ana.cookie, { ...contenido(), clienteId: otra.usuario.id, estado: "aceptada", id: "inventado", baseConsolidacion: "Palma", localidadRecogida: "Rubí" });
     assert.equal(res.status, 201);
     const { solicitud, creada } = await res.json();
     assert.equal(creada, true); assert.equal(solicitud.estado, "pendiente_recogida");
     assert.notEqual(solicitud.id, "inventado");
-    assert.equal(solicitud.destino, undefined); assert.equal(solicitud.contactoEntrega, undefined);
+    assert.equal(solicitud.destino, contenido().destino); assert.deepEqual(solicitud.contactoEntrega, contenido().contactoEntrega);
+    assert.equal(solicitud.baseConsolidacion, "Yecla"); assert.equal(solicitud.localidadRecogida, "Yecla");
     assert.equal(solicitud.huella, undefined); assert.equal(solicitud.claveEnvio, undefined);
     const guardada = await datos.buscarSolicitudEnvio(ana.usuario.id, "envio-prueba-12345678");
     assert.equal(guardada.clienteId, ana.usuario.id);
@@ -69,7 +71,7 @@ test("rechaza anónimos, conductores, administradores y permisos revocados en se
 });
 test("valida fechas reales no pasadas, contactos, límites y cantidades sin guardar solicitudes inválidas", async () => {
     const ana = await cuenta("ana@example.com");
-    const errores = [{ fecha: "2027-02-30" }, { fecha: "2020-01-01" }, { fecha: "no-fecha" }, { origen: " " }, { fabricante: "x".repeat(161) }, { fabricante: " " }, { origen: "x".repeat(301) },
+    const errores = [{destinatario:""},{destino:""},{destino:"x".repeat(301)},{localidadEntrega:""},{codigoPostalEntrega:"123"},{contactoEntrega:null},{contactoEntrega:{nombre:"Eva",telefono:"hola"}},{ fecha: "2027-02-30" }, { fecha: "2020-01-01" }, { fecha: "no-fecha" }, { origen: " " }, { fabricante: "x".repeat(161) }, { fabricante: " " }, { origen: "x".repeat(301) },
         { contactoRecogida: { nombre: "Ana", telefono: "hola" } }, { contactoRecogida: null },
         { mobiliario: [] }, { mobiliario: Array(51).fill({ descripcion: "Sillas", cantidad: 8, unidad: "cajas" }) },
         ...[0, -1, 1.5, "2", 1000].map(cantidad => ({ mobiliario: [{ descripcion: "Mesa", cantidad, unidad: "bultos" }] })),
@@ -128,7 +130,7 @@ test("P18: bloquea cancelaciones planificadas, asignadas, en tránsito, finaliza
         await datos.configurarTransportePrueba("solicitudes", { id, clienteId: ana.usuario.id, referencia: id, origen: "Yecla", destino: "Rubí", fecha: "2099-12-15", estado });
         assert.equal((await cancelar(ana.cookie, id)).status, 409, estado);
         const detalle = (await (await consultar(ana.cookie, id)).json()).registro;
-        assert.equal(detalle.estado, estado); assert.equal(detalle.destino, "Rubí");
+        assert.equal(detalle.estado, estado); assert.equal(detalle.destino, "Rubí"); assert.equal(detalle.contactoEntrega, undefined);
     }
     await datos.configurarTransportePrueba("solicitudes", { id: "antigua-pendiente", clienteId: ana.usuario.id, referencia: "Antigua", origen: "Yecla", destino: "Rubí", fecha: "2099-12-15", estado: "pendiente" });
     assert.equal((await cancelar(ana.cookie, "antigua-pendiente")).status, 200);

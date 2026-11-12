@@ -54,6 +54,9 @@ function grupoEstado(valor) {
     if (texto === "aceptada") return "completado";
     return "otro";
 }
+function resumenEntrega(registro) {
+    return [registro.destino, registro.codigoPostalEntrega, registro.localidadEntrega].filter(Boolean).join(", ") || "Datos de entrega pendientes";
+}
 function etiquetaEstado(valor) {
     if (!valor) return "Sin estado";
     if (valor === "pendiente_recogida") return "Pendiente de recogida";
@@ -167,7 +170,7 @@ async function cargarDatosPanel() {
                 insignia.textContent = etiquetaEstado(registro.estado);
                 ficha.append(nombre, insignia, detalle, datos);
                 if (tipos[i] === "solicitudes" && ["cliente", "administrador"].includes(rol)) {
-                    detalle.textContent = `${registro.origen || "Origen pendiente"} → ${registro.destino || "Destino pendiente de planificación"}`;
+                    detalle.textContent = `${registro.origen || "Origen pendiente"} → ${resumenEntrega(registro)}`;
                     const ver = document.createElement("button");
                     ver.type = "button"; ver.className = "boton-secundario ver-solicitud";
                     ver.textContent = "Ver detalle →";
@@ -229,10 +232,14 @@ function mostrarDetalleSolicitud(registro) {
     };
     campo("Referencia", registro.referencia || registro.id);
     campo("Origen / recogida", registro.origen);
-    campo("Destino", registro.destino || "Pendiente de planificación en la base de Yecla");
+    campo("Base de consolidación", "Yecla");
+    campo("Destinatario", registro.destinatario || "Datos de entrega pendientes");
+    campo("Entrega final", registro.destino || "Datos de entrega pendientes");
+    campo("Localidad de entrega", registro.localidadEntrega || "Datos de entrega pendientes");
+    campo("Código postal de entrega", registro.codigoPostalEntrega || "Datos de entrega pendientes");
+    campo("Contacto de entrega", registro.contactoEntrega ? `${registro.contactoEntrega.nombre} · ${registro.contactoEntrega.telefono}` : "Datos de entrega pendientes");
     campo("Fecha solicitada", registro.fecha);
     campo("Fabricante", registro.fabricante);
-    campo("Sede operativa", registro.sedeOperativa || "Sin asignar");
     if (registro.motivoRechazo) campo("Motivo del rechazo", registro.motivoRechazo);
     campo("Contacto de recogida", registro.contactoRecogida ? `${registro.contactoRecogida.nombre} · ${registro.contactoRecogida.telefono}` : null);
     campo("Observaciones", registro.observaciones || "Sin observaciones");
@@ -256,9 +263,8 @@ function mostrarDetalleSolicitud(registro) {
     if (!historial.children.length) { const fila = document.createElement("li"); fila.textContent = "Sin cambios registrados."; historial.append(fila); }
     contenidoDetalle.append(historial);
     const pendiente = ["pendiente", "pendiente_recogida"].includes(registro.estado);
-    formularioRevision.hidden = rolActual !== "administrador" || !["pendiente", "pendiente_recogida", "aceptada"].includes(registro.estado);
+    formularioRevision.hidden = rolActual !== "administrador" || !["pendiente", "pendiente_recogida"].includes(registro.estado);
     formularioRevision.dataset.revision = registro.revision || 0;
-    document.getElementById("revision-sede").value = registro.sedeOperativa || "";
     document.getElementById("revision-motivo").value = "";
     document.getElementById("revision-motivo").setCustomValidity("");
     for (const boton of formularioRevision.querySelectorAll('button[value="aceptar"], button[value="rechazar"]')) boton.hidden = !pendiente;
@@ -270,7 +276,7 @@ function mostrarDetalleSolicitud(registro) {
     document.getElementById("titulo-detalle-solicitud").focus({ preventScroll: true });
 }
 function etiquetaHistorial(evento) {
-    const transicion = evento.accion === "asignar_sede" ? `Sede operativa: ${evento.sede}` : evento.estadoAnterior ? `${etiquetaEstado(evento.estadoAnterior)} → ${etiquetaEstado(evento.estado)}` : etiquetaEstado(evento.estado);
+    const transicion = evento.accion === "asignar_sede" ? `Asignación anterior de sede (histórica): ${evento.sede}` : evento.estadoAnterior ? `${etiquetaEstado(evento.estadoAnterior)} → ${etiquetaEstado(evento.estado)}` : etiquetaEstado(evento.estado);
     return `${transicion}${evento.responsable ? " · " + evento.responsable : ""}${evento.responsableId ? " #" + evento.responsableId : ""}${evento.motivo ? " · " + evento.motivo : ""}`;
 }
 async function cargarDetalleSolicitud() {
@@ -349,8 +355,7 @@ formularioRevision.addEventListener("submit", async evento => {
     const accion = evento.submitter?.value;
     const motivo = document.getElementById("revision-motivo");
     if (accion === "rechazar" && !motivo.value.trim()) { estadoDetalle.textContent = "Indica el motivo del rechazo que verá el cliente."; motivo.focus(); return; }
-    const sede = document.getElementById("revision-sede").value;
-    const datos = { accion, revision: Number(formularioRevision.dataset.revision), ...(sede ? { sedeOperativa: sede } : {}), ...(accion === "rechazar" ? { motivo: motivo.value } : {}) };
+    const datos = { accion, revision: Number(formularioRevision.dataset.revision), ...(accion === "rechazar" ? { motivo: motivo.value } : {}) };
     const version = versionPanel, peticion = versionDetalle, id = idDetalleSolicitud;
     revisandoSolicitud = true; controlesDetalle(true); estadoDetalle.textContent = "Guardando revisión…";
     try {
@@ -586,6 +591,8 @@ formularioSolicitud.addEventListener("submit", async evento => {
     if (enviandoSolicitud || rolActual !== "cliente") return;
     const campos = new FormData(formularioSolicitud);
     const datos = {
+        destinatario: campos.get("destinatario"), destino: campos.get("destino"), localidadEntrega: campos.get("localidadEntrega"), codigoPostalEntrega: campos.get("codigoPostalEntrega"),
+        contactoEntrega: { nombre: campos.get("entregaNombre"), telefono: campos.get("entregaTelefono") },
         fabricante: campos.get("fabricante"), origen: campos.get("origen"), fecha: campos.get("fecha"),
         contactoRecogida: { nombre: campos.get("recogidaNombre"), telefono: campos.get("recogidaTelefono") },
         mobiliario: [...document.querySelectorAll(".linea-mueble")].map(fila => ({ descripcion: fila.querySelector('[name="descripcion"]').value, cantidad: Number(fila.querySelector('[name="cantidad"]').value), unidad: fila.querySelector('[name="unidad"]').value })),

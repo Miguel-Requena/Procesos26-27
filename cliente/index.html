@@ -107,20 +107,29 @@
                 <article><span id="metrica-tercera-titulo">Completadas</span><strong id="metrica-tercera">—</strong><small id="metrica-tercera-ayuda">Transportes finalizados</small></article>
             </div>
             <section id="nueva-solicitud" hidden aria-labelledby="titulo-nueva-solicitud">
-                <div class="formulario-cabecera"><div><span class="antetitulo">UN NUEVO DESTINO</span><h3 id="titulo-nueva-solicitud" tabindex="-1">Solicita una recogida</h3><p>Indica qué mercancía debemos recoger. En la base de Yecla organizaremos los camiones.</p></div><button id="cancelar-solicitud" type="button">Cerrar formulario</button></div>
+                <div class="formulario-cabecera"><div><span class="antetitulo">UN NUEVO DESTINO</span><h3 id="titulo-nueva-solicitud" tabindex="-1">Solicita una recogida</h3><p>Indica la fábrica en Yecla y la dirección final del albarán. La mercancía pasa por la base de Yecla antes de salir a reparto.</p></div><button id="cancelar-solicitud" type="button">Cerrar formulario</button></div>
                 <form id="formulario-solicitud">
                     <fieldset id="campos-solicitud"><legend>Datos de la recogida</legend>
                     <p class="ayuda">Todos los campos son obligatorios salvo las observaciones. La fecha está sujeta a confirmación.</p>
                     <label for="solicitud-fabricante">Nombre del fabricante</label><input id="solicitud-fabricante" name="fabricante" maxlength="160" autocomplete="organization" required placeholder="Nombre de la fábrica">
                     <div class="recogida-datos">
                         <fieldset><legend><span aria-hidden="true">01 · </span>Recogida</legend>
-                            <label for="solicitud-origen">Dirección de recogida</label><textarea id="solicitud-origen" name="origen" rows="2" maxlength="300" placeholder="Calle, número, localidad y código postal" required></textarea>
+                            <label for="solicitud-origen">Dirección de recogida en Yecla</label><textarea id="solicitud-origen" name="origen" rows="2" maxlength="300" placeholder="Calle, número y código postal de la fábrica en Yecla" required></textarea>
                             <label for="solicitud-recogida-nombre">Persona de contacto en recogida</label><input id="solicitud-recogida-nombre" name="recogidaNombre" maxlength="120" autocomplete="off" required>
                             <label for="solicitud-recogida-telefono">Teléfono de recogida</label><input id="solicitud-recogida-telefono" name="recogidaTelefono" type="tel" maxlength="30" autocomplete="off" required>
                         </fieldset>
                     </div>
+                    <fieldset class="entrega-datos"><legend>02 · Entrega final según el albarán</legend>
+                        <p class="ayuda">Recogida en la fábrica → base de Yecla → dirección final. Indica la dirección completa del destinatario; Rubí/Barcelona, Palma y Castellón son zonas de las rutas de salida.</p>
+                        <label for="solicitud-destinatario">Destinatario o empresa de entrega</label><input id="solicitud-destinatario" name="destinatario" maxlength="160" required autocomplete="off">
+                        <label for="solicitud-destino">Dirección de entrega final</label><textarea id="solicitud-destino" name="destino" maxlength="300" rows="2" required placeholder="Calle, número, piso y puerta"></textarea>
+                        <label for="solicitud-localidad-entrega">Localidad de entrega</label><input id="solicitud-localidad-entrega" name="localidadEntrega" maxlength="120" required autocomplete="off">
+                        <label for="solicitud-cp-entrega">Código postal de entrega</label><input id="solicitud-cp-entrega" name="codigoPostalEntrega" maxlength="5" pattern="[0-9]{5}" inputmode="numeric" required autocomplete="off">
+                        <label for="solicitud-entrega-nombre">Persona de contacto en entrega</label><input id="solicitud-entrega-nombre" name="entregaNombre" maxlength="120" required autocomplete="off">
+                        <label for="solicitud-entrega-telefono">Teléfono de entrega</label><input id="solicitud-entrega-telefono" name="entregaTelefono" type="tel" maxlength="30" required autocomplete="off">
+                    </fieldset>
                     <div class="campo-fecha"><label for="solicitud-fecha">Fecha solicitada de recogida</label><input id="solicitud-fecha" name="fecha" type="date" max="2099-12-31" required aria-describedby="ayuda-fecha"><p class="ayuda" id="ayuda-fecha">La fecha definitiva se acordará con el equipo.</p></div>
-                    <fieldset class="mobiliario"><legend><span aria-hidden="true">02 · </span>¿Qué recogemos?</legend><p class="ayuda">Describe la mercancía e indica la cantidad en bultos, cajas o unidades.</p><div id="lineas-mobiliario"></div><button id="agregar-mueble" class="boton-secundario" type="button">＋ Añadir mercancía</button></fieldset>
+                    <fieldset class="mobiliario"><legend><span aria-hidden="true">03 · </span>¿Qué recogemos?</legend><p class="ayuda">Describe la mercancía e indica la cantidad en bultos, cajas o unidades.</p><div id="lineas-mobiliario"></div><button id="agregar-mueble" class="boton-secundario" type="button">＋ Añadir mercancía</button></fieldset>
                     <label for="solicitud-observaciones">Observaciones de recogida (opcional)</label><textarea id="solicitud-observaciones" name="observaciones" rows="3" maxlength="2000" placeholder="Horario, acceso del camión o indicaciones para la recogida"></textarea>
                     </fieldset>
                     <p id="mensaje-solicitud" role="status" aria-live="polite"></p>
@@ -152,9 +161,9 @@
                 <div id="confirmar-cancelacion" hidden><h4>¿Cancelar esta solicitud?</h4><p>Se conservarán sus datos y su historial. Esta acción no se puede deshacer.</p><div class="detalle-acciones"><button id="mantener-solicitud" class="boton-secundario" type="button">Mantener solicitud</button><button id="confirmar-cancelacion-boton" type="button">Sí, cancelar solicitud</button></div></div>
                 <form id="revision-administrativa" class="revision-administrativa" hidden aria-label="Revisión administrativa">
                     <h4>Revisión de la solicitud</h4>
-                    <label for="revision-sede">Sede operativa</label><select id="revision-sede"><option value="">Sin asignar</option><option>Yecla</option><option>Rubí</option><option>Palma de Mallorca</option></select>
+                    <p class="ayuda">Base de consolidación: <strong>Yecla</strong>. La ruta y el camión de salida se organizan después; la entrega final es la indicada por el cliente.</p>
                     <label for="revision-motivo">Motivo del rechazo (obligatorio para rechazar)</label><textarea id="revision-motivo" rows="3" maxlength="1000" placeholder="Explica el motivo que verá el cliente"></textarea>
-                    <div class="detalle-acciones"><button type="submit" name="accion" value="asignar_sede" class="boton-secundario">Guardar sede</button><button type="submit" name="accion" value="aceptar">Aceptar solicitud</button><button type="submit" name="accion" value="rechazar" class="boton-rechazar">Rechazar solicitud</button></div>
+                    <div class="detalle-acciones"><button type="submit" name="accion" value="aceptar">Aceptar solicitud</button><button type="submit" name="accion" value="rechazar" class="boton-rechazar">Rechazar solicitud</button></div>
                 </form>
             </dialog>
             <aside class="red-discreta" aria-label="Nuestra red de transporte"><div><span class="antetitulo">CONECTAMOS DESTINOS</span><p>De origen a destino.</p><span>Yecla <i>→</i> Rubí <i>→</i> Palma de Mallorca</span></div><div id="camion-panel" aria-hidden="true"></div></aside>

@@ -404,3 +404,5 @@ body:not(.sesion-activa) .cancelar-vinculo:hover { background: #eceeea; }
 .revision-administrativa .boton-rechazar:hover { background: #fff0f1; }
 @media (max-width: 1200px) { .filtros-administracion { grid-template-columns: repeat(2, minmax(0, 1fr)); } .filtros-administracion > div:first-child { grid-column: 1 / -1; } }
 @media (max-width: 640px) { .filtros-administracion { padding: 14px; gap: 12px; } .filtros-administracion input, .filtros-administracion select { font-size: 16px; min-width: 0; } .filtros-administracion > div { min-width: 0; } .revision-administrativa { padding: 16px; } }
+
+.entrega-datos { border-top: 1px solid #e2e4e8 !important; padding-top: 22px !important; margin-top: 24px !important; }

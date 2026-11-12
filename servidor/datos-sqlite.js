@@ -117,7 +117,11 @@ function consultarTransportes(tipo, propietarioId, id) {
     const condiciones = ["tipo=?"], parametros = [tipo];
     if (propietarioId !== undefined) { condiciones.push("propietarioId=?"); parametros.push(propietarioId); }
     if (id !== undefined) { condiciones.push("id=?"); parametros.push(id); }
-    return db.prepare(`SELECT id,referencia,origen,destino,fecha,estado FROM transportes WHERE ${condiciones.join(" AND ")} ORDER BY id`).all(...parametros);
+    return db.prepare(`SELECT id,referencia,origen,destino,fecha,estado FROM transportes WHERE ${condiciones.join(" AND ")} ORDER BY id`).all(...parametros).map(fila => {
+        if (tipo !== "solicitudes") return fila;
+        const detalle = detalleSolicitud(propietarioId, fila.id);
+        return { ...fila, ...(detalle.localidadEntrega ? { localidadEntrega: detalle.localidadEntrega, codigoPostalEntrega: detalle.codigoPostalEntrega } : {}) };
+    });
 }
 function configurarTransportePrueba(tipo, registro) {
     if (process.env.NODE_ENV !== "test") throw new Error("Operación exclusiva de pruebas");
@@ -157,20 +161,20 @@ function listarSolicitudesAdministracion(filtros) {
     }
     return db.prepare(`SELECT id,referencia,origen,destino,fecha,estado FROM transportes WHERE ${clausulas.join(" AND ")} ORDER BY fecha,id`).all(...valores).map(fila => {
         const registro = detalleSolicitud(undefined, fila.id);
-        return { ...fila, sedeOperativa: registro.sedeOperativa, motivoRechazo: registro.motivoRechazo, revision: registro.revision || 0 };
+        return { ...fila, localidadEntrega: registro.localidadEntrega, codigoPostalEntrega: registro.codigoPostalEntrega, motivoRechazo: registro.motivoRechazo, revision: registro.revision || 0 };
     });
 }
 function revisarSolicitud(id, cambio, responsableId, fecha) {
     db.exec("BEGIN IMMEDIATE");
     try {
         const anterior = detalleSolicitud(undefined, id);
-        const permitidos = cambio.accion === "asignar_sede" ? ["pendiente", "pendiente_recogida", "aceptada"] : ["pendiente", "pendiente_recogida"];
+        const permitidos = ["pendiente", "pendiente_recogida"];
         if (!anterior || !permitidos.includes(anterior.estado) || (anterior.revision || 0) !== cambio.revision) { db.exec("COMMIT"); return undefined; }
-        const estado = cambio.accion === "aceptar" ? "aceptada" : cambio.accion === "rechazar" ? "rechazada" : anterior.estado;
+        const estado = cambio.accion === "aceptar" ? "aceptada" : "rechazada";
         const evento = { accion: cambio.accion, estadoAnterior: anterior.estado, estado, fecha, responsable: "Administración", responsableId,
-            ...(cambio.sedeOperativa ? { sede: cambio.sedeOperativa, sedeAnterior: anterior.sedeOperativa || null } : {}), ...(cambio.motivoRechazo ? { motivo: cambio.motivoRechazo } : {}) };
+            ...(cambio.motivoRechazo ? { motivo: cambio.motivoRechazo } : {}) };
         const metadatos = { revision: cambio.revision + 1, historial: [...(anterior.historial || []), evento],
-            sedeOperativa: cambio.sedeOperativa || anterior.sedeOperativa, motivoRechazo: cambio.motivoRechazo || anterior.motivoRechazo };
+            sedeOperativa: anterior.sedeOperativa, motivoRechazo: cambio.motivoRechazo || anterior.motivoRechazo };
         db.prepare("UPDATE transportes SET estado=? WHERE tipo='solicitudes' AND id=?").run(estado, id);
         db.prepare("INSERT INTO historial_solicitudes VALUES (?,?) ON CONFLICT(id) DO UPDATE SET contenido=excluded.contenido").run(id, JSON.stringify(metadatos));
         const guardada = db.prepare("SELECT contenido FROM solicitudes_detalles WHERE id=?").get(id);

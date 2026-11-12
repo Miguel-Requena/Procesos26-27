@@ -70,7 +70,7 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         await logica.cambiarPerfilEquipo(usuario.id, 'cliente', admin);
         await assert.rejects(logica.consultarTransportes('rutas', usuario), {estado:403});
         const entrada = { fabricante:'Fabricante de Yecla', origen:'Yecla', fecha:'2099-12-15',
-            contactoRecogida:{nombre:'Ana',telefono:'612345678'},
+            destinatario:'Tienda destino',destino:'Calle Destino 10',localidadEntrega:'Rubí',codigoPostalEntrega:'08191',contactoEntrega:{nombre:'Eva',telefono:'623456789'},contactoRecogida:{nombre:'Ana',telefono:'612345678'},
             mobiliario:[{descripcion:'Sofá',cantidad:2,unidad:'unidades'}], observaciones:'Con ascensor' };
         const resultados = await Promise.all([logica.crearSolicitud(entrada,'mongo-envio-12345678',usuario),logica.crearSolicitud(entrada,'mongo-envio-12345678',usuario)]);
         assert.equal(resultados.filter(r=>r.creada).length,1);
@@ -94,13 +94,10 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         assert.equal(cancelada.historial[1].estadoAnterior,'pendiente_recogida');
         assert.equal((await datos.buscarSolicitudEnvio(usuario.id,'mongo-envio-12345678')).estado,'cancelada');
         const paraRevisar = (await logica.crearSolicitud(entrada,'mongo-p19-12345678',usuario)).solicitud;
-        const sedeAsignada = await logica.revisarSolicitud(paraRevisar.id,{accion:'asignar_sede',revision:0,sedeOperativa:'Rubí'},admin);
-        assert.equal(sedeAsignada.revision,1);
-        assert.equal(sedeAsignada.historial.at(-1).responsableId,admin.id);
         const motivo = '$estado: sin capacidad en la fecha solicitada';
         const revisiones = await Promise.allSettled([
-            logica.revisarSolicitud(paraRevisar.id,{accion:'rechazar',revision:1,motivo},admin),
-            logica.revisarSolicitud(paraRevisar.id,{accion:'rechazar',revision:1,motivo},admin)]);
+            logica.revisarSolicitud(paraRevisar.id,{accion:'rechazar',revision:0,motivo},admin),
+            logica.revisarSolicitud(paraRevisar.id,{accion:'rechazar',revision:0,motivo},admin)]);
         assert.equal(revisiones.filter(r=>r.status==='fulfilled').length,1);
         assert.equal(revisiones.find(r=>r.status==='rejected').reason.estado,409);
         const revisada = await logica.consultarTransportes('solicitudes',usuario,paraRevisar.id);
@@ -127,7 +124,8 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         assert.equal((await datos.buscarSolicitudEnvio(anterior.id,'mongo-envio-12345678')).historial.length,2);
         const revisada = await datos.buscarSolicitudEnvio(anterior.id,'mongo-p19-12345678');
         assert.equal(revisada.estado,'rechazada');
-        assert.equal(revisada.sedeOperativa,'Rubí');
-        assert.equal(revisada.historial.length,3);
+        assert.equal(revisada.baseConsolidacion,'Yecla');
+        assert.equal(revisada.destino,'Calle Destino 10');
+        assert.equal(revisada.historial.length,2);
         await logica.eliminarUsuario(admin.id, admin);`);
 });
