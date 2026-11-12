@@ -130,6 +130,12 @@
             <ul id="panel-funciones" class="panel-funciones" hidden></ul>
             <section id="transportes" aria-labelledby="titulo-transportes">
                 <div class="seccion-barra"><div><span class="antetitulo">ACTIVIDAD</span><h3 id="titulo-transportes">Transportes</h3></div><button id="actualizar-panel" type="button"><span aria-hidden="true">↻</span> Actualizar</button></div>
+                <form id="filtros-administracion" class="filtros-administracion" hidden aria-label="Filtrar solicitudes">
+                    <div><label for="filtro-estado">Estado</label><select id="filtro-estado"><option value="">Todos los estados</option><option value="pendiente_recogida">Pendiente de recogida</option><option value="pendiente">Pendiente (anterior)</option><option value="aceptada">Aceptada</option><option value="rechazada">Rechazada</option><option value="planificada">Planificada</option><option value="asignada">Asignada</option><option value="en_transito">En tránsito</option><option value="en_curso">En curso</option><option value="completada">Completada</option><option value="cancelada">Cancelada</option></select></div>
+                    <div><label for="filtro-desde">Fecha solicitada desde</label><input id="filtro-desde" type="date" min="2000-01-01" max="2099-12-31"></div>
+                    <div><label for="filtro-hasta">Hasta</label><input id="filtro-hasta" type="date" min="2000-01-01" max="2099-12-31"></div>
+                    <button type="submit">Aplicar filtros</button><button id="limpiar-filtros" class="boton-secundario" type="button">Limpiar</button>
+                </form>
                 <p id="estado-panel" role="status"></p>
                 <div id="lista-transportes"></div>
             </section>
@@ -139,11 +145,17 @@
                 <div id="lista-cuentas"></div>
             </section>
             <dialog id="detalle-solicitud" aria-labelledby="titulo-detalle-solicitud">
-                <div class="seccion-barra"><div><span class="antetitulo">MI SOLICITUD</span><h3 id="titulo-detalle-solicitud" tabindex="-1">Detalle de la solicitud</h3></div><button id="cerrar-detalle-solicitud" class="boton-secundario" type="button">Cerrar</button></div>
+                <div class="seccion-barra"><div><span id="etiqueta-detalle" class="antetitulo">MI SOLICITUD</span><h3 id="titulo-detalle-solicitud" tabindex="-1">Detalle de la solicitud</h3></div><button id="cerrar-detalle-solicitud" class="boton-secundario" type="button">Cerrar</button></div>
                 <p id="estado-detalle-solicitud" role="status" aria-live="polite"></p>
                 <div id="contenido-detalle-solicitud"></div>
                 <div class="detalle-acciones"><button id="actualizar-detalle-solicitud" class="boton-secundario" type="button">Actualizar detalle</button><button id="solicitar-cancelacion" type="button" hidden>Cancelar solicitud</button></div>
                 <div id="confirmar-cancelacion" hidden><h4>¿Cancelar esta solicitud?</h4><p>Se conservarán sus datos y su historial. Esta acción no se puede deshacer.</p><div class="detalle-acciones"><button id="mantener-solicitud" class="boton-secundario" type="button">Mantener solicitud</button><button id="confirmar-cancelacion-boton" type="button">Sí, cancelar solicitud</button></div></div>
+                <form id="revision-administrativa" class="revision-administrativa" hidden aria-label="Revisión administrativa">
+                    <h4>Revisión de la solicitud</h4>
+                    <label for="revision-sede">Sede operativa</label><select id="revision-sede"><option value="">Sin asignar</option><option>Yecla</option><option>Rubí</option><option>Palma de Mallorca</option></select>
+                    <label for="revision-motivo">Motivo del rechazo (obligatorio para rechazar)</label><textarea id="revision-motivo" rows="3" maxlength="1000" placeholder="Explica el motivo que verá el cliente"></textarea>
+                    <div class="detalle-acciones"><button type="submit" name="accion" value="asignar_sede" class="boton-secundario">Guardar sede</button><button type="submit" name="accion" value="aceptar">Aceptar solicitud</button><button type="submit" name="accion" value="rechazar" class="boton-rechazar">Rechazar solicitud</button></div>
+                </form>
             </dialog>
             <aside class="red-discreta" aria-label="Nuestra red de transporte"><div><span class="antetitulo">CONECTAMOS DESTINOS</span><p>De origen a destino.</p><span>Yecla <i>→</i> Rubí <i>→</i> Palma de Mallorca</span></div><div id="camion-panel" aria-hidden="true"></div></aside>
             <p class="ayuda">Las fechas y la planificación de transportes se confirman con el equipo.</p>

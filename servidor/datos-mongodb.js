@@ -33,6 +33,7 @@ async function inicializar() {
         }
         await db.collection("solicitudes").createIndex({ clienteId: 1, claveEnvio: 1 },
             { unique: true, partialFilterExpression: { claveEnvio: { $type: "string" } } });
+        await db.collection("solicitudes").createIndex({ estado: 1, fecha: 1 });
         await usuarios.createIndex({ googleSub: 1 }, { unique: true, sparse: true });
         await db.collection("sesiones").createIndex({ token: 1 }, { unique: true });
         await db.collection("sesiones").createIndex({ caduca: 1 }, { expireAfterSeconds: 0 });
@@ -123,18 +124,36 @@ async function consultarTransportes(tipo, propietarioId, id) {
     const filtro = { ...(propietarioId === undefined ? {} : { [propietario]: propietarioId }), ...(id === undefined ? {} : { id }) };
     // Proyección cerrada: no se devuelven campos internos o contactos ajenos.
     return ejecutar(() => db.collection(tipo).find(filtro, { projection: {
-        _id: 0, id: 1, referencia: 1, origen: 1, destino: 1, fecha: 1, estado: 1
+        _id: 0, id: 1, referencia: 1, origen: 1, destino: 1, fecha: 1, estado: 1, sedeOperativa: 1, motivoRechazo: 1
     } }).sort({ id: 1 }).toArray());
 }
 async function detalleSolicitud(clienteId, id) {
-    return ejecutar(() => db.collection("solicitudes").findOne({ id, clienteId }));
+    return ejecutar(() => db.collection("solicitudes").findOne({ id, ...(clienteId === undefined ? {} : { clienteId }) }));
 }
 async function cancelarSolicitud(clienteId, id, fecha) {
     return ejecutar(() => db.collection("solicitudes").findOneAndUpdate(
         { id, clienteId, estado: { $in: ["pendiente", "pendiente_recogida"] } },
-        [{ $set: { estado: "cancelada", canceladaEn: fecha,
+        [{ $set: { estado: "cancelada", canceladaEn: fecha, revision: { $add: [{ $ifNull: ["$revision", 0] }, 1] },
             historial: { $concatArrays: [{ $ifNull: ["$historial", []] },
                 [{ estado: "cancelada", estadoAnterior: "$estado", fecha }]] } } }],
+        { returnDocument: "after" }));
+}
+async function listarSolicitudesAdministracion(filtros) {
+    const consulta = { ...(filtros.estado ? { estado: filtros.estado } : {}),
+        ...(filtros.desde || filtros.hasta ? { fecha: { ...(filtros.desde ? { $gte: filtros.desde } : {}), ...(filtros.hasta ? { $lte: filtros.hasta } : {}) } } : {}) };
+    return ejecutar(() => db.collection("solicitudes").find(consulta, { projection: { _id:0, id:1, referencia:1, origen:1, destino:1, fecha:1, estado:1, sedeOperativa:1, motivoRechazo:1, revision:1 } }).sort({ fecha:1, id:1 }).toArray());
+}
+async function revisarSolicitud(id, cambio, responsableId, fecha) {
+    const permitidos = cambio.accion === "asignar_sede" ? ["pendiente", "pendiente_recogida", "aceptada"] : ["pendiente", "pendiente_recogida"];
+    const evento = { accion: cambio.accion, estadoAnterior: "$estado", estado: cambio.accion === "aceptar" ? "aceptada" : cambio.accion === "rechazar" ? "rechazada" : "$estado", fecha, responsable: "Administración", responsableId,
+        ...(cambio.sedeOperativa ? { sede: cambio.sedeOperativa, sedeAnterior: { $ifNull: ["$sedeOperativa", null] } } : {}),
+        ...(cambio.motivoRechazo ? { motivo: { $literal: cambio.motivoRechazo } } : {}) };
+    return ejecutar(() => db.collection("solicitudes").findOneAndUpdate(
+        { id, estado: { $in: permitidos }, $expr: { $eq: [{ $ifNull: ["$revision", 0] }, cambio.revision] } },
+        [{ $set: { estado: evento.estado, revision: cambio.revision + 1,
+            ...(cambio.sedeOperativa ? { sedeOperativa: cambio.sedeOperativa } : {}),
+            ...(cambio.motivoRechazo ? { motivoRechazo: { $literal: cambio.motivoRechazo } } : {}),
+            historial: { $concatArrays: [{ $ifNull: ["$historial", []] }, [evento]] } } }],
         { returnDocument: "after" }));
 }
 async function buscarSolicitudEnvio(clienteId, claveEnvio) {
@@ -181,4 +200,4 @@ async function crearSolicitud(registro) {
 }
 async function limpiar() { throw new Error("No se permite limpiar la base MongoDB de la aplicación"); }
 async function cerrar() { await client.close(); }
-module.exports = { detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };
+module.exports = { listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };

@@ -139,6 +139,26 @@ async function consultarTransportes(tipo, actor, id) {
     return id === undefined ? registros : registros[0];
 }
 
+async function consultarSolicitudesAdministracion(filtros, actor, id) {
+    await exigirAdministrador(actor);
+    if (id !== undefined) {
+        if (typeof id !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(id)) throw errorAcceso("Registro no encontrado", 404);
+        const registro = await datos.detalleSolicitud(undefined, id);
+        if (!registro) throw errorAcceso("Registro no encontrado", 404);
+        return require("./solicitudes").publica(registro, true);
+    }
+    return datos.listarSolicitudesAdministracion(require("./solicitudes").filtrosAdministracion(filtros));
+}
+async function revisarSolicitud(id, entrada, actor) {
+    await exigirAdministrador(actor);
+    if (typeof id !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(id)) throw errorAcceso("Registro no encontrado", 404);
+    const cambio = require("./solicitudes").revisionAdministrativa(entrada);
+    if (!await datos.detalleSolicitud(undefined, id)) throw errorAcceso("Registro no encontrado", 404);
+    const registro = await datos.revisarSolicitud(id, cambio, actor.id, new Date().toISOString());
+    if (!registro) throw errorAcceso("La solicitud ha cambiado o su estado no permite esta acción. Actualiza el detalle antes de continuar.", 409);
+    return require("./solicitudes").publica(registro, true);
+}
+
 async function listarUsuarios(actor) {
     await exigirAdministrador(actor);
     return (await datos.listar()).map(publico);
@@ -204,7 +224,7 @@ async function crearSolicitud(entrada, claveEnvio, actor) {
     return { solicitud: contrato.publica(resultado.registro), creada: resultado.creada };
 }
 
-module.exports = {
+module.exports = { consultarSolicitudesAdministracion, revisarSolicitud,
     cancelarSolicitud,
     crearSolicitud,
     cambiarPerfilEquipo, consultarTransportes,
