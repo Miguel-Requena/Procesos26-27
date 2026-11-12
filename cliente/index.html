@@ -107,22 +107,21 @@
                 <article><span id="metrica-tercera-titulo">Completadas</span><strong id="metrica-tercera">—</strong><small id="metrica-tercera-ayuda">Transportes finalizados</small></article>
             </div>
             <section id="nueva-solicitud" hidden aria-labelledby="titulo-nueva-solicitud">
-                <div class="formulario-cabecera"><div><span class="antetitulo">UN NUEVO DESTINO</span><h3 id="titulo-nueva-solicitud" tabindex="-1">Solicita una recogida</h3><p>Indica la fábrica en Yecla y la dirección final del albarán. La mercancía pasa por la base de Yecla antes de salir a reparto.</p></div><button id="cancelar-solicitud" type="button">Cerrar formulario</button></div>
+                <div class="formulario-cabecera"><div><span class="antetitulo">UN NUEVO DESTINO</span><h3 id="titulo-nueva-solicitud" tabindex="-1">Solicita una recogida</h3></div><button id="cancelar-solicitud" type="button">Cerrar formulario</button></div>
                 <form id="formulario-solicitud">
                     <fieldset id="campos-solicitud"><legend>Datos de la recogida</legend>
                     <p class="ayuda">Todos los campos son obligatorios salvo las observaciones. La fecha está sujeta a confirmación.</p>
                     <label for="solicitud-fabricante">Nombre del fabricante</label><input id="solicitud-fabricante" name="fabricante" maxlength="160" autocomplete="organization" required placeholder="Nombre de la fábrica">
                     <div class="recogida-datos">
                         <fieldset><legend><span aria-hidden="true">01 · </span>Recogida</legend>
-                            <label for="solicitud-origen">Dirección de recogida en Yecla</label><textarea id="solicitud-origen" name="origen" rows="2" maxlength="300" placeholder="Calle, número y código postal de la fábrica en Yecla" required></textarea>
+                            <label for="solicitud-origen">Dirección de recogida</label><textarea id="solicitud-origen" name="origen" rows="2" maxlength="300" placeholder="Calle, número y código postal" required></textarea>
                             <label for="solicitud-recogida-nombre">Persona de contacto en recogida</label><input id="solicitud-recogida-nombre" name="recogidaNombre" maxlength="120" autocomplete="off" required>
                             <label for="solicitud-recogida-telefono">Teléfono de recogida</label><input id="solicitud-recogida-telefono" name="recogidaTelefono" type="tel" maxlength="30" autocomplete="off" required>
                         </fieldset>
                     </div>
-                    <fieldset class="entrega-datos"><legend>02 · Entrega final según el albarán</legend>
-                        <p class="ayuda">Recogida en la fábrica → base de Yecla → dirección final. Indica la dirección completa del destinatario; Rubí/Barcelona, Palma y Castellón son zonas de las rutas de salida.</p>
+                    <fieldset class="entrega-datos"><legend>02 · Dirección de entrega</legend>
                         <label for="solicitud-destinatario">Destinatario o empresa de entrega</label><input id="solicitud-destinatario" name="destinatario" maxlength="160" required autocomplete="off">
-                        <label for="solicitud-destino">Dirección de entrega final</label><textarea id="solicitud-destino" name="destino" maxlength="300" rows="2" required placeholder="Calle, número, piso y puerta"></textarea>
+                        <label for="solicitud-destino">Dirección de entrega</label><textarea id="solicitud-destino" name="destino" maxlength="300" rows="2" required placeholder="Calle, número, piso y puerta"></textarea>
                         <label for="solicitud-localidad-entrega">Localidad de entrega</label><input id="solicitud-localidad-entrega" name="localidadEntrega" maxlength="120" required autocomplete="off">
                         <label for="solicitud-cp-entrega">Código postal de entrega</label><input id="solicitud-cp-entrega" name="codigoPostalEntrega" maxlength="5" pattern="[0-9]{5}" inputmode="numeric" required autocomplete="off">
                         <label for="solicitud-entrega-nombre">Persona de contacto en entrega</label><input id="solicitud-entrega-nombre" name="entregaNombre" maxlength="120" required autocomplete="off">
