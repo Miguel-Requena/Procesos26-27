@@ -19,7 +19,12 @@ function validarSolicitud(entrada) {
     if (!Array.isArray(entrada.mobiliario) || entrada.mobiliario.length < 1 || entrada.mobiliario.length > 50) throw invalido("Añade entre 1 y 50 líneas de mobiliario.");
     return {
         fabricante: texto(entrada.fabricante, "Fabricante", 160),
-        origen: texto(entrada.origen, "Dirección de recogida", 300),
+        origen: texto(entrada.origen, "Dirección de recogida en Yecla", 300),
+        destinatario: texto(entrada.destinatario, "Destinatario", 160),
+        destino: texto(entrada.destino, "Dirección de entrega final", 300),
+        localidadEntrega: texto(entrada.localidadEntrega, "Localidad de entrega", 120),
+        codigoPostalEntrega: (() => { const cp = texto(entrada.codigoPostalEntrega, "Código postal de entrega", 5); if (!/^\d{5}$/.test(cp)) throw invalido("Introduce un código postal de entrega de 5 dígitos."); return cp; })(),
+        contactoEntrega: contacto(entrada.contactoEntrega, "entrega"),
         contactoRecogida: contacto(entrada.contactoRecogida, "recogida"),
         fecha,
         mobiliario: entrada.mobiliario.map(item => {
@@ -41,14 +46,13 @@ function comprobarReintento(registro, firma) {
     return { registro, creada: false };
 }
 function publica(registro, administracion = false) {
-    const { id, referencia, fabricante, origen, destino, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn, canceladaEn, historial, sedeOperativa, motivoRechazo, revision = 0 } = registro;
-    return { id, referencia, fabricante, origen, destino, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn, canceladaEn, sedeOperativa, motivoRechazo, ...(administracion ? { revision } : {}),
+    const { id, referencia, fabricante, origen, destino, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn, canceladaEn, historial, destinatario, localidadEntrega, codigoPostalEntrega, contactoEntrega, baseConsolidacion, localidadRecogida, motivoRechazo, revision = 0 } = registro;
+    return { id, referencia, fabricante, origen, destino, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn, canceladaEn, destinatario, localidadEntrega, codigoPostalEntrega, contactoEntrega, baseConsolidacion, localidadRecogida, motivoRechazo, ...(administracion ? { revision } : {}),
         historial: historial?.map(({ estado, estadoAnterior, fecha, responsable, responsableId, accion, sede, sedeAnterior, motivo }) => ({ estado, estadoAnterior, fecha, responsable, accion, sede, sedeAnterior, motivo, ...(administracion ? { responsableId } : {}) })) };
 }
 module.exports = { validarSolicitud, hoyMadrid, huella, comprobarReintento, publica };
 
 const estados = ["pendiente", "pendiente_recogida", "aceptada", "rechazada", "planificada", "asignada", "en_transito", "en_curso", "completada", "cancelada"];
-const sedes = ["Yecla", "Rubí", "Palma de Mallorca"];
 function filtrosAdministracion(entrada) {
     if (Object.keys(entrada).some(k => !["estado", "desde", "hasta"].includes(k))) throw invalido("Filtro no válido.");
     const salida = {};
@@ -67,14 +71,10 @@ function filtrosAdministracion(entrada) {
 }
 function revisionAdministrativa(entrada) {
     if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) throw invalido("Introduce una revisión válida.");
-    if (!["asignar_sede", "aceptar", "rechazar"].includes(entrada.accion)) throw invalido("Acción de revisión no válida.");
+    if (!["aceptar", "rechazar"].includes(entrada.accion)) throw invalido("Acción de revisión no válida.");
     if (!Number.isSafeInteger(entrada.revision) || entrada.revision < 0) throw invalido("Actualiza el detalle antes de revisar la solicitud.");
     const resultado = { accion: entrada.accion, revision: entrada.revision };
-    if (entrada.sedeOperativa !== undefined) {
-        if (!sedes.includes(entrada.sedeOperativa)) throw invalido("Selecciona Yecla, Rubí o Palma de Mallorca.");
-        resultado.sedeOperativa = entrada.sedeOperativa;
-    }
-    if (entrada.accion === "asignar_sede" && !resultado.sedeOperativa) throw invalido("Selecciona una sede operativa.");
+    if (entrada.sedeOperativa !== undefined) throw invalido("La base de consolidación es Yecla. Actualiza la página: ya no se asignan sedes en la revisión.");
     if (entrada.accion === "rechazar") resultado.motivoRechazo = texto(entrada.motivo, "Motivo del rechazo", 1000);
     return resultado;
 }

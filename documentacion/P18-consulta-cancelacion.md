@@ -4,7 +4,7 @@ Implementación de T44 (listado y detalle del cliente) y T45 (cancelación de so
 
 ## Criterios y comportamiento
 
-1. El cliente consulta solo sus solicitudes. El listado muestra referencia, origen, destino, fecha y estado. «Ver detalle» añade fabricante, contacto de recogida, mercancía, observaciones e historial. Un destino aún no planificado se identifica como pendiente: P17 no solicita un destino al crear la recogida.
+1. El cliente consulta solo sus solicitudes. El listado muestra referencia, origen, destino, fecha y estado. «Ver detalle» añade fabricante, contacto de recogida, mercancía, observaciones e historial. Las nuevas solicitudes incluyen la entrega final indicada por el cliente. Las anteriores conservan sus datos y muestran los datos de entrega ausentes como pendientes. La base de consolidación es Yecla.
 2. Se conservan el estado vacío del listado y los avisos de carga y error. El detalle permite volver a consultar mediante «Actualizar detalle» y muestra errores sin conservar datos de una solicitud anterior.
 3. Solo el cliente propietario puede cancelar, con confirmación explícita. Los estados admitidos son `pendiente_recogida` y el estado legado `pendiente`. Los estados planificados, asignados, en tránsito, finalizados, cancelados y desconocidos se rechazan. El servidor comprueba el estado en la actualización atómica, aunque el navegador tenga información antigua.
 4. Cancelar cambia el estado a `cancelada`, guarda `canceladaEn` y añade una entrada al historial con el estado anterior y la fecha. No se borra el registro ni se modifica su mercancía. Repetir la cancelación devuelve 409 y no duplica el historial. Repetir el alta original con la misma clave de idempotencia devuelve la solicitud ya cancelada.

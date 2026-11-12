@@ -141,46 +141,33 @@ Administración dispone de un listado de cuentas en su panel. Puede convertir cu
 Contrato inicial de lectura para los siguientes PBIs: MongoDB usa las colecciones `solicitudes` (`id` de texto y `clienteId` numérico) y `rutas` (`id` de texto y `conductorId` numérico); ambas admiten referencia, origen, destino, fecha y estado. Los ids admiten letras, números, guiones y guiones bajos (máximo 80). P17 y P22 incorporarán las altas y los restantes campos de negocio. La app muestra listas vacías si no hay registros: no inserta datos de demostración en MongoDB. SQLite replica este contrato únicamente en pruebas. Los datos ficticios se cargan mediante una función exclusiva del entorno de pruebas.
 
 
-### P17: solicitud de recogida al fabricante
+### P17–P19: recogida en Yecla y entrega final
 
-El panel de cliente ofrece **Nueva solicitud** para pedir una recogida en fábrica. Se indican fabricante (hasta 160 caracteres), dirección de recogida (hasta 300), contacto (nombre de hasta 120 caracteres y teléfono de 7–15 dígitos), fecha solicitada de recogida y entre 1 y 50 líneas de mercancía (descripción de hasta 200 caracteres, cantidad entera de 1 a 999 y formato `bultos`, `cajas` o `unidades`). Las observaciones de horario y acceso son opcionales (hasta 2000 caracteres). La fecha debe existir y no ser anterior al día actual en Europe/Madrid. La organización de los camiones se realiza después en la base de Yecla; no se pide destino ni contacto de entrega en esta fase.
+El cliente solicita la recogida en su fábrica de Yecla e indica la entrega final
+según el albarán: destinatario, dirección completa, localidad, código postal de
+cinco dígitos y persona y teléfono de contacto. Estos datos de entrega son
+obligatorios en las nuevas solicitudes. Se conservan los datos de recogida,
+fecha, mercancía y observaciones, con las validaciones e idempotencia de P17.
 
-`POST /api/solicitudes` requiere sesión de cliente confirmado y activo y cabecera `Idempotency-Key` (16–80 letras, números, guiones o guiones bajos). El JSON contiene `fabricante`, `origen`, `contactoRecogida` (objeto con `nombre` y `telefono`), `fecha` (AAAA-MM-DD), `mobiliario` (lista de `{descripcion,cantidad,unidad}`) y `observaciones`. El servidor fija id, referencia, clienteId, estado `pendiente_recogida` y creadaEn; ignora propietario, estado, destino o contacto de entrega enviados por el navegador. La respuesta contiene `solicitud` y `creada`: 201 al crear y 200 al repetir un envío ya guardado. Los registros anteriores no se migran ni se borran; los listados siguen mostrando su información disponible.
+El recorrido es **fábrica en Yecla → base de Yecla → dirección final**. El servidor
+fija `localidadRecogida` y `baseConsolidacion` a `Yecla`; no acepta una base distinta
+desde el navegador. Rubí/Barcelona, Palma y Castellón son zonas de las futuras
+rutas de salida, no sustituyen la dirección del destinatario ni se eligen como
+base operativa en la revisión administrativa. La planificación corresponde a P22.
 
-La clave se conserva al reintentar sin modificar los datos y se renueva tras el éxito o al cambiar el contenido. Un índice único de MongoDB por cliente y clave impide duplicados incluso en peticiones concurrentes; reutilizar una clave con otros datos responde 409. La clave y su huella persisten y no se exponen en la respuesta pública. Clientes diferentes pueden utilizar la misma clave. Una nueva clave permite una solicitud independiente con el mismo contenido. La prevención cubre doble envío y reintentos del formulario, no identifica automáticamente solicitudes parecidas ni recupera un borrador tras recargar la página.
+P18 mantiene listado, detalle y cancelación de pendientes del cliente propietario.
+P19 mantiene filtros, aceptación y rechazo, motivo visible al cliente, fecha,
+responsable y control de versión. Se retira la acción `asignar_sede`; los clientes
+antiguos que la envíen reciben 400. La revisión ya no cambia sedes ni destinos.
 
-MongoDB guarda todos los datos en `solicitudes`. SQLite replica el alta de resumen y detalles en una transacción exclusivamente para pruebas. Los listados mantienen la proyección reducida y el aislamiento de P16; el detalle ampliado y la cancelación se implementan en P18. El formulario conserva los datos ante errores y avisa del resultado sin insertar ejemplos en la base habitual.
+Los datos se almacenan en MongoDB Atlas; SQLite reproduce el contrato para las
+pruebas. No se borran ni se migran de forma destructiva las solicitudes antiguas:
+conservan los datos disponibles y muestran **Datos de entrega pendientes** donde
+falten destinatario, dirección, localidad, código postal o contacto. Los eventos
+anteriores de asignación de sede se mantienen identificados como históricos.
 
-### P18: consulta y cancelación de solicitudes (T44 y T45)
-
-El cliente dispone de **Ver detalle** en sus solicitudes, con referencia, origen,
-destino (o pendiente de planificación), fecha, estado, datos de recogida, mercancía,
-observaciones e historial. **Actualizar detalle** vuelve a consultar el estado.
-
-`POST /api/solicitudes/:id/cancelacion` permite cancelar únicamente al cliente
-propietario y solo desde `pendiente_recogida` o el estado legado `pendiente`.
-La confirmación de la interfaz no sustituye la validación del servidor: MongoDB
-actualiza estado e historial atómicamente con filtro de propietario y estado.
-Planificadas, asignadas, en tránsito, finalizadas y canceladas responden 409.
-La cancelación conserva el registro y sus datos, guarda `canceladaEn` y añade el
-estado anterior al historial. El listado y los indicadores se actualizan al terminar.
-
-Las consultas ajenas o inexistentes devuelven 404. Otros perfiles no pueden
-cancelar; la consulta administrativa previa de P16 mantiene su resumen. El detalle
-completo del cliente excluye identificadores de propietario y datos internos.
-La consulta y cancelación persisten en Atlas y sobreviven a reinicios de Cloud Run.
-Véase [alcance, criterios y pruebas de P18](documentacion/P18-consulta-cancelacion.md).
-
-### P19: revisión administrativa (T54 y T55)
-
-Administración dispone de filtros por estado y rango de fecha solicitada, detalle
-completo y revisión de solicitudes. Puede asignar sede operativa (Yecla, Rubí o
-Palma de Mallorca) y aceptar o rechazar una pendiente. El rechazo exige motivo,
-visible al cliente en su detalle. Cada cambio guarda fecha y responsable.
-
-Los endpoints `/api/administracion/solicitudes`, `/:id` y `/:id/revision` son
-exclusivos de administración. Las mutaciones validan estado y versión en una
-operación atómica en MongoDB; una revisión antigua o un conflicto con cancelación
-responde 409 y recarga el detalle. Las solicitudes posteriores a pendiente no se
-pueden aceptar/rechazar; la sede aún se puede asignar en estado aceptado.
-Véase [criterios, API y pruebas de P19](documentacion/P19-revision-administrativa.md).
+Las rutas API, permisos y cancelación se describen en
+[documentación de P18](documentacion/P18-consulta-cancelacion.md) y
+[documentación de P19](documentacion/P19-revision-administrativa.md).
+La definición del flujo actual prevalece sobre la asignación de sedes descrita
+originalmente en esos PBI.

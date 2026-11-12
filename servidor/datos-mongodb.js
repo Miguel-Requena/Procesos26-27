@@ -124,7 +124,7 @@ async function consultarTransportes(tipo, propietarioId, id) {
     const filtro = { ...(propietarioId === undefined ? {} : { [propietario]: propietarioId }), ...(id === undefined ? {} : { id }) };
     // Proyección cerrada: no se devuelven campos internos o contactos ajenos.
     return ejecutar(() => db.collection(tipo).find(filtro, { projection: {
-        _id: 0, id: 1, referencia: 1, origen: 1, destino: 1, fecha: 1, estado: 1, sedeOperativa: 1, motivoRechazo: 1
+        _id: 0, id: 1, referencia: 1, origen: 1, destino: 1, fecha: 1, estado: 1, localidadEntrega: 1, codigoPostalEntrega: 1, motivoRechazo: 1
     } }).sort({ id: 1 }).toArray());
 }
 async function detalleSolicitud(clienteId, id) {
@@ -141,17 +141,15 @@ async function cancelarSolicitud(clienteId, id, fecha) {
 async function listarSolicitudesAdministracion(filtros) {
     const consulta = { ...(filtros.estado ? { estado: filtros.estado } : {}),
         ...(filtros.desde || filtros.hasta ? { fecha: { ...(filtros.desde ? { $gte: filtros.desde } : {}), ...(filtros.hasta ? { $lte: filtros.hasta } : {}) } } : {}) };
-    return ejecutar(() => db.collection("solicitudes").find(consulta, { projection: { _id:0, id:1, referencia:1, origen:1, destino:1, fecha:1, estado:1, sedeOperativa:1, motivoRechazo:1, revision:1 } }).sort({ fecha:1, id:1 }).toArray());
+    return ejecutar(() => db.collection("solicitudes").find(consulta, { projection: { _id:0, id:1, referencia:1, origen:1, destino:1, fecha:1, estado:1, localidadEntrega:1, codigoPostalEntrega:1, motivoRechazo:1, revision:1 } }).sort({ fecha:1, id:1 }).toArray());
 }
 async function revisarSolicitud(id, cambio, responsableId, fecha) {
-    const permitidos = cambio.accion === "asignar_sede" ? ["pendiente", "pendiente_recogida", "aceptada"] : ["pendiente", "pendiente_recogida"];
-    const evento = { accion: cambio.accion, estadoAnterior: "$estado", estado: cambio.accion === "aceptar" ? "aceptada" : cambio.accion === "rechazar" ? "rechazada" : "$estado", fecha, responsable: "Administración", responsableId,
-        ...(cambio.sedeOperativa ? { sede: cambio.sedeOperativa, sedeAnterior: { $ifNull: ["$sedeOperativa", null] } } : {}),
+    const permitidos = ["pendiente", "pendiente_recogida"];
+    const evento = { accion: cambio.accion, estadoAnterior: "$estado", estado: cambio.accion === "aceptar" ? "aceptada" : "rechazada", fecha, responsable: "Administración", responsableId,
         ...(cambio.motivoRechazo ? { motivo: { $literal: cambio.motivoRechazo } } : {}) };
     return ejecutar(() => db.collection("solicitudes").findOneAndUpdate(
         { id, estado: { $in: permitidos }, $expr: { $eq: [{ $ifNull: ["$revision", 0] }, cambio.revision] } },
         [{ $set: { estado: evento.estado, revision: cambio.revision + 1,
-            ...(cambio.sedeOperativa ? { sedeOperativa: cambio.sedeOperativa } : {}),
             ...(cambio.motivoRechazo ? { motivoRechazo: { $literal: cambio.motivoRechazo } } : {}),
             historial: { $concatArrays: [{ $ifNull: ["$historial", []] }, [evento]] } } }],
         { returnDocument: "after" }));
