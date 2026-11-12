@@ -369,3 +369,25 @@ body:not(.sesion-activa) .intro-acceso h2 { font-size: clamp(32px, 2.9vw, 40px);
 .google-simbolo { font-family: 'Segoe UI', sans-serif; font-size: 18px; font-weight: 750; color: #386ec5; }
 body:not(.sesion-activa) .cancelar-vinculo { width: 100%; margin-top: 12px; padding: 9px; background: transparent; color: #626c78; font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
 body:not(.sesion-activa) .cancelar-vinculo:hover { background: #eceeea; }
+
+/* P18: consulta de solicitud y cancelación con confirmación. */
+.estado-cancelada { background: #f9e7e9; color: #9a3041; }
+.sesion-activa .ficha-transporte .ver-solicitud { grid-column: 1 / -1; justify-self: start; margin-top: 3px; font-size: 11px; }
+#detalle-solicitud { width: min(660px, calc(100% - 32px)); max-height: calc(100dvh - 48px); margin: auto; padding: 28px; border: 1px solid #e0e4e9; border-radius: 16px; color: #27313d; background: #fff; box-shadow: 0 24px 80px #111b3640; overflow-y: auto; }
+#detalle-solicitud::backdrop { background: #121c2ecc; backdrop-filter: blur(4px); }
+#detalle-solicitud h3 { margin: 7px 0 0; overflow-wrap: anywhere; }
+#detalle-solicitud h4 { margin: 24px 0 12px; font-size: 14px; }
+#estado-detalle-solicitud { margin: 18px 0; color: #626e7e; font-size: 12px; line-height: 1.7; }
+#contenido-detalle-solicitud > .insignia-estado { display: inline-block; }
+.datos-solicitud { display: grid; grid-template-columns: 145px minmax(0, 1fr); gap: 12px 18px; margin: 22px 0; padding: 20px; background: #f7f8fa; border-radius: 10px; font-size: 12px; line-height: 1.7; }
+.datos-solicitud dt { font-weight: 650; color: #677383; }
+.datos-solicitud dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.mercancia-detalle, .historial-detalle { padding-left: 20px; margin: 0; font-size: 12px; line-height: 1.8; }
+.mercancia-detalle li, .historial-detalle li { margin: 7px 0; overflow-wrap: anywhere; }
+.historial-detalle { color: #626e7e; }
+.detalle-acciones { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+.detalle-acciones button { font-size: 12px; }
+#confirmar-cancelacion { margin-top: 22px; padding: 18px; border: 1px solid #efcdd3; border-radius: 10px; background: #fff7f7; }
+#confirmar-cancelacion h4 { margin-top: 0; }
+#confirmar-cancelacion p { font-size: 12px; line-height: 1.7; }
+@media (max-width: 640px) { #detalle-solicitud { padding: 20px; max-height: calc(100dvh - 24px); } .datos-solicitud { grid-template-columns: 1fr; gap: 4px; padding: 16px; } .datos-solicitud dd { margin-bottom: 12px; } .detalle-acciones button { flex: 1; } }

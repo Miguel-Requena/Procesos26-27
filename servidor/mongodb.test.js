@@ -79,6 +79,20 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         await assert.rejects(logica.crearSolicitud({...entrada,fabricante:'Otro fabricante'},'mongo-envio-12345678',usuario),{estado:409});
         assert.equal((await logica.consultarTransportes('solicitudes',usuario)).length,1);
         assert.equal((await datos.buscarSolicitudEnvio(usuario.id,'mongo-envio-12345678')).mobiliario[0].cantidad,2);
+        const idSolicitud = resultados[0].solicitud.id;
+        const detallePropio = await logica.consultarTransportes('solicitudes', usuario, idSolicitud);
+        assert.equal(detallePropio.contactoRecogida.nombre, entrada.contactoRecogida.nombre);
+        assert.equal(detallePropio.clienteId, undefined);
+        await assert.rejects(logica.cancelarSolicitud(idSolicitud, admin), {estado:403});
+        const cancelaciones = await Promise.allSettled([logica.cancelarSolicitud(idSolicitud, usuario), logica.cancelarSolicitud(idSolicitud, usuario)]);
+        assert.equal(cancelaciones.filter(r => r.status === 'fulfilled').length, 1);
+        assert.equal(cancelaciones.find(r => r.status === 'rejected').reason.estado, 409);
+        assert.equal(await manual.db().collection('solicitudes').countDocuments({id:idSolicitud}),1);
+        const cancelada = await logica.consultarTransportes('solicitudes', usuario, idSolicitud);
+        assert.equal(cancelada.estado,'cancelada');
+        assert.equal(cancelada.historial.length,2);
+        assert.equal(cancelada.historial[1].estadoAnterior,'pendiente_recogida');
+        assert.equal((await datos.buscarSolicitudEnvio(usuario.id,'mongo-envio-12345678')).estado,'cancelada');
         assert.equal(await logica.comprobarUsuarioActivo(usuario.id, admin), true);
         assert.equal(Object.hasOwn((await logica.listarUsuarios(admin))[0], 'clave'), false);
         const intentos = await Promise.allSettled([logica.registrarUsuario(${JSON.stringify(duplicado)}, 'clave-prueba'),
@@ -93,5 +107,7 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         const admin = await logica.iniciarSesion(${JSON.stringify(adminEmail)}, 'clave-admin');
         const anterior = await datos.buscarPorEmail(${JSON.stringify(email)});
         assert.equal((await datos.buscarSolicitudEnvio(anterior.id,'mongo-envio-12345678')).observaciones,'Con ascensor');
+        assert.equal((await datos.buscarSolicitudEnvio(anterior.id,'mongo-envio-12345678')).estado,'cancelada');
+        assert.equal((await datos.buscarSolicitudEnvio(anterior.id,'mongo-envio-12345678')).historial.length,2);
         await logica.eliminarUsuario(admin.id, admin);`);
 });

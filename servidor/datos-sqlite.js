@@ -127,6 +127,29 @@ function configurarTransportePrueba(tipo, registro) {
 db.exec(`CREATE TABLE IF NOT EXISTS solicitudes_detalles (
     id TEXT PRIMARY KEY, clienteId INTEGER NOT NULL, claveEnvio TEXT NOT NULL, contenido TEXT NOT NULL,
     UNIQUE(clienteId, claveEnvio));`);
+db.exec("CREATE TABLE IF NOT EXISTS historial_solicitudes (id TEXT PRIMARY KEY, contenido TEXT NOT NULL)");
+function detalleSolicitud(clienteId, id) {
+    const resumen = db.prepare("SELECT id,referencia,origen,destino,fecha,estado FROM transportes WHERE tipo='solicitudes' AND id=? AND propietarioId=?").get(id, clienteId);
+    if (!resumen) return undefined;
+    const detalle = db.prepare("SELECT contenido FROM solicitudes_detalles WHERE id=? AND clienteId=?").get(id, clienteId);
+    const historial = db.prepare("SELECT contenido FROM historial_solicitudes WHERE id=?").get(id);
+    return { ...(detalle ? JSON.parse(detalle.contenido) : {}), ...resumen, ...(historial ? JSON.parse(historial.contenido) : {}) };
+}
+function cancelarSolicitud(clienteId, id, fecha) {
+    db.exec("BEGIN IMMEDIATE");
+    try {
+        const anterior = detalleSolicitud(clienteId, id);
+        const cambio = db.prepare("UPDATE transportes SET estado='cancelada' WHERE tipo='solicitudes' AND id=? AND propietarioId=? AND estado IN ('pendiente','pendiente_recogida')").run(id, clienteId);
+        if (!cambio.changes) { db.exec("COMMIT"); return undefined; }
+        const registro = { ...anterior, estado: "cancelada", canceladaEn: fecha,
+            historial: [...(anterior.historial || []), { estado: "cancelada", estadoAnterior: anterior.estado, fecha }] };
+        db.prepare("INSERT INTO historial_solicitudes VALUES (?,?) ON CONFLICT(id) DO UPDATE SET contenido=excluded.contenido").run(id, JSON.stringify({ historial: registro.historial, canceladaEn: fecha }));
+        const guardada = db.prepare("SELECT contenido FROM solicitudes_detalles WHERE id=? AND clienteId=?").get(id, clienteId);
+        if (guardada) db.prepare("UPDATE solicitudes_detalles SET contenido=? WHERE id=? AND clienteId=?").run(JSON.stringify({ ...JSON.parse(guardada.contenido), ...registro }), id, clienteId);
+        db.exec("COMMIT");
+        return registro;
+    } catch (error) { db.exec("ROLLBACK"); throw error; }
+}
 function buscarSolicitudEnvio(clienteId, claveEnvio) {
     const fila = db.prepare("SELECT contenido FROM solicitudes_detalles WHERE clienteId=? AND claveEnvio=?").get(clienteId, claveEnvio);
     return fila ? JSON.parse(fila.contenido) : undefined;
@@ -160,7 +183,7 @@ function crearSolicitud(registro) {
 }
 function limpiar() {
     if (process.env.NODE_ENV !== "test") throw new Error("Solo se puede limpiar la base de datos durante las pruebas");
-    db.exec("DELETE FROM intentos_oauth; DELETE FROM solicitudes_detalles; DELETE FROM transportes; DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM sesiones; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
+    db.exec("DELETE FROM historial_solicitudes; DELETE FROM intentos_oauth; DELETE FROM solicitudes_detalles; DELETE FROM transportes; DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM sesiones; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
 }
 function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     if (process.env.NODE_ENV !== "test") throw new Error("Operación exclusiva de pruebas");
@@ -169,5 +192,5 @@ function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     return buscarPorId(id);
 }
 function cerrar() { db.close(); }
-module.exports = { guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
+module.exports = { detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
     ...(process.env.NODE_ENV === "test" ? { configurarCuentaPrueba, configurarTransportePrueba } : {}) };

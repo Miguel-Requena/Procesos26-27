@@ -1,4 +1,4 @@
-const eventos = new Set(["registro", "login", "logout", "consulta_sesion", "listado_usuarios", "consulta_estado", "eliminacion_usuario", "peticion_api", "servidor_iniciado", "administrador_inicializado", "cambio_perfil", "alta_solicitud"]);
+const eventos = new Set(["registro", "login", "logout", "consulta_sesion", "listado_usuarios", "consulta_estado", "eliminacion_usuario", "peticion_api", "servidor_iniciado", "administrador_inicializado", "cambio_perfil", "alta_solicitud", "cancelacion_solicitud"]);
 function registrar(evento, campos = {}, salida = process.stdout) {
     if (!eventos.has(evento)) evento = "peticion_api";
     const entrada = { fecha: new Date().toISOString(), evento };
@@ -13,6 +13,7 @@ function middleware(req, res, next) {
     const rutas = [
         ["POST", /^\/api\/registro\/?$/, "registro"],
         ["POST", /^\/api\/solicitudes\/?$/, "alta_solicitud"],
+        ["POST", /^\/api\/solicitudes\/[^/]+\/cancelacion\/?$/, "cancelacion_solicitud"],
         ["POST", /^\/api\/login\/?$/, "login"],
         ["POST", /^\/api\/logout\/?$/, "logout"],
         ["GET", /^\/api\/sesion\/?$/, "consulta_sesion"],

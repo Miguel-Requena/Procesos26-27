@@ -41,7 +41,8 @@ function comprobarReintento(registro, firma) {
     return { registro, creada: false };
 }
 function publica(registro) {
-    const { id, referencia, fabricante, origen, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn } = registro;
-    return { id, referencia, fabricante, origen, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn };
+    const { id, referencia, fabricante, origen, destino, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn, canceladaEn, historial } = registro;
+    return { id, referencia, fabricante, origen, destino, fecha, estado, contactoRecogida, mobiliario, observaciones, creadaEn, canceladaEn,
+        historial: historial?.map(({ estado, estadoAnterior, fecha }) => ({ estado, estadoAnterior, fecha })) };
 }
 module.exports = { validarSolicitud, hoyMadrid, huella, comprobarReintento, publica };

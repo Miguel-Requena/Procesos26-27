@@ -49,6 +49,7 @@ function grupoEstado(valor) {
     if (["completada", "completado", "entregado", "entregada", "finalizada", "finalizado"].includes(texto)) return "completado";
     if (["pendiente", "pendiente_recogida", "asignada", "asignado"].includes(texto)) return "pendiente";
     if (["en_curso", "en_transito", "en_reparto"].includes(texto)) return "en-curso";
+    if (texto === "cancelada") return "cancelada";
     return "otro";
 }
 function etiquetaEstado(valor) {
@@ -159,6 +160,15 @@ async function cargarDatosPanel() {
                 insignia.className = `insignia-estado estado-${grupoEstado(registro.estado)}`;
                 insignia.textContent = etiquetaEstado(registro.estado);
                 ficha.append(nombre, insignia, detalle, datos);
+                if (rol === "cliente") {
+                    detalle.textContent = `${registro.origen || "Origen pendiente"} → ${registro.destino || "Destino pendiente de planificación"}`;
+                    const ver = document.createElement("button");
+                    ver.type = "button"; ver.className = "boton-secundario ver-solicitud";
+                    ver.textContent = "Ver detalle →";
+                    ver.setAttribute("aria-label", `Ver detalle de ${registro.referencia || registro.id}`);
+                    ver.addEventListener("click", () => abrirDetalleSolicitud(registro.id));
+                    ficha.append(ver);
+                }
                 bloque.append(ficha);
             }
             document.getElementById("lista-transportes").append(bloque);
@@ -178,11 +188,132 @@ async function cargarDatosPanel() {
         }
     }
 }
+const dialogoSolicitud = document.getElementById("detalle-solicitud");
+const estadoDetalle = document.getElementById("estado-detalle-solicitud");
+const contenidoDetalle = document.getElementById("contenido-detalle-solicitud");
+const confirmarCancelacion = document.getElementById("confirmar-cancelacion");
+let idDetalleSolicitud, versionDetalle = 0, cancelandoSolicitud = false;
+function cerrarDetalleSolicitud() {
+    versionDetalle++;
+    idDetalleSolicitud = undefined;
+    if (dialogoSolicitud.open) dialogoSolicitud.close();
+    contenidoDetalle.replaceChildren();
+    estadoDetalle.textContent = "";
+}
+function controlesDetalle(cargando) {
+    for (const id of ["actualizar-detalle-solicitud", "solicitar-cancelacion", "confirmar-cancelacion-boton", "mantener-solicitud"]) document.getElementById(id).disabled = cargando;
+    contenidoDetalle.setAttribute("aria-busy", String(cargando));
+}
+function mostrarDetalleSolicitud(registro) {
+    contenidoDetalle.replaceChildren();
+    document.getElementById("titulo-detalle-solicitud").textContent = registro.referencia || registro.id;
+    const insignia = document.createElement("span");
+    insignia.className = `insignia-estado estado-${grupoEstado(registro.estado)}`;
+    insignia.textContent = etiquetaEstado(registro.estado);
+    contenidoDetalle.append(insignia);
+    const datos = document.createElement("dl"); datos.className = "datos-solicitud";
+    const campo = (nombre, valor) => {
+        const titulo = document.createElement("dt"), texto = document.createElement("dd");
+        titulo.textContent = nombre; texto.textContent = valor || "No disponible"; datos.append(titulo, texto);
+    };
+    campo("Referencia", registro.referencia || registro.id);
+    campo("Origen / recogida", registro.origen);
+    campo("Destino", registro.destino || "Pendiente de planificación en la base de Yecla");
+    campo("Fecha solicitada", registro.fecha);
+    campo("Fabricante", registro.fabricante);
+    campo("Contacto de recogida", registro.contactoRecogida ? `${registro.contactoRecogida.nombre} · ${registro.contactoRecogida.telefono}` : null);
+    campo("Observaciones", registro.observaciones || "Sin observaciones");
+    contenidoDetalle.append(datos);
+    const encabezado = document.createElement("h4"); encabezado.textContent = "Mercancía"; contenidoDetalle.append(encabezado);
+    const mercancia = document.createElement("ul"); mercancia.className = "mercancia-detalle";
+    for (const item of registro.mobiliario || []) {
+        const fila = document.createElement("li"); fila.textContent = `${item.cantidad} ${item.unidad || "unidades"} · ${item.descripcion}`; mercancia.append(fila);
+    }
+    if (!mercancia.children.length) { const fila = document.createElement("li"); fila.textContent = "Sin detalle de mercancía en esta solicitud."; mercancia.append(fila); }
+    contenidoDetalle.append(mercancia);
+    const titulo = document.createElement("h4"); titulo.textContent = "Historial"; contenidoDetalle.append(titulo);
+    const historial = document.createElement("ol"); historial.className = "historial-detalle";
+    const eventos = registro.historial?.length ? registro.historial : registro.creadaEn ? [{ estado: "pendiente_recogida", fecha: registro.creadaEn }] : [];
+    for (const evento of eventos) {
+        const fila = document.createElement("li");
+        const fecha = new Date(evento.fecha);
+        fila.textContent = `${etiquetaHistorial(evento)} · ${Number.isNaN(fecha.getTime()) ? "Fecha no disponible" : new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Madrid" }).format(fecha)}`;
+        historial.append(fila);
+    }
+    if (!historial.children.length) { const fila = document.createElement("li"); fila.textContent = "Sin cambios registrados."; historial.append(fila); }
+    contenidoDetalle.append(historial);
+    const pendiente = ["pendiente", "pendiente_recogida"].includes(registro.estado);
+    document.getElementById("solicitar-cancelacion").hidden = !pendiente;
+    if (!pendiente) { const nota = document.createElement("p"); nota.className = "ayuda"; nota.textContent = registro.estado === "cancelada" ? "Solicitud cancelada. Sus datos y su historial se conservan." : "Esta solicitud ya no está pendiente y no se puede cancelar."; contenidoDetalle.append(nota); }
+    dialogoSolicitud.scrollTop = 0;
+    document.getElementById("titulo-detalle-solicitud").focus({ preventScroll: true });
+}
+function etiquetaHistorial(evento) {
+    return evento.estadoAnterior ? `${etiquetaEstado(evento.estadoAnterior)} → ${etiquetaEstado(evento.estado)}` : etiquetaEstado(evento.estado);
+}
+async function cargarDetalleSolicitud() {
+    const version = versionPanel, peticion = ++versionDetalle, id = idDetalleSolicitud;
+    if (!id || rolActual !== "cliente") return;
+    confirmarCancelacion.hidden = true;
+    document.getElementById("solicitar-cancelacion").hidden = true;
+    contenidoDetalle.replaceChildren(); controlesDetalle(true); estadoDetalle.textContent = "Cargando solicitud…";
+    try {
+        const { registro } = await window.api.detalleSolicitud(id);
+        if (version !== versionPanel || peticion !== versionDetalle) return;
+        mostrarDetalleSolicitud(registro); estadoDetalle.textContent = "Detalle actualizado.";
+    } catch (error) {
+        if (version !== versionPanel || peticion !== versionDetalle) return;
+        estadoDetalle.textContent = error.message;
+    } finally { if (version === versionPanel && peticion === versionDetalle) controlesDetalle(false); }
+}
+function abrirDetalleSolicitud(id) {
+    idDetalleSolicitud = id;
+    document.getElementById("titulo-detalle-solicitud").textContent = "Detalle de la solicitud";
+    if (!dialogoSolicitud.open) dialogoSolicitud.showModal();
+    cargarDetalleSolicitud();
+}
+dialogoSolicitud.addEventListener("close", () => { if (!dialogoSolicitud.open) { versionDetalle++; idDetalleSolicitud = undefined; } });
+document.getElementById("cerrar-detalle-solicitud").addEventListener("click", cerrarDetalleSolicitud);
+document.getElementById("actualizar-detalle-solicitud").addEventListener("click", cargarDetalleSolicitud);
+document.getElementById("solicitar-cancelacion").addEventListener("click", () => {
+    confirmarCancelacion.hidden = false;
+    document.getElementById("mantener-solicitud").focus();
+});
+document.getElementById("mantener-solicitud").addEventListener("click", () => {
+    confirmarCancelacion.hidden = true;
+    document.getElementById("solicitar-cancelacion").focus();
+});
+document.getElementById("confirmar-cancelacion-boton").addEventListener("click", async () => {
+    if (cancelandoSolicitud || !idDetalleSolicitud || rolActual !== "cliente") return;
+    const version = versionPanel, peticion = versionDetalle, id = idDetalleSolicitud;
+    cancelandoSolicitud = true; controlesDetalle(true); estadoDetalle.textContent = "Cancelando solicitud…";
+    try {
+        const { solicitud } = await window.api.cancelarSolicitud(id);
+        if (version !== versionPanel) return;
+        await cargarDatosPanel();
+        if (version !== versionPanel || peticion !== versionDetalle) return;
+        confirmarCancelacion.hidden = true; mostrarDetalleSolicitud(solicitud);
+        estadoDetalle.textContent = "Solicitud cancelada. Se conserva su historial.";
+    } catch (error) {
+        if (version !== versionPanel || peticion !== versionDetalle) return;
+        if (error.estado === 409) {
+            await cargarDatosPanel();
+            if (version !== versionPanel || peticion !== versionDetalle) return;
+            await cargarDetalleSolicitud();
+        }
+        if (version === versionPanel && id === idDetalleSolicitud) estadoDetalle.textContent = error.message;
+    } finally {
+        cancelandoSolicitud = false;
+        if (version === versionPanel && id === idDetalleSolicitud) controlesDetalle(false);
+    }
+});
+
 document.getElementById("actualizar-panel").addEventListener("click", cargarDatosPanel);
 async function mostrarUsuario(usuario) {
     const version = ++versionPanel;
     rolActual = undefined;
     document.getElementById("acciones-cliente").hidden = true;
+    cerrarDetalleSolicitud();
     restablecerSolicitud();
     limpiarDatosPanel();
     formularios.hidden = Boolean(usuario);
