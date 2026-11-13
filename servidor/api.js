@@ -170,6 +170,15 @@ for (const tipo of ["vehiculos", "conductores"]) {
     app.put(ruta+"/:id",exigirSesion,(req,res)=>responder(req,res,req.body ?? null,req.params.id));
 }
 
+app.post("/api/administracion/rutas", exigirSesion, async (req,res)=>{
+    try { res.status(201).json({ruta:await logica.planificarRuta(req.body,req.usuario)}); }
+    catch(error) { res.status(error.estado || 500).json({error:error.estado ? error.message : "No se pudo planificar la ruta"}); }
+});
+app.get("/api/administracion/rutas/:id", exigirSesion, async (req,res)=>{
+    try { res.json({ruta:await logica.consultarRutaAdministracion(req.params.id,req.usuario)}); }
+    catch(error) { res.status(error.estado || 500).json({error:error.estado ? error.message : "No se pudo consultar la ruta"}); }
+});
+
 app.use("/api/usuarios", exigirSesion);
 app.patch("/api/usuarios/:id/perfil", async (req, res) => {
     try { res.json({ usuario: await logica.cambiarPerfilEquipo(req.params.id, req.body?.rol, req.usuario) }); }

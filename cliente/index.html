@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="estilos.css">
     <script src="rest.js" defer></script>
     <script src="presentacion.js" defer></script>
+    <script src="rutas.js" defer></script>
 </head>
 <body>
     <header class="cabecera">
@@ -146,6 +147,28 @@
                 </form>
                 <p id="estado-panel" role="status"></p>
                 <div id="lista-transportes"></div>
+            </section>
+            <section id="planificacion-rutas" hidden aria-labelledby="titulo-planificacion">
+                <h3 id="titulo-planificacion">Planificar rutas</h3>
+                <p id="estado-planificacion" role="status" aria-live="polite"></p>
+                <button type="button" id="actualizar-planificacion" class="boton-secundario">Actualizar planificación</button>
+                <form id="form-ruta" class="recurso-form">
+                    <div class="recursos-columnas">
+                        <label>Fecha de salida<input name="fecha" type="date" max="2099-12-31" required></label>
+                        <label>Base de salida<input name="sede" value="Yecla" readonly></label>
+                        <label>Camión<select name="vehiculoId" required></select></label>
+                        <label>Conductor<select name="conductorRecursoId" required></select></label>
+                    </div>
+                    <label>Solicitud aceptada<select id="solicitud-para-ruta"></select></label>
+                    <button type="button" id="agregar-parada" class="boton-secundario">Añadir parada</button>
+                    <h4>Orden de entrega</h4><ol id="paradas-ruta"></ol>
+                    <button type="submit">Guardar planificación</button>
+                </form>
+                <h4>Rutas planificadas</h4><div id="lista-rutas-planificadas"></div>
+                <dialog id="itinerario-ruta" aria-labelledby="titulo-itinerario">
+                    <div class="seccion-barra"><h3 id="titulo-itinerario">Itinerario</h3><button type="button" id="cerrar-itinerario" class="boton-secundario">Cerrar</button></div>
+                    <div id="contenido-itinerario"></div>
+                </dialog>
             </section>
             <section id="recursos-equipo" hidden>
                 <h3>Vehículos y conductores</h3><p id="estado-recursos" role="status"></p>

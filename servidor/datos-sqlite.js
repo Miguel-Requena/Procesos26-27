@@ -118,7 +118,7 @@ function consultarTransportes(tipo, propietarioId, id) {
     if (propietarioId !== undefined) { condiciones.push("propietarioId=?"); parametros.push(propietarioId); }
     if (id !== undefined) { condiciones.push("id=?"); parametros.push(id); }
     return db.prepare(`SELECT id,referencia,origen,destino,fecha,estado FROM transportes WHERE ${condiciones.join(" AND ")} ORDER BY id`).all(...parametros).map(fila => {
-        if (tipo !== "solicitudes") return fila;
+        if (tipo !== "solicitudes") { const ruta=detalleRuta(fila.id); return {...fila,...(ruta ? {vehiculoId:ruta.vehiculoId,conductorId:ruta.conductorId} : {})}; }
         const detalle = detalleSolicitud(propietarioId, fila.id);
         return { ...fila, ...(detalle.localidadEntrega ? { localidadEntrega: detalle.localidadEntrega, codigoPostalEntrega: detalle.codigoPostalEntrega } : {}) };
     });
@@ -222,9 +222,42 @@ function guardarRecurso(registro, revision) {
         return registro;
     } catch(error) { if(error.errcode===2067) throw Object.assign(new Error("Ya existe ese recurso"),{estado:409}); throw error; }
 }
+db.exec(`CREATE TABLE IF NOT EXISTS rutas_planificadas (id TEXT PRIMARY KEY, contenido TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS reservas_rutas (fecha TEXT NOT NULL, tipo TEXT NOT NULL, recursoId TEXT NOT NULL, rutaId TEXT NOT NULL, UNIQUE(fecha,tipo,recursoId));
+    CREATE TABLE IF NOT EXISTS paradas_rutas (solicitudId TEXT PRIMARY KEY, rutaId TEXT NOT NULL);`);
+function detalleRuta(id) {
+    const fila = db.prepare("SELECT contenido FROM rutas_planificadas WHERE id=?").get(id);
+    return fila ? JSON.parse(fila.contenido) : undefined;
+}
+function planificarRuta(entrada, responsableId) {
+    const contrato = require("./rutas");
+    db.exec("BEGIN IMMEDIATE");
+    try {
+        const vehiculo = listarRecursos("vehiculos").find(r=>r.id===entrada.vehiculoId);
+        const conductor = listarRecursos("conductores").find(r=>r.id===entrada.conductorRecursoId);
+        const solicitudes = entrada.solicitudes.map(id=>detalleSolicitud(undefined,id));
+        const ruta = contrato.construir(entrada,vehiculo,conductor,buscarPorId(conductor?.usuarioId),solicitudes,responsableId);
+        for (const [tipo,recursoId] of [["vehiculo",ruta.vehiculoId],["conductor",String(ruta.conductorId)]])
+            db.prepare("INSERT INTO reservas_rutas VALUES (?,?,?,?)").run(ruta.fecha,tipo,recursoId,ruta.id);
+        for(const solicitud of solicitudes) {
+            db.prepare("INSERT INTO paradas_rutas VALUES (?,?)").run(solicitud.id,ruta.id);
+            const actual = contrato.planificada(solicitud,ruta);
+            db.prepare("UPDATE transportes SET estado='planificada' WHERE tipo='solicitudes' AND id=?").run(solicitud.id);
+            db.prepare("INSERT INTO historial_solicitudes VALUES (?,?) ON CONFLICT(id) DO UPDATE SET contenido=excluded.contenido").run(solicitud.id,JSON.stringify({historial:actual.historial,revision:actual.revision}));
+            db.prepare("UPDATE solicitudes_detalles SET contenido=? WHERE id=?").run(JSON.stringify(actual),solicitud.id);
+        }
+        db.prepare("INSERT INTO rutas_planificadas VALUES (?,?)").run(ruta.id,JSON.stringify(ruta));
+        db.prepare("INSERT INTO transportes VALUES (?,?,?,?,?,?,?,?)").run("rutas",ruta.id,ruta.conductorId,ruta.referencia,ruta.origen,ruta.destino,ruta.fecha,ruta.estado);
+        db.exec("COMMIT"); return ruta;
+    } catch(error) {
+        db.exec("ROLLBACK");
+        if(error.errcode===2067 || error.errcode===1555) throw contrato.error("Conflicto: vehículo, conductor o solicitud ya asignados. Actualiza la planificación.");
+        throw error;
+    }
+}
 function limpiar() {
     if (process.env.NODE_ENV !== "test") throw new Error("Solo se puede limpiar la base de datos durante las pruebas");
-    db.exec("DELETE FROM recursos; DELETE FROM historial_solicitudes; DELETE FROM intentos_oauth; DELETE FROM solicitudes_detalles; DELETE FROM transportes; DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM sesiones; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
+    db.exec("DELETE FROM reservas_rutas; DELETE FROM paradas_rutas; DELETE FROM rutas_planificadas; DELETE FROM recursos; DELETE FROM historial_solicitudes; DELETE FROM intentos_oauth; DELETE FROM solicitudes_detalles; DELETE FROM transportes; DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM sesiones; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
 }
 function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     if (process.env.NODE_ENV !== "test") throw new Error("Operación exclusiva de pruebas");
@@ -233,5 +266,5 @@ function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     return buscarPorId(id);
 }
 function cerrar() { db.close(); }
-module.exports = { listarRecursos, guardarRecurso, listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
+module.exports = { detalleRuta, planificarRuta, listarRecursos, guardarRecurso, listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
     ...(process.env.NODE_ENV === "test" ? { configurarCuentaPrueba, configurarTransportePrueba } : {}) };

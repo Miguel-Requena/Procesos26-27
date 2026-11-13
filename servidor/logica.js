@@ -254,7 +254,18 @@ async function gestionarRecursos(tipo, actor, entrada, id, asignables = false) {
     return guardado;
 }
 
-module.exports = { gestionarRecursos, consultarSolicitudesAdministracion, revisarSolicitud,
+async function planificarRuta(entrada, actor) {
+    await exigirAdministrador(actor);
+    return datos.planificarRuta(require("./rutas").validar(entrada),actor.id);
+}
+async function consultarRutaAdministracion(id, actor) {
+    await exigirAdministrador(actor);
+    if(typeof id!=="string" || !/^[a-zA-Z0-9_-]{1,80}$/.test(id)) throw errorAcceso("Ruta no encontrada",404);
+    const ruta=await datos.detalleRuta(id);
+    if(!ruta) throw errorAcceso("Ruta no encontrada",404);
+    return ruta;
+}
+module.exports = { planificarRuta, consultarRutaAdministracion, gestionarRecursos, consultarSolicitudesAdministracion, revisarSolicitud,
     cancelarSolicitud,
     crearSolicitud,
     cambiarPerfilEquipo, consultarTransportes,

@@ -413,3 +413,9 @@ body:not(.sesion-activa) .cancelar-vinculo:hover { background: #eceeea; }
 .recurso-form label:has(input[type="checkbox"]) { display:flex; align-items:center; }
 .recurso-form input[type="checkbox"] { width:auto; }
 #recursos-equipo { margin:32px 0; }
+
+#planificacion-rutas { margin:32px 0; }
+#paradas-ruta li, #contenido-itinerario li { padding:12px; border-bottom:1px solid #dde3e5; }
+#paradas-ruta button { margin:4px; }
+#itinerario-ruta { width:min(850px,92vw); max-height:85vh; overflow:auto; border:0; border-radius:16px; padding:24px; }
+#itinerario-ruta::backdrop { background:rgb(15 30 40 / 55%); }
