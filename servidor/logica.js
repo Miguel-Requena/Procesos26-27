@@ -224,7 +224,37 @@ async function crearSolicitud(entrada, claveEnvio, actor) {
     return { solicitud: contrato.publica(resultado.registro), creada: resultado.creada };
 }
 
-module.exports = { consultarSolicitudesAdministracion, revisarSolicitud,
+async function gestionarRecursos(tipo, actor, entrada, id, asignables = false) {
+    await exigirAdministrador(actor);
+    if (!["vehiculos","conductores"].includes(tipo)) throw errorAcceso("Recurso inválido",400);
+    const registros = await datos.listarRecursos(tipo);
+    const cuentas = tipo === "conductores" ? await datos.listar() : [];
+    const habilitado = r => r.activo && r.disponible && (tipo !== "conductores" || cuentas.some(u=>u.id===r.usuarioId && u.activo && u.rol==="conductor"));
+    if (entrada === undefined) return registros.filter(r=>!asignables || habilitado(r)).map(r=>({...r,asignable:habilitado(r)}));
+    if (!entrada || typeof entrada!=="object" || Array.isArray(entrada)) throw errorAcceso("Datos inválidos",400);
+    const anterior = id === undefined ? undefined : registros.find(r=>r.id===id);
+    if (id !== undefined && !anterior) throw errorAcceso("Recurso no encontrado",404);
+    if (anterior && entrada.revision !== anterior.revision) throw errorAcceso("El recurso ha cambiado. Actualiza antes de guardar.",409);
+    const texto = (campo,max=100) => { const v=entrada[campo]; if(typeof v!=="string" || !v.trim() || v.trim().length>max) throw errorAcceso(`Falta un valor válido para ${campo}`,400); return v.trim(); };
+    for(const campo of ["activo","disponible"]) if(typeof entrada[campo]!=="boolean") throw errorAcceso(`Valor inválido para ${campo}`,400);
+    const registro = {id:anterior?.id || require("node:crypto").randomUUID(),tipo,sede:texto("sede"),activo:entrada.activo,disponible:entrada.disponible,revision:(anterior?.revision ?? -1)+1};
+    if(tipo === "vehiculos") {
+        registro.matricula=texto("matricula",20).toUpperCase().replace(/[\s-]/g,"");
+        if(!/^[A-Z0-9]{4,15}$/.test(registro.matricula)) throw errorAcceso("Matrícula inválida",400);
+        registro.tipoVehiculo=texto("tipoVehiculo");
+        if(typeof entrada.capacidad!=="number" || !Number.isFinite(entrada.capacidad) || entrada.capacidad<=0 || entrada.capacidad>1000000) throw errorAcceso("La capacidad debe ser mayor que cero",400);
+        registro.capacidad=entrada.capacidad; registro.unidadCapacidad=texto("unidadCapacidad",20); registro.clave=registro.matricula;
+    } else {
+        if(!Number.isSafeInteger(entrada.usuarioId) || !(cuentas.some(u=>u.id===entrada.usuarioId && u.activo && u.rol==="conductor") || (anterior?.usuarioId===entrada.usuarioId && entrada.activo===false))) throw errorAcceso("Selecciona una cuenta activa con rol conductor",400);
+        registro.usuarioId=entrada.usuarioId; registro.clave=String(registro.usuarioId);
+    }
+    registro.historial=[...(anterior?.historial || []),{fecha:new Date().toISOString(),responsableId:actor.id,accion:anterior ? "actualizacion" : "alta",activo:registro.activo,disponible:registro.disponible}];
+    const guardado=await datos.guardarRecurso(registro,anterior?.revision);
+    if(!guardado) throw errorAcceso("El recurso ha cambiado. Actualiza antes de guardar.",409);
+    return guardado;
+}
+
+module.exports = { gestionarRecursos, consultarSolicitudesAdministracion, revisarSolicitud,
     cancelarSolicitud,
     crearSolicitud,
     cambiarPerfilEquipo, consultarTransportes,

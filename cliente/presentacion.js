@@ -75,6 +75,8 @@ function limpiarDatosPanel() {
 async function cargarDatosPanel() {
     const version = versionPanel, carga = ++versionDatos, rol = rolActual;
     limpiarDatosPanel();
+    document.getElementById("recursos-equipo").hidden = rol !== "administrador";
+    if (rol === "administrador") cargarRecursos();
     if (!rol) return;
     const estadoPanel = document.getElementById("estado-panel");
     estadoPanel.textContent = "Cargando datos…";
@@ -385,6 +387,7 @@ async function mostrarUsuario(usuario) {
     formularios.hidden = Boolean(usuario);
     document.querySelector(".intro-acceso").hidden = Boolean(usuario);
     panelSesion.hidden = true;
+    document.getElementById("recursos-equipo").hidden = true;
     document.body.classList.remove("sesion-activa");
     activarNavegacion(enlacesPrivados[0]);
     document.querySelector(".zona-acceso").prepend(estado, mensaje);
@@ -630,3 +633,65 @@ formularioSolicitud.addEventListener("submit", async evento => {
     }
 });
 iniciar();
+
+let versionRecursos=0;
+async function cargarRecursos() {
+    const version=++versionRecursos,panel=versionPanel,estado=document.getElementById("estado-recursos"),contenedor=document.getElementById("formularios-recursos");
+    estado.textContent="Cargando recursos…";contenedor.replaceChildren();
+    try {
+        const [v,c,u]=await Promise.all([window.api.peticion("/administracion/vehiculos"),window.api.peticion("/administracion/conductores"),window.api.listarUsuarios()]);
+        if(version!==versionRecursos || panel!==versionPanel || rolActual!=="administrador") return;
+        const opcion=(valor,texto)=>{const o=document.createElement("option");o.value=valor;o.textContent=texto;return o;};
+        for(const [tipo,registros] of [["vehiculos",v.vehiculos],["conductores",c.conductores]]) {
+            const vehiculo=tipo==="vehiculos",form=document.createElement("form");form.className="recurso-form";
+            const titulo=document.createElement("h4");titulo.textContent=vehiculo?"Camiones":"Conductores";form.append(titulo);
+            const controles={};
+            function campo(nombre,texto,clase="text") {
+                const label=document.createElement("label"),control=document.createElement(clase==="select"?"select":"input");
+                label.append(document.createTextNode(texto));control.name=nombre;
+                if(clase!=="select") control.type=clase;
+                control.required=!["registro","activo","disponible"].includes(nombre);
+                if(clase==="text") control.maxLength=100;
+                if(clase==="number") {control.min="0.01";control.max="1000000";control.step="any";}
+                label.append(control);form.append(label);controles[nombre]=control;return control;
+            }
+            const selector=campo("registro",vehiculo?"Camión guardado":"Conductor guardado","select");
+            selector.append(opcion("",vehiculo?"Añadir camión":"Añadir conductor"));
+            for(const r of registros) selector.append(opcion(r.id,`${r.matricula || u.usuarios.find(c=>c.id===r.usuarioId)?.email || "Cuenta no disponible"} · ${r.sede} · ${r.asignable ? "Asignable" : "No asignable"}`));
+            if(vehiculo) {
+                campo("matricula","Matrícula").maxLength=20;campo("tipoVehiculo","Tipo de vehículo");campo("capacidad","Capacidad declarada","number");
+                campo("unidadCapacidad","Unidad de capacidad","select").append(opcion("m³","m³"),opcion("kg","kg"),opcion("palés","Palés"));
+            } else {
+                const cuenta=campo("usuarioId","Cuenta con rol conductor","select");cuenta.append(opcion("","Seleccionar cuenta"));
+                for(const c of u.usuarios.filter(c=>c.activo && c.rol==="conductor")) cuenta.append(opcion(c.id,c.email));
+            }
+            campo("sede","Sede").defaultValue="Yecla";
+            campo("activo","Activo","checkbox").defaultChecked=true;campo("disponible","Disponible","checkbox").defaultChecked=true;
+            const boton=document.createElement("button");boton.type="submit";boton.textContent=vehiculo?"Guardar camión":"Guardar conductor";form.append(boton);
+            selector.addEventListener("change",()=>{
+                const r=registros.find(r=>r.id===selector.value);
+                if(!r) {form.reset();return;}
+                for(const [nombre,control] of Object.entries(controles)) if(nombre!=="registro") {
+                    if(nombre==="usuarioId" && !Array.from(control.options).some(o=>o.value===String(r[nombre]))) control.append(opcion(r[nombre],"Cuenta no disponible"));
+                    if(control.type==="checkbox") control.checked=r[nombre];else control.value=r[nombre];
+                }
+            });
+            form.addEventListener("submit",async evento=>{
+                evento.preventDefault();if(rolActual!=="administrador") return;
+                const id=selector.value,anterior=registros.find(r=>r.id===id),entrada={};
+                for(const [nombre,control] of Object.entries(controles)) if(nombre!=="registro") entrada[nombre]=control.type==="checkbox"?control.checked:control.value;
+                if(vehiculo) entrada.capacidad=Number(entrada.capacidad);else entrada.usuarioId=Number(entrada.usuarioId);
+                if(anterior) entrada.revision=anterior.revision;
+                boton.disabled=true;
+                try {
+                    await window.api.peticion(`/administracion/${tipo}${id?"/"+encodeURIComponent(id):""}`,{method:id?"PUT":"POST",body:JSON.stringify(entrada)});
+                    if(panel===versionPanel) {await cargarRecursos();estado.textContent="Recurso guardado.";}
+                } catch(error) {if(panel===versionPanel) estado.textContent=error.message;}
+                finally {boton.disabled=false;}
+            });
+            contenedor.append(form);
+        }
+        estado.textContent=v.vehiculos.length || c.conductores.length ? "Recursos actualizados." : "Todavía no hay recursos registrados.";
+    } catch(error) {if(version===versionRecursos && panel===versionPanel) estado.textContent=error.message;}
+}
+document.getElementById("recargar-recursos").addEventListener("click",cargarRecursos);
