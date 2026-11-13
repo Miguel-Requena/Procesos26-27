@@ -156,6 +156,20 @@ app.post("/api/administracion/solicitudes/:id/revision", exigirSesion, async (re
     catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo revisar la solicitud" }); }
 });
 
+for (const tipo of ["vehiculos", "conductores"]) {
+    const ruta = `/api/administracion/${tipo}`;
+    const responder = async (req,res,entrada,id) => {
+        try {
+            if (Object.keys(req.query).some(k=>k!=="asignables") || (req.query.asignables!==undefined && req.query.asignables!=="true")) throw Object.assign(new Error("Filtro inválido"),{estado:400});
+            const resultado=await logica.gestionarRecursos(tipo,req.usuario,entrada,id,req.query.asignables==="true");
+            res.status(req.method==="POST"?201:200).json({[entrada===undefined?tipo:"recurso"]:resultado});
+        } catch(error) { res.status(error.estado || 500).json({error:error.estado ? error.message : "No se pudo gestionar el recurso"}); }
+    };
+    app.get(ruta,exigirSesion,(req,res)=>responder(req,res));
+    app.post(ruta,exigirSesion,(req,res)=>responder(req,res,req.body ?? null));
+    app.put(ruta+"/:id",exigirSesion,(req,res)=>responder(req,res,req.body ?? null,req.params.id));
+}
+
 app.use("/api/usuarios", exigirSesion);
 app.patch("/api/usuarios/:id/perfil", async (req, res) => {
     try { res.json({ usuario: await logica.cambiarPerfilEquipo(req.params.id, req.body?.rol, req.usuario) }); }

@@ -25,6 +25,8 @@ async function inicializar() {
     if (!inicializacion) inicializacion = (async () => {
         await client.connect();
         await usuarios.updateMany({ rol: "usuario" }, { $set: { rol: "cliente" } });
+        await db.collection("recursos").createIndex({ tipo: 1, clave: 1 }, { unique: true });
+        await db.collection("recursos").createIndex({ id: 1 }, { unique: true });
         await usuarios.createIndex({ email: 1 }, { unique: true });
         await usuarios.createIndex({ id: 1 }, { unique: true });
         for (const [coleccion, propietario] of [["solicitudes", "clienteId"], ["rutas", "conductorId"]]) {
@@ -196,6 +198,15 @@ async function crearSolicitud(registro) {
         }
     });
 }
+async function listarRecursos(tipo) { return ejecutar(()=>db.collection("recursos").find({tipo},{projection:{_id:0}}).sort({clave:1}).toArray()); }
+async function guardarRecurso(registro, revision) {
+    return ejecutar(async()=>{
+        try {
+            if (revision === undefined) { await db.collection("recursos").insertOne({...registro}); return registro; }
+            return await db.collection("recursos").findOneAndReplace({id:registro.id,tipo:registro.tipo,revision},registro,{returnDocument:"after",projection:{_id:0}});
+        } catch(error) { if(error.code===11000) throw Object.assign(new Error("Ya existe ese recurso"),{estado:409}); throw error; }
+    });
+}
 async function limpiar() { throw new Error("No se permite limpiar la base MongoDB de la aplicación"); }
 async function cerrar() { await client.close(); }
-module.exports = { listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };
+module.exports = { listarRecursos, guardarRecurso, listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };

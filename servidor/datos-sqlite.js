@@ -213,9 +213,18 @@ function crearSolicitud(registro) {
         return { registro, creada: true };
     } catch (error) { db.exec("ROLLBACK"); throw error; }
 }
+db.exec(`CREATE TABLE IF NOT EXISTS recursos (id TEXT PRIMARY KEY, tipo TEXT NOT NULL, clave TEXT NOT NULL, revision INTEGER NOT NULL, contenido TEXT NOT NULL, UNIQUE(tipo,clave));`);
+function listarRecursos(tipo) { return db.prepare("SELECT contenido FROM recursos WHERE tipo=? ORDER BY clave").all(tipo).map(r=>JSON.parse(r.contenido)); }
+function guardarRecurso(registro, revision) {
+    try {
+        if (revision === undefined) db.prepare("INSERT INTO recursos VALUES (?,?,?,?,?)").run(registro.id,registro.tipo,registro.clave,registro.revision,JSON.stringify(registro));
+        else if (!db.prepare("UPDATE recursos SET clave=?, revision=?, contenido=? WHERE id=? AND tipo=? AND revision=?").run(registro.clave,registro.revision,JSON.stringify(registro),registro.id,registro.tipo,revision).changes) return undefined;
+        return registro;
+    } catch(error) { if(error.errcode===2067) throw Object.assign(new Error("Ya existe ese recurso"),{estado:409}); throw error; }
+}
 function limpiar() {
     if (process.env.NODE_ENV !== "test") throw new Error("Solo se puede limpiar la base de datos durante las pruebas");
-    db.exec("DELETE FROM historial_solicitudes; DELETE FROM intentos_oauth; DELETE FROM solicitudes_detalles; DELETE FROM transportes; DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM sesiones; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
+    db.exec("DELETE FROM recursos; DELETE FROM historial_solicitudes; DELETE FROM intentos_oauth; DELETE FROM solicitudes_detalles; DELETE FROM transportes; DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM sesiones; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
 }
 function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     if (process.env.NODE_ENV !== "test") throw new Error("Operación exclusiva de pruebas");
@@ -224,5 +233,5 @@ function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     return buscarPorId(id);
 }
 function cerrar() { db.close(); }
-module.exports = { listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
+module.exports = { listarRecursos, guardarRecurso, listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
     ...(process.env.NODE_ENV === "test" ? { configurarCuentaPrueba, configurarTransportePrueba } : {}) };

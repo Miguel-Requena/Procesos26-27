@@ -38,6 +38,15 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
     ejecutar(`const usuario = await logica.iniciarSesion(${JSON.stringify(email)}, 'clave-prueba');
         const admin = await logica.iniciarSesion(${JSON.stringify(adminEmail)}, 'clave-admin');
         assert.equal(admin.rol, 'administrador');
+        const camion = {matricula:'P'+admin.id+'TEST',tipoVehiculo:'Camión',capacidad:80,unidadCapacidad:'m³',sede:'Yecla',activo:true,disponible:true};
+        const recurso = await logica.gestionarRecursos('vehiculos',admin,camion);
+        await assert.rejects(logica.gestionarRecursos('vehiculos',admin,camion),{estado:409});
+        const cambios = await Promise.allSettled([
+            logica.gestionarRecursos('vehiculos',admin,{...recurso,disponible:false},recurso.id),
+            logica.gestionarRecursos('vehiculos',admin,{...recurso,activo:false},recurso.id)]);
+        assert.equal(cambios.filter(r=>r.status==='fulfilled').length,1);
+        assert.equal(cambios.find(r=>r.status==='rejected').reason.estado,409);
+
         assert.equal(usuario.rol, 'cliente');
         const lecturas = await Promise.all([datos.leerIntentoOAuth('oauth-' + usuario.id, true), datos.leerIntentoOAuth('oauth-' + usuario.id, true)]);
         assert.equal(lecturas.filter(Boolean).length, 1);
@@ -118,6 +127,9 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         await usuarios.updateOne({email: ${JSON.stringify(email)}}, {$set: {confirmado: true}});
         await assert.rejects(logica.iniciarSesion(${JSON.stringify(email)}, 'clave-prueba'));
         const admin = await logica.iniciarSesion(${JSON.stringify(adminEmail)}, 'clave-admin');
+        const persistido = (await logica.gestionarRecursos('vehiculos',admin)).find(r=>r.matricula==='P'+admin.id+'TEST');
+        assert.equal(persistido.historial.length,2);
+        assert.equal(persistido.asignable,false);
         const anterior = await datos.buscarPorEmail(${JSON.stringify(email)});
         assert.equal((await datos.buscarSolicitudEnvio(anterior.id,'mongo-envio-12345678')).observaciones,'Con ascensor');
         assert.equal((await datos.buscarSolicitudEnvio(anterior.id,'mongo-envio-12345678')).estado,'cancelada');
