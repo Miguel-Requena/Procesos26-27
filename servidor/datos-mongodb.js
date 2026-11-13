@@ -27,6 +27,9 @@ async function inicializar() {
         await usuarios.updateMany({ rol: "usuario" }, { $set: { rol: "cliente" } });
         await db.collection("recursos").createIndex({ tipo: 1, clave: 1 }, { unique: true });
         await db.collection("recursos").createIndex({ id: 1 }, { unique: true });
+        await db.collection("rutas").createIndex({ fecha:1, vehiculoId:1 }, { unique:true, partialFilterExpression:{activa:true} });
+        await db.collection("rutas").createIndex({ fecha:1, conductorId:1 }, { unique:true, partialFilterExpression:{activa:true} });
+        await db.collection("rutas").createIndex({ "paradas.solicitudId":1 }, { unique:true, partialFilterExpression:{activa:true} });
         await usuarios.createIndex({ email: 1 }, { unique: true });
         await usuarios.createIndex({ id: 1 }, { unique: true });
         for (const [coleccion, propietario] of [["solicitudes", "clienteId"], ["rutas", "conductorId"]]) {
@@ -126,7 +129,7 @@ async function consultarTransportes(tipo, propietarioId, id) {
     const filtro = { ...(propietarioId === undefined ? {} : { [propietario]: propietarioId }), ...(id === undefined ? {} : { id }) };
     // Proyección cerrada: no se devuelven campos internos o contactos ajenos.
     return ejecutar(() => db.collection(tipo).find(filtro, { projection: {
-        _id: 0, id: 1, referencia: 1, origen: 1, destino: 1, fecha: 1, estado: 1, localidadEntrega: 1, codigoPostalEntrega: 1, motivoRechazo: 1
+        _id: 0, id: 1, referencia: 1, origen: 1, destino: 1, fecha: 1, estado: 1, vehiculoId: 1, conductorId: 1, localidadEntrega: 1, codigoPostalEntrega: 1, motivoRechazo: 1
     } }).sort({ id: 1 }).toArray());
 }
 async function detalleSolicitud(clienteId, id) {
@@ -207,6 +210,36 @@ async function guardarRecurso(registro, revision) {
         } catch(error) { if(error.code===11000) throw Object.assign(new Error("Ya existe ese recurso"),{estado:409}); throw error; }
     });
 }
+async function detalleRuta(id) { return ejecutar(()=>db.collection("rutas").findOne({id},{projection:{_id:0}})); }
+async function planificarRuta(entrada, responsableId) {
+    return ejecutar(async()=>{
+        const session = client.startSession(), contrato = require("./rutas");
+        try {
+            return await session.withTransaction(async()=>{
+                const opciones = {session};
+                const vehiculo = await db.collection("recursos").findOne({id:entrada.vehiculoId,tipo:"vehiculos"},opciones);
+                const conductor = await db.collection("recursos").findOne({id:entrada.conductorRecursoId,tipo:"conductores"},opciones);
+                const cuenta = convertir(await usuarios.findOne({id:conductor?.usuarioId ?? -1},opciones));
+                const solicitudes = await db.collection("solicitudes").find({id:{$in:entrada.solicitudes}},opciones).toArray();
+                const ordenadas = entrada.solicitudes.map(id=>solicitudes.find(s=>s.id===id));
+                const ruta = contrato.construir(entrada,vehiculo,conductor,cuenta,ordenadas,responsableId);
+                // Escrituras compartidas con bajas/cambios: MongoDB reintenta y revalida si otra operación ganó.
+                for(const recurso of [vehiculo,conductor]) await db.collection("recursos").updateOne({id:recurso.id},{$inc:{versionPlanificacion:1}},opciones);
+                await usuarios.updateOne({id:cuenta.id},{$inc:{versionPlanificacion:1}},opciones);
+                await db.collection("rutas").insertOne({...ruta},opciones);
+                for(const solicitud of ordenadas) {
+                    const actual = contrato.planificada(solicitud,ruta);
+                    const cambio = await db.collection("solicitudes").updateOne({id:solicitud.id,estado:"aceptada"},{$set:{estado:actual.estado,rutaId:ruta.id,revision:actual.revision,historial:actual.historial}},opciones);
+                    if(cambio.matchedCount!==1) throw contrato.error("Una solicitud ha cambiado. Actualiza antes de planificar.");
+                }
+                return ruta;
+            },{readConcern:{level:"snapshot"},writeConcern:{w:"majority"},maxCommitTimeMS:15000});
+        } catch(error) {
+            if(error.code===11000) throw contrato.error("Conflicto: vehículo, conductor o solicitud ya asignados. Actualiza la planificación.");
+            throw error;
+        } finally { await session.endSession(); }
+    });
+}
 async function limpiar() { throw new Error("No se permite limpiar la base MongoDB de la aplicación"); }
 async function cerrar() { await client.close(); }
-module.exports = { listarRecursos, guardarRecurso, listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };
+module.exports = { detalleRuta, planificarRuta, listarRecursos, guardarRecurso, listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };

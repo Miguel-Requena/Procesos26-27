@@ -76,6 +76,7 @@ async function cargarDatosPanel() {
     const version = versionPanel, carga = ++versionDatos, rol = rolActual;
     limpiarDatosPanel();
     document.getElementById("recursos-equipo").hidden = rol !== "administrador";
+    window.rutasPanel?.actualizar(rol);
     if (rol === "administrador") cargarRecursos();
     if (!rol) return;
     const estadoPanel = document.getElementById("estado-panel");
@@ -387,6 +388,7 @@ async function mostrarUsuario(usuario) {
     formularios.hidden = Boolean(usuario);
     document.querySelector(".intro-acceso").hidden = Boolean(usuario);
     panelSesion.hidden = true;
+    window.rutasPanel?.actualizar(undefined);
     document.getElementById("recursos-equipo").hidden = true;
     document.body.classList.remove("sesion-activa");
     activarNavegacion(enlacesPrivados[0]);

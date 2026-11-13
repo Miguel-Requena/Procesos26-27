@@ -9,16 +9,6 @@ jobs:
     # MongoDB 8.0 falla al detectar el kernel Azure actual de Ubuntu 24.04.
     # Solución temporal recomendada: https://github.com/actions/runner-images/issues/15005
     runs-on: ubuntu-22.04
-    services:
-      mongodb:
-        image: mongo:8.0
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1}).ok'"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     env:
       MONGODB_TEST_URL: mongodb://localhost:27017/pruebas_procesos
     defaults:
@@ -35,6 +25,20 @@ jobs:
           cache-dependency-path: servidor/package-lock.json
       - name: Instalar dependencias
         run: npm ci
+      - name: Iniciar MongoDB con transacciones
+        run: |
+          docker run --detach --name mongodb --publish 27017:27017 mongo:8.0 --replSet rs0 --bind_ip_all
+          for intento in $(seq 1 30); do
+            if docker exec mongodb mongosh --quiet --eval 'db.adminCommand({ping:1}).ok'; then break; fi
+            sleep 2
+          done
+          docker exec mongodb mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
+          for intento in $(seq 1 30); do
+            if docker exec mongodb mongosh --quiet --eval 'if (!db.hello().isWritablePrimary) quit(1)'; then exit 0; fi
+            sleep 2
+          done
+          docker logs mongodb
+          exit 1
       - name: Ejecutar pruebas
         run: npm test
       - name: Comprobar contenedor de Cloud Run con MongoDB real
