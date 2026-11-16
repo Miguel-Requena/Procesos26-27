@@ -96,6 +96,12 @@ test("P22: rechaza recursos inactivos, no disponibles, de otra sede o con cuenta
 test("P22: solicitud pendiente o inexistente impide toda la ruta",async()=>{
     const e=await escenario();
     await datos.configurarTransportePrueba("solicitudes",{id:"pendiente",clienteId:e.cliente.id,referencia:"ANTIGUA",origen:"Yecla",destino:"Rubí",fecha:"2099-12-15",estado:"pendiente_recogida"});
+    await datos.configurarTransportePrueba("solicitudes",{id:"incompleta",clienteId:e.cliente.id,referencia:"TD-INCOMPLETA",origen:"Yecla",fecha:"2099-12-15",estado:"aceptada"});
+    const resumen=await logica.consultarSolicitudesAdministracion({estado:"aceptada"},e.admin);
+    assert.equal(resumen.find(s=>s.id==="incompleta").entregaCompleta,false);
+    assert.equal(resumen.find(s=>s.id===e.solicitudes[0].id).entregaCompleta,true);
+    assert.equal(resumen.find(s=>s.id===e.solicitudes[0].id).contactoEntrega,undefined);
+    await assert.rejects(logica.planificarRuta({...e.entrada,solicitudes:["incompleta"]},e.admin),error=>error.estado===409 && error.message.includes("TD-INCOMPLETA"));
     for (const id of ["pendiente","inexistente"]) await assert.rejects(logica.planificarRuta({...e.entrada,solicitudes:[e.solicitudes[0].id,id]},e.admin),{estado:409});
     assert.equal((await datos.detalleSolicitud(undefined,e.solicitudes[0].id)).estado,"aceptada");
     assert.equal((await logica.consultarTransportes("rutas",e.admin)).length,0);

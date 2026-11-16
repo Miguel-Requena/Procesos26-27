@@ -30,6 +30,8 @@ test("El nombre de la cuenta se utiliza automáticamente en los conductores sin 
     await datos.configurarCuentaPrueba(usuario.id,true,"conductor");
     const recurso=await logica.gestionarRecursos("conductores",admin,{usuarioId:usuario.id,sede:"Yecla",activo:true,disponible:true});
     assert.equal(recurso.nombre,"Miguel Requena");
+    const actualizado=await logica.gestionarRecursos("conductores",admin,{...recurso,nombre:"Otro nombre enviado"},recurso.id);
+    assert.equal(actualizado.nombre,"Miguel Requena");
     assert.equal((await logica.gestionarRecursos("conductores",admin))[0].nombre,"Miguel Requena");
     const antigua=await ayudas.registrarConfirmado("antigua@example.com","clave-prueba","conductor");
     const sinNombre=await logica.gestionarRecursos("conductores",admin,{usuarioId:antigua.id,sede:"Yecla",activo:true,disponible:true});assert.equal(sinNombre.nombre,"");

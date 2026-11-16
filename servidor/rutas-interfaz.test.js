@@ -2,7 +2,7 @@ const test = require("node:test"), assert = require("node:assert/strict");
 const vm = require("node:vm"), fs = require("node:fs"), path = require("node:path");
 
 // Ejecuta el controlador real y sus eventos contra un DOM mínimo, sin cuentas ni red reales.
-function interfaz(errorGuardado) {
+function interfaz(errorGuardado, incompleta = false) {
     class Elemento {
         constructor() { this.value=""; this.children=[]; this.eventos={}; this.open=false; }
         append(...elementos) { this.children.push(...elementos); }
@@ -19,7 +19,7 @@ function interfaz(errorGuardado) {
     const form=nodo("form-ruta");form.elements=Object.fromEntries(["fecha","vehiculoId","conductorRecursoId"].map(k=>[k,new Elemento()]));
     const envios=[];
     const window={api:{
-        listarSolicitudesAdministracion:async()=>({solicitudes:[{id:"s1",referencia:"TD-1",destino:"Entrega 1"},{id:"s2",referencia:"TD-2",destino:"Entrega 2"}]}),
+        listarSolicitudesAdministracion:async()=>({solicitudes:[{id:"s1",referencia:"TD-1",destino:"Entrega 1",entregaCompleta:!incompleta},{id:"s2",referencia:"TD-2",destino:"Entrega 2"}]}),
         consultarTransportes:async()=>({rutas:[]}),
         peticion:async(ruta,opciones)=>{
             if(opciones?.method==="POST") {
@@ -67,4 +67,13 @@ test("Los errores de entrega aparecen junto al botón sin perder las paradas",as
     assert.equal(i.nodo("resultado-planificacion").textContent,"Faltan datos de entrega");
     assert.equal(i.nodo("resultado-planificacion").enfocado,true);
     assert.equal(i.nodo("paradas-ruta").children.length,1);
+});
+
+test("Las solicitudes incompletas están deshabilitadas y explican por qué no se pueden planificar",async()=>{
+    const i=interfaz(undefined,true);await preparar(i);
+    const opcion=i.nodo("solicitud-para-ruta").children.find(o=>o.value==="s1");assert.equal(opcion.disabled,true);
+    assert.match(i.nodo("aviso-solicitudes-incompletas").textContent,/TD-1.*faltan datos de entrega/);
+    assert.equal(i.nodo("aviso-solicitudes-incompletas").hidden,false);
+    i.nodo("solicitud-para-ruta").value="s1";await i.form.eventos.submit({preventDefault(){}});
+    assert.equal(i.envios.length,0);assert.match(i.nodo("resultado-planificacion").textContent,/TD-1.*datos de entrega/);
 });

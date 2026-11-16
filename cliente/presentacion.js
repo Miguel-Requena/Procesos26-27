@@ -668,14 +668,8 @@ async function cargarRecursos() {
                 campo("matricula","Matrícula").maxLength=20;campo("tipoVehiculo","Tipo de vehículo");campo("capacidad","Capacidad declarada","number");
                 campo("unidadCapacidad","Unidad de capacidad","select").append(opcion("m³","m³"),opcion("kg","kg"),opcion("palés","Palés"));
             } else {
-                campo("nombre","Nombre del conductor");
                 const cuenta=campo("usuarioId","Cuenta con rol conductor","select");cuenta.append(opcion("","Seleccionar cuenta"));
                 for(const c of u.usuarios.filter(c=>c.activo && c.rol==="conductor")) cuenta.append(opcion(c.id,c.email));
-                cuenta.addEventListener("change",()=>{
-                    const usuario=u.usuarios.find(u=>u.id===Number(cuenta.value));
-                    const nombre=[usuario?.nombre,usuario?.primerApellido].filter(Boolean).join(" ");
-                    controles.nombre.value=nombre;
-                });
             }
             campo("sede","Sede").defaultValue="Yecla";
             campo("activo","Activo","checkbox").defaultChecked=true;campo("disponible","Disponible","checkbox").defaultChecked=true;

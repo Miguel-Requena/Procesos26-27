@@ -14,7 +14,13 @@
         if (enfocar) resultado.focus();
     }
     function agregarSeleccionada() {
-        if (selector.value && !elegidas.includes(selector.value)) { elegidas.push(selector.value); paradas(); }
+        const solicitud = solicitudes.find(s=>s.id===selector.value);
+        if (solicitud?.entregaCompleta === false) {
+            informar(`La solicitud ${solicitud.referencia} no tiene los datos de entrega completos. Crea una solicitud con esos datos desde la cuenta de cliente.`, true);
+            return false;
+        }
+        if (solicitud && !elegidas.includes(solicitud.id)) { elegidas.push(solicitud.id); paradas(); }
+        return true;
     }
     function controles() {
         for (const control of seccion.querySelectorAll("input, select, button")) control.disabled = guardando;
@@ -31,7 +37,14 @@
     }
     function paradas() {
         selector.replaceChildren(opcion("", "Seleccionar solicitud aceptada")); lista.replaceChildren();
-        for (const s of solicitudes.filter(s => !elegidas.includes(s.id))) selector.append(opcion(s.id, `${s.referencia} · ${entrega(s)}`));
+        for (const s of solicitudes.filter(s => !elegidas.includes(s.id))) {
+            const o = opcion(s.id, `${s.referencia} · ${s.entregaCompleta === false ? "Datos de entrega incompletos" : entrega(s)}`);
+            o.disabled = s.entregaCompleta === false; selector.append(o);
+        }
+        const incompletas = solicitudes.filter(s=>s.entregaCompleta === false);
+        const aviso = document.getElementById("aviso-solicitudes-incompletas");
+        aviso.hidden = incompletas.length === 0;
+        aviso.textContent = incompletas.length ? `${incompletas.map(s=>s.referencia).join(", ")}: faltan datos de entrega. Para planificar, crea una solicitud con los datos de entrega completos desde la cuenta de cliente.` : "";
         elegidas.forEach((id, indice) => {
             const s = solicitudes.find(s => s.id === id), li = document.createElement("li"), texto = document.createElement("p");
             texto.textContent = `${s.referencia} · ${entrega(s)}`; li.append(texto);
@@ -80,7 +93,7 @@
             if (carga !== version || !administracion) return;
             vehiculos = v.vehiculos; conductores = c.conductores;
             solicitudes = s.solicitudes; rutas = r.rutas;
-            elegidas = conservar ? elegidas.filter(id => solicitudes.some(s=>s.id===id)) : [];
+            elegidas = conservar ? elegidas.filter(id => solicitudes.some(s=>s.id===id && s.entregaCompleta !== false)) : [];
             recursos(); paradas();
             const contenedor = document.getElementById("lista-rutas-planificadas");
             for (const ruta of rutas) {
@@ -90,7 +103,7 @@
                 boton.addEventListener("click", () => detalle(ruta.id)); p.append(boton); contenedor.append(p);
             }
             if (!rutas.length) contenedor.textContent = "Todavía no hay rutas planificadas.";
-            estado.textContent = !solicitudes.length ? "No hay solicitudes aceptadas para planificar." : !vehiculos.some(v=>v.sede==="Yecla") || !conductores.some(c=>c.sede==="Yecla") ? "Registra un camión y un conductor disponibles en Yecla para planificar." : "Añade las solicitudes en el orden de entrega.";
+            estado.textContent = !solicitudes.length ? "No hay solicitudes aceptadas para planificar." : !solicitudes.some(s=>s.entregaCompleta !== false) ? "Las solicitudes aceptadas tienen datos de entrega incompletos y todavía no se pueden planificar." : !vehiculos.some(v=>v.sede==="Yecla") || !conductores.some(c=>c.sede==="Yecla") ? "Registra un camión y un conductor disponibles en Yecla para planificar." : "Añade las solicitudes en el orden de entrega.";
             form.hidden = false;
         } catch (error) { if (carga === version) informar(error.message, true); }
     }
@@ -101,7 +114,7 @@
     dialog.addEventListener("close", () => { ++versionDetalle; });
     form.addEventListener("submit", async evento => {
         evento.preventDefault(); if (guardando || !administracion) return;
-        agregarSeleccionada();
+        if (!agregarSeleccionada()) return;
         if (!elegidas.length) { informar("Selecciona una solicitud aceptada o añade una parada antes de guardar.", true); return; }
         const vista = version, entrada = {fecha:form.elements.fecha.value,sede:"Yecla",vehiculoId:form.elements.vehiculoId.value,conductorRecursoId:form.elements.conductorRecursoId.value,solicitudes:[...elegidas]};
         guardando = true; controles(); informar("Guardando planificación…");

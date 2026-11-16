@@ -146,7 +146,10 @@ async function cancelarSolicitud(clienteId, id, fecha) {
 async function listarSolicitudesAdministracion(filtros) {
     const consulta = { ...(filtros.estado ? { estado: filtros.estado } : {}),
         ...(filtros.desde || filtros.hasta ? { fecha: { ...(filtros.desde ? { $gte: filtros.desde } : {}), ...(filtros.hasta ? { $lte: filtros.hasta } : {}) } } : {}) };
-    return ejecutar(() => db.collection("solicitudes").find(consulta, { projection: { _id:0, id:1, referencia:1, origen:1, destino:1, fecha:1, estado:1, localidadEntrega:1, codigoPostalEntrega:1, motivoRechazo:1, revision:1 } }).sort({ fecha:1, id:1 }).toArray());
+    return ejecutar(async () => {
+        const registros = await db.collection("solicitudes").find(consulta, { projection: { _id:0, id:1, referencia:1, origen:1, destino:1, fecha:1, estado:1, localidadEntrega:1, codigoPostalEntrega:1, motivoRechazo:1, revision:1, destinatario:1, contactoEntrega:1 } }).sort({ fecha:1, id:1 }).toArray();
+        return registros.map(({destinatario,contactoEntrega,...resumen})=>({...resumen,entregaCompleta:require("./rutas").entregaCompleta({...resumen,destinatario,contactoEntrega})}));
+    });
 }
 async function revisarSolicitud(id, cambio, responsableId, fecha) {
     const permitidos = ["pendiente", "pendiente_recogida"];
