@@ -115,7 +115,7 @@
     form.addEventListener("submit", async evento => {
         evento.preventDefault(); if (guardando || !administracion) return;
         if (!agregarSeleccionada()) return;
-        if (!elegidas.length) { informar("Selecciona una solicitud aceptada o añade una parada antes de guardar.", true); return; }
+        if (!elegidas.length) { informar(solicitudes.length && solicitudes.every(s=>s.entregaCompleta === false) ? "No hay solicitudes con datos de entrega completos. Crea una solicitud completa desde la cuenta de cliente antes de planificar." : "Selecciona una solicitud aceptada o añade una parada antes de guardar.", true); return; }
         const vista = version, entrada = {fecha:form.elements.fecha.value,sede:"Yecla",vehiculoId:form.elements.vehiculoId.value,conductorRecursoId:form.elements.conductorRecursoId.value,solicitudes:[...elegidas]};
         guardando = true; controles(); informar("Guardando planificación…");
         try {

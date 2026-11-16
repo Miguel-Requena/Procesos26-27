@@ -19,7 +19,7 @@ function interfaz(errorGuardado, incompleta = false) {
     const form=nodo("form-ruta");form.elements=Object.fromEntries(["fecha","vehiculoId","conductorRecursoId"].map(k=>[k,new Elemento()]));
     const envios=[];
     const window={api:{
-        listarSolicitudesAdministracion:async()=>({solicitudes:[{id:"s1",referencia:"TD-1",destino:"Entrega 1",entregaCompleta:!incompleta},{id:"s2",referencia:"TD-2",destino:"Entrega 2"}]}),
+        listarSolicitudesAdministracion:async()=>({solicitudes:[{id:"s1",referencia:"TD-1",destino:"Entrega 1",entregaCompleta:!incompleta},{id:"s2",referencia:"TD-2",destino:"Entrega 2",entregaCompleta:incompleta!=="todas"}]}),
         consultarTransportes:async()=>({rutas:[]}),
         peticion:async(ruta,opciones)=>{
             if(opciones?.method==="POST") {
@@ -76,4 +76,11 @@ test("Las solicitudes incompletas están deshabilitadas y explican por qué no s
     assert.equal(i.nodo("aviso-solicitudes-incompletas").hidden,false);
     i.nodo("solicitud-para-ruta").value="s1";await i.form.eventos.submit({preventDefault(){}});
     assert.equal(i.envios.length,0);assert.match(i.nodo("resultado-planificacion").textContent,/TD-1.*datos de entrega/);
+});
+
+test("Si todas las solicitudes están incompletas, Guardar explica el problema real",async()=>{
+    const i=interfaz(undefined,"todas");await preparar(i);
+    await i.form.eventos.submit({preventDefault(){}});
+    assert.equal(i.envios.length,0);
+    assert.match(i.nodo("resultado-planificacion").textContent,/No hay solicitudes con datos de entrega completos/);
 });
