@@ -35,8 +35,8 @@ window.api = {
     reenviar(email) { return this.peticion("/confirmacion/reenviar", { method: "POST", body: JSON.stringify({ email }) }); },
     obtenerPanel(rol) { return this.peticion(`/panel/${encodeURIComponent(rol)}`); },
     obtenerSesion() { return this.peticion("/sesion"); },
-    registrar(email, clave) {
-        return this.peticion("/registro", { method: "POST", body: JSON.stringify({ email, clave }) });
+    registrar(email, clave, nombre, primerApellido) {
+        return this.peticion("/registro", { method: "POST", body: JSON.stringify({ email, clave, nombre, primerApellido }) });
     },
     iniciarSesion(email, clave, vincularGoogle = false) {
         return this.peticion("/login", { method: "POST", body: JSON.stringify({ email, clave, vincularGoogle }) });

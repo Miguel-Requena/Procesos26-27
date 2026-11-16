@@ -47,10 +47,11 @@ app.post("/api/prueba/email", (req, res) => {
 app.post("/api/registro", async (req, res) => {
     try {
         const { email, clave } = req.body || {};
+        const identidad = logica.validarIdentidad(req.body);
         if (!externos.correoDisponible()) throw Object.assign(new Error("El envío de correo no está configurado. Contacta con el administrador."), { estado: 503 });
         externos.urlPublica();
         externos.limitar(logica.normalizarEmail(email));
-        const usuario = await logica.registrarUsuario(email, clave);
+        const usuario = await logica.registrarUsuario(email, clave, identidad);
         await externos.enviarConfirmacion(usuario);
         req.usuarioActividad = usuario.id;
 

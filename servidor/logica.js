@@ -3,7 +3,8 @@ const bcrypt = require("bcrypt");
 const datos = require("./datos");
 
 function publico(usuario) {
-    return { id: usuario.id, email: usuario.email, activo: usuario.activo, rol: usuario.rol };
+    return { id: usuario.id, email: usuario.email, activo: usuario.activo, rol: usuario.rol,
+        ...(usuario.nombre || usuario.primerApellido ? {nombre:usuario.nombre || "",primerApellido:usuario.primerApellido || ""} : {}) };
 }
 function errorAcceso(mensaje, estado) {
     const error = new Error(mensaje);
@@ -37,11 +38,21 @@ function validarClave(clave) {
     }
 }
 
-async function registrarUsuario(email, clave) {
+function validarIdentidad(entrada) {
+    const validar = (campo, etiqueta) => {
+        const valor = entrada?.[campo];
+        if (typeof valor !== "string" || !valor.trim() || valor.trim().length > 100 || /[\u0000-\u001f\u007f]/.test(valor)) throw errorAcceso(`${etiqueta}: introduce un texto de hasta 100 caracteres`,400);
+        return valor.trim().replace(/\s+/g," ");
+    };
+    return {nombre:validar("nombre","Nombre"),primerApellido:validar("primerApellido","Primer apellido")};
+}
+function nombreCuenta(cuenta) { return [cuenta?.nombre,cuenta?.primerApellido].filter(Boolean).join(" "); }
+async function registrarUsuario(email, clave, identidad) {
     if (!email || !clave) {
         throw new Error("Email y clave son obligatorios");
     }
 
+    const persona = identidad === undefined ? {} : validarIdentidad(identidad);
     email = normalizarEmail(email);
     validarClave(clave);
     const usuarioExistente = await datos.buscarPorEmail(email);
@@ -52,7 +63,7 @@ async function registrarUsuario(email, clave) {
 
     const claveHash = await bcrypt.hash(clave, 10);
 
-    const usuario = await datos.crear(email, claveHash);
+    const usuario = await datos.crear(email, claveHash, false, persona);
 
     return publico(usuario);
 }
@@ -92,7 +103,10 @@ async function entrarGoogle(perfil) {
         const existente = await datos.buscarPorEmail(email);
         if (existente && !existente.activo) throw errorAcceso("Cuenta no disponible", 403);
         if (existente) throw errorAcceso("Ya existe esa cuenta. Accede con tu contraseña para vincular Google.", 409);
-        usuario = await datos.crear(email, "", true);
+        let identidad;
+        try { identidad=validarIdentidad({nombre:perfil.given_name,primerApellido:perfil.family_name}); }
+        catch { throw Object.assign(errorAcceso("Google no ha facilitado nombre y apellido. Crea la cuenta con el formulario y después vincula Google.",400),{acceso:"datos-personales"}); }
+        usuario = await datos.crear(email, "", true, identidad);
         await datos.vincularGoogle(usuario.id, perfil.sub);
     }
     if (!usuario.activo) throw errorAcceso("Cuenta no disponible", 403);
@@ -230,7 +244,7 @@ async function gestionarRecursos(tipo, actor, entrada, id, asignables = false) {
     const registros = await datos.listarRecursos(tipo);
     const cuentas = tipo === "conductores" ? await datos.listar() : [];
     const habilitado = r => r.activo && r.disponible && (tipo !== "conductores" || cuentas.some(u=>u.id===r.usuarioId && u.activo && u.rol==="conductor"));
-    if (entrada === undefined) return registros.filter(r=>!asignables || habilitado(r)).map(r=>({...r,asignable:habilitado(r)}));
+    if (entrada === undefined) return registros.filter(r=>!asignables || habilitado(r)).map(r=>({...r,...(tipo === "conductores" ? {nombre:r.nombre || nombreCuenta(cuentas.find(u=>u.id===r.usuarioId))} : {}),asignable:habilitado(r)}));
     if (!entrada || typeof entrada!=="object" || Array.isArray(entrada)) throw errorAcceso("Datos inválidos",400);
     const anterior = id === undefined ? undefined : registros.find(r=>r.id===id);
     if (id !== undefined && !anterior) throw errorAcceso("Recurso no encontrado",404);
@@ -246,7 +260,7 @@ async function gestionarRecursos(tipo, actor, entrada, id, asignables = false) {
         registro.capacidad=entrada.capacidad; registro.unidadCapacidad=texto("unidadCapacidad",20); registro.clave=registro.matricula;
     } else {
         if(!Number.isSafeInteger(entrada.usuarioId) || !(cuentas.some(u=>u.id===entrada.usuarioId && u.activo && u.rol==="conductor") || (anterior?.usuarioId===entrada.usuarioId && entrada.activo===false))) throw errorAcceso("Selecciona una cuenta activa con rol conductor",400);
-        registro.nombre=entrada.nombre === undefined ? (anterior?.nombre || "") : texto("nombre");
+        registro.nombre=entrada.nombre === undefined ? (anterior?.nombre || nombreCuenta(cuentas.find(u=>u.id===entrada.usuarioId))) : texto("nombre");
         registro.usuarioId=entrada.usuarioId; registro.clave=String(registro.usuarioId);
     }
     registro.historial=[...(anterior?.historial || []),{fecha:new Date().toISOString(),responsableId:actor.id,accion:anterior ? "actualizacion" : "alta",activo:registro.activo,disponible:registro.disponible}];
@@ -266,7 +280,7 @@ async function consultarRutaAdministracion(id, actor) {
     if(!ruta) throw errorAcceso("Ruta no encontrada",404);
     return ruta;
 }
-module.exports = { planificarRuta, consultarRutaAdministracion, gestionarRecursos, consultarSolicitudesAdministracion, revisarSolicitud,
+module.exports = { validarIdentidad, planificarRuta, consultarRutaAdministracion, gestionarRecursos, consultarSolicitudesAdministracion, revisarSolicitud,
     cancelarSolicitud,
     crearSolicitud,
     cambiarPerfilEquipo, consultarTransportes,

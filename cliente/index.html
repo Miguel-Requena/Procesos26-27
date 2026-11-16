@@ -60,6 +60,10 @@
                 <p class="descripcion-formulario">Crea tu cuenta de cliente. Confirma tu correo para activarla.</p>
                 <a id="google-registro" class="acceso-google" href="/api/oauth/google" hidden><span class="google-simbolo" aria-hidden="true">G</span> Registrarse con Google</a>
                 <form id="registro">
+                    <label for="registro-nombre">Nombre</label>
+                    <input id="registro-nombre" name="nombre" type="text" autocomplete="given-name" maxlength="100" required>
+                    <label for="registro-primer-apellido">Primer apellido</label>
+                    <input id="registro-primer-apellido" name="primerApellido" type="text" autocomplete="family-name" maxlength="100" required>
                     <label for="registro-email">Correo electrónico</label>
                     <input id="registro-email" name="email" type="email" autocomplete="email" placeholder="tu@email.com" required>
                     <label for="registro-clave">Contraseña</label>

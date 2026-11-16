@@ -20,7 +20,7 @@ function construir(entrada, vehiculo, conductor, cuenta, solicitudes, responsabl
         destino: solicitudes.at(-1).localidadEntrega, estado: "planificada", activa: true, creadaEn, responsableId,
         vehiculoId: vehiculo.id, conductorRecursoId: conductor.id, conductorId: cuenta.id,
         vehiculo: { matricula: vehiculo.matricula, tipo: vehiculo.tipoVehiculo, capacidad: vehiculo.capacidad, unidadCapacidad: vehiculo.unidadCapacidad },
-        conductor: { nombre: conductor.nombre || "", email: cuenta.email },
+        conductor: { nombre: conductor.nombre || [cuenta.nombre,cuenta.primerApellido].filter(Boolean).join(" "), email: cuenta.email },
         paradas: solicitudes.map((s,i) => ({ orden: i+1, solicitudId: s.id, referencia: s.referencia, destinatario: s.destinatario,
             direccion: s.destino, localidad: s.localidadEntrega, codigoPostal: s.codigoPostalEntrega, contacto: s.contactoEntrega,
             mobiliario: s.mobiliario, observaciones: s.observaciones })) };

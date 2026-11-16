@@ -10,7 +10,7 @@ const usuarios = db.collection("usuarios");
 let inicializacion;
 function convertir(documento) {
     if (!documento) return undefined;
-    return { id: documento.id, email: documento.email, clave: documento.clave,
+    return { id: documento.id, email: documento.email, clave: documento.clave, nombre: documento.nombre || "", primerApellido: documento.primerApellido || "",
         rol: documento.rol === "usuario" ? "cliente" : documento.rol, confirmado: documento.confirmado === true,
         eliminado: documento.eliminado === true,
         activo: documento.confirmado === true && documento.eliminado === false };
@@ -69,13 +69,13 @@ async function buscarPorId(id) {
 async function listar() {
     return ejecutar(async () => (await usuarios.find().sort({ id: 1 }).toArray()).map(convertir));
 }
-async function crear(email, claveHash, confirmado = false) {
+async function crear(email, claveHash, confirmado = false, identidad = {}) {
     return ejecutar(async () => {
         const contador = await db.collection("contadores").findOneAndUpdate(
             { _id: "usuarios" }, { $inc: { valor: 1 } },
             { returnDocument: "after", includeResultMetadata: false });
         const documento = { id: contador.valor, email, clave: claveHash, rol: "cliente",
-            confirmado, eliminado: false };
+            confirmado, eliminado: false, nombre:identidad.nombre || "", primerApellido:identidad.primerApellido || "" };
         await usuarios.insertOne(documento);
         return convertir(documento);
     });

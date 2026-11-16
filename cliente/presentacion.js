@@ -459,7 +459,7 @@ for (const tipo of ["registro", "login"]) {
         const campos = new FormData(formulario);
         try {
             if (tipo === "registro") {
-                await window.api.registrar(campos.get("email"), campos.get("clave"));
+                await window.api.registrar(campos.get("email"), campos.get("clave"), campos.get("nombre"), campos.get("primerApellido"));
                 mensaje.textContent = "Cuenta creada. Revisa tu correo y confirma la cuenta antes de entrar.";
                 document.getElementById("login-email").value = campos.get("email");
                 seleccionarAcceso("login");
@@ -512,6 +512,10 @@ async function iniciar() {
     if (token) {
         try { mensaje.textContent = (await window.api.confirmar(token)).mensaje; }
         catch (error) { mensaje.textContent = error.message; }
+    }
+    if (acceso === "datos-personales") {
+        seleccionarAcceso("registro");
+        mensaje.textContent = "Google no ha facilitado nombre y apellido. Completa el formulario para crear tu cuenta; después podrás vincular Google.";
     }
     if (acceso === "error") mensaje.textContent = "No se pudo completar el acceso con Google. Inténtalo de nuevo.";
     if (acceso === "cuenta-existente") {
@@ -667,6 +671,11 @@ async function cargarRecursos() {
                 campo("nombre","Nombre del conductor");
                 const cuenta=campo("usuarioId","Cuenta con rol conductor","select");cuenta.append(opcion("","Seleccionar cuenta"));
                 for(const c of u.usuarios.filter(c=>c.activo && c.rol==="conductor")) cuenta.append(opcion(c.id,c.email));
+                cuenta.addEventListener("change",()=>{
+                    const usuario=u.usuarios.find(u=>u.id===Number(cuenta.value));
+                    const nombre=[usuario?.nombre,usuario?.primerApellido].filter(Boolean).join(" ");
+                    controles.nombre.value=nombre;
+                });
             }
             campo("sede","Sede").defaultValue="Yecla";
             campo("activo","Activo","checkbox").defaultChecked=true;campo("disponible","Disponible","checkbox").defaultChecked=true;

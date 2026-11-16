@@ -27,7 +27,7 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         });
         assert.equal(resultado.status, 0, resultado.stderr);
     }
-    ejecutar(`const pendiente = await logica.registrarUsuario(${JSON.stringify(email)}, 'clave-prueba');
+    ejecutar(`const pendiente = await logica.registrarUsuario(${JSON.stringify(email)}, 'clave-prueba', {nombre:'Ana',primerApellido:'García'});
         assert.equal(pendiente.activo, false);
         await assert.rejects(logica.iniciarSesion(pendiente.email, 'clave-prueba'));
         await logica.registrarUsuario(${JSON.stringify(adminEmail)}, 'clave-admin');
@@ -48,6 +48,7 @@ test("MongoDB conserva cuentas y confirmación manual entre procesos y aplica pe
         assert.equal(cambios.find(r=>r.status==='rejected').reason.estado,409);
 
         assert.equal(usuario.rol, 'cliente');
+        assert.equal(usuario.nombre,'Ana');assert.equal(usuario.primerApellido,'García');
         const lecturas = await Promise.all([datos.leerIntentoOAuth('oauth-' + usuario.id, true), datos.leerIntentoOAuth('oauth-' + usuario.id, true)]);
         assert.equal(lecturas.filter(Boolean).length, 1);
         assert.equal(lecturas.find(Boolean).verifier, 'prueba-persistida');
