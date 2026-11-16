@@ -6,7 +6,16 @@
     form.elements.fecha.min = `${partesFecha.year}-${partesFecha.month}-${partesFecha.day}`;
     let version = 0, versionDetalle = 0, solicitudes = [], rutas = [], vehiculos = [], conductores = [], elegidas = [], administracion = false, guardando = false;
     const opcion = (valor, texto) => { const o = document.createElement("option"); o.value = valor; o.textContent = texto; return o; };
-    const entrega = s => [s.destino, s.codigoPostalEntrega, s.localidadEntrega].filter(Boolean).join(", ");
+    const entrega = s => [s.destino, s.codigoPostalEntrega, s.localidadEntrega].filter(Boolean).join(", ") || "Datos de entrega pendientes";
+    function informar(texto, enfocar = false) {
+        estado.textContent = texto;
+        const resultado = document.getElementById("resultado-planificacion");
+        resultado.textContent = texto;
+        if (enfocar) resultado.focus();
+    }
+    function agregarSeleccionada() {
+        if (selector.value && !elegidas.includes(selector.value)) { elegidas.push(selector.value); paradas(); }
+    }
     function controles() {
         for (const control of seccion.querySelectorAll("input, select, button")) control.disabled = guardando;
     }
@@ -17,7 +26,7 @@
         form.elements.vehiculoId.replaceChildren(opcion("", "Seleccionar camión disponible"));
         form.elements.conductorRecursoId.replaceChildren(opcion("", "Seleccionar conductor disponible"));
         for (const v of vehiculos.filter(v => v.sede === "Yecla" && !ocupadas.some(r => r.vehiculoId === v.id))) form.elements.vehiculoId.append(opcion(v.id, `${v.matricula} · ${v.capacidad} ${v.unidadCapacidad}`));
-        for (const c of conductores.filter(c => c.sede === "Yecla" && !ocupadas.some(r => r.conductorId === c.usuarioId))) form.elements.conductorRecursoId.append(opcion(c.id, c.email));
+        for (const c of conductores.filter(c => c.sede === "Yecla" && !ocupadas.some(r => r.conductorId === c.usuarioId))) form.elements.conductorRecursoId.append(opcion(c.id, c.nombre || "Nombre pendiente"));
         form.elements.vehiculoId.value = anteriorV; form.elements.conductorRecursoId.value = anteriorC;
     }
     function paradas() {
@@ -45,7 +54,7 @@
             const { ruta } = await window.api.peticion(`/administracion/rutas/${encodeURIComponent(id)}`);
             if (carga !== versionDetalle || vista !== version || !administracion) return;
             contenido.replaceChildren();
-            const cabecera = document.createElement("p"); cabecera.textContent = `${ruta.referencia} · ${ruta.fecha} · Salida: ${ruta.sede} · ${ruta.vehiculo.matricula} · ${ruta.conductor.email}`; contenido.append(cabecera);
+            const cabecera = document.createElement("p"); cabecera.textContent = `${ruta.referencia} · ${ruta.fecha} · Salida: ${ruta.sede} · ${ruta.vehiculo.matricula} · ${ruta.conductor.nombre || conductores.find(c=>c.id===ruta.conductorRecursoId)?.nombre || "Nombre pendiente"}`; contenido.append(cabecera);
             const orden = document.createElement("ol");
             for (const p of ruta.paradas) {
                 const li = document.createElement("li"), direccion = document.createElement("p"), contacto = document.createElement("p");
@@ -64,12 +73,12 @@
         estado.textContent = "Cargando planificación…";
         form.hidden = true; document.getElementById("lista-rutas-planificadas").replaceChildren();
         try {
-            const [v,c,u,s,r] = await Promise.all([
+            const [v,c,s,r] = await Promise.all([
                 window.api.peticion("/administracion/vehiculos?asignables=true"), window.api.peticion("/administracion/conductores?asignables=true"),
-                window.api.listarUsuarios(), window.api.listarSolicitudesAdministracion({estado:"aceptada"}), window.api.consultarTransportes("rutas")
+                window.api.listarSolicitudesAdministracion({estado:"aceptada"}), window.api.consultarTransportes("rutas")
             ]);
             if (carga !== version || !administracion) return;
-            vehiculos = v.vehiculos; conductores = c.conductores.map(c => ({...c,email:u.usuarios.find(u=>u.id===c.usuarioId)?.email || "Conductor"}));
+            vehiculos = v.vehiculos; conductores = c.conductores;
             solicitudes = s.solicitudes; rutas = r.rutas;
             elegidas = conservar ? elegidas.filter(id => solicitudes.some(s=>s.id===id)) : [];
             recursos(); paradas();
@@ -83,27 +92,28 @@
             if (!rutas.length) contenedor.textContent = "Todavía no hay rutas planificadas.";
             estado.textContent = !solicitudes.length ? "No hay solicitudes aceptadas para planificar." : !vehiculos.some(v=>v.sede==="Yecla") || !conductores.some(c=>c.sede==="Yecla") ? "Registra un camión y un conductor disponibles en Yecla para planificar." : "Añade las solicitudes en el orden de entrega.";
             form.hidden = false;
-        } catch (error) { if (carga === version) estado.textContent = error.message; }
+        } catch (error) { if (carga === version) informar(error.message, true); }
     }
     form.elements.fecha.addEventListener("change", recursos);
-    document.getElementById("agregar-parada").addEventListener("click", () => { if (selector.value && !elegidas.includes(selector.value)) { elegidas.push(selector.value); paradas(); } });
+    document.getElementById("agregar-parada").addEventListener("click", agregarSeleccionada);
     document.getElementById("actualizar-planificacion").addEventListener("click", () => cargar(true));
     document.getElementById("cerrar-itinerario").addEventListener("click", () => dialog.close());
     dialog.addEventListener("close", () => { ++versionDetalle; });
     form.addEventListener("submit", async evento => {
         evento.preventDefault(); if (guardando || !administracion) return;
-        if (!elegidas.length) { estado.textContent = "Añade al menos una parada."; return; }
+        agregarSeleccionada();
+        if (!elegidas.length) { informar("Selecciona una solicitud aceptada o añade una parada antes de guardar.", true); return; }
         const vista = version, entrada = {fecha:form.elements.fecha.value,sede:"Yecla",vehiculoId:form.elements.vehiculoId.value,conductorRecursoId:form.elements.conductorRecursoId.value,solicitudes:[...elegidas]};
-        guardando = true; controles(); estado.textContent = "Guardando planificación…";
+        guardando = true; controles(); informar("Guardando planificación…");
         try {
             const {ruta} = await window.api.peticion("/administracion/rutas", {method:"POST",body:JSON.stringify(entrada)});
             if (vista !== version || !administracion) return;
-            elegidas = []; await cargar(); estado.textContent = "Ruta planificada. Sus solicitudes ya figuran como planificadas.";
+            elegidas = []; await cargar(); informar("Ruta planificada. Sus solicitudes ya figuran como planificadas.");
             await cargarDatosPanel(); if (administracion) detalle(ruta.id);
         } catch (error) {
             if (vista !== version || !administracion) return;
             if (error.estado === 409) await cargar(true);
-            estado.textContent = error.message;
+            informar(error.message, true);
         } finally { guardando = false; controles(); paradas(); }
     });
     window.rutasPanel = { actualizar(rol) {

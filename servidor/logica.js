@@ -246,6 +246,7 @@ async function gestionarRecursos(tipo, actor, entrada, id, asignables = false) {
         registro.capacidad=entrada.capacidad; registro.unidadCapacidad=texto("unidadCapacidad",20); registro.clave=registro.matricula;
     } else {
         if(!Number.isSafeInteger(entrada.usuarioId) || !(cuentas.some(u=>u.id===entrada.usuarioId && u.activo && u.rol==="conductor") || (anterior?.usuarioId===entrada.usuarioId && entrada.activo===false))) throw errorAcceso("Selecciona una cuenta activa con rol conductor",400);
+        registro.nombre=entrada.nombre === undefined ? (anterior?.nombre || "") : texto("nombre");
         registro.usuarioId=entrada.usuarioId; registro.clave=String(registro.usuarioId);
     }
     registro.historial=[...(anterior?.historial || []),{fecha:new Date().toISOString(),responsableId:actor.id,accion:anterior ? "actualizacion" : "alta",activo:registro.activo,disponible:registro.disponible}];

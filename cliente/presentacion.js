@@ -659,11 +659,12 @@ async function cargarRecursos() {
             }
             const selector=campo("registro",vehiculo?"Camión guardado":"Conductor guardado","select");
             selector.append(opcion("",vehiculo?"Añadir camión":"Añadir conductor"));
-            for(const r of registros) selector.append(opcion(r.id,`${r.matricula || u.usuarios.find(c=>c.id===r.usuarioId)?.email || "Cuenta no disponible"} · ${r.sede} · ${r.asignable ? "Asignable" : "No asignable"}`));
+            for(const r of registros) selector.append(opcion(r.id,`${r.matricula || r.nombre || "Nombre pendiente"} · ${r.sede} · ${r.asignable ? "Asignable" : "No asignable"}`));
             if(vehiculo) {
                 campo("matricula","Matrícula").maxLength=20;campo("tipoVehiculo","Tipo de vehículo");campo("capacidad","Capacidad declarada","number");
                 campo("unidadCapacidad","Unidad de capacidad","select").append(opcion("m³","m³"),opcion("kg","kg"),opcion("palés","Palés"));
             } else {
+                campo("nombre","Nombre del conductor");
                 const cuenta=campo("usuarioId","Cuenta con rol conductor","select");cuenta.append(opcion("","Seleccionar cuenta"));
                 for(const c of u.usuarios.filter(c=>c.activo && c.rol==="conductor")) cuenta.append(opcion(c.id,c.email));
             }
@@ -675,7 +676,7 @@ async function cargarRecursos() {
                 if(!r) {form.reset();return;}
                 for(const [nombre,control] of Object.entries(controles)) if(nombre!=="registro") {
                     if(nombre==="usuarioId" && !Array.from(control.options).some(o=>o.value===String(r[nombre]))) control.append(opcion(r[nombre],"Cuenta no disponible"));
-                    if(control.type==="checkbox") control.checked=r[nombre];else control.value=r[nombre];
+                    if(control.type==="checkbox") control.checked=r[nombre];else control.value=r[nombre] ?? "";
                 }
             });
             form.addEventListener("submit",async evento=>{
@@ -687,7 +688,7 @@ async function cargarRecursos() {
                 boton.disabled=true;
                 try {
                     await window.api.peticion(`/administracion/${tipo}${id?"/"+encodeURIComponent(id):""}`,{method:id?"PUT":"POST",body:JSON.stringify(entrada)});
-                    if(panel===versionPanel) {await cargarRecursos();estado.textContent="Recurso guardado.";}
+                    if(panel===versionPanel) {await cargarRecursos();estado.textContent="Recurso guardado.";window.rutasPanel?.actualizar(rolActual);}
                 } catch(error) {if(panel===versionPanel) estado.textContent=error.message;}
                 finally {boton.disabled=false;}
             });

@@ -27,7 +27,7 @@ test("P22 MongoDB: transacciones, conflictos simultáneos, rollback e itinerario
         }
         const admin=await cuenta('admin','administrador'),cliente=await cuenta('cliente','cliente'),c1=await cuenta('conductor1','conductor'),c2=await cuenta('conductor2','conductor');
         async function vehiculo(n) {return logica.gestionarRecursos('vehiculos',admin,{matricula:'P'+admin.id+'V'+n,tipoVehiculo:'Tráiler',capacidad:80,unidadCapacidad:'m³',sede:'Yecla',activo:true,disponible:true});}
-        async function conductor(usuarioId) {return logica.gestionarRecursos('conductores',admin,{usuarioId,sede:'Yecla',activo:true,disponible:true});}
+        async function conductor(usuarioId) {return logica.gestionarRecursos('conductores',admin,{usuarioId,nombre:'Miguel',sede:'Yecla',activo:true,disponible:true});}
         const v1=await vehiculo(1),v2=await vehiculo(2),r1=await conductor(c1.id),r2=await conductor(c2.id),solicitudes=[];
         for(let i=0;i<4;i++) {
             const {solicitud:s}=await logica.crearSolicitud({fabricante:'Fábrica',origen:'Industria 1',fecha:'2099-12-01',destinatario:'Tienda '+i,destino:'Entrega '+i,localidadEntrega:'Rubí',codigoPostalEntrega:'08191',contactoEntrega:{nombre:'Ana',telefono:'612345678'},contactoRecogida:{nombre:'Eva',telefono:'623456789'},mobiliario:[{descripcion:'Sofá',cantidad:2,unidad:'bultos'}]},prefijo+'-s'+i,cliente);
@@ -41,6 +41,7 @@ test("P22 MongoDB: transacciones, conflictos simultáneos, rollback e itinerario
         assert.equal(intentos.find(r=>r.status==='rejected').reason.estado,409);
         const ruta=intentos.find(r=>r.status==='fulfilled').value;
         assert.deepEqual(ruta.paradas.map(p=>p.solicitudId),entrada.solicitudes);
+        assert.equal(ruta.conductor.nombre,'Miguel');
         for(const id of entrada.solicitudes) {
             const s=await datos.detalleSolicitud(cliente.id,id);assert.equal(s.estado,'planificada');assert.equal(s.rutaId,ruta.id);assert.equal(s.historial.length,3);
         }
@@ -58,7 +59,7 @@ test("P22 MongoDB: transacciones, conflictos simultáneos, rollback e itinerario
     `);
     ejecutar(`
         const ruta=await datos.detalleRuta(${JSON.stringify(rutaId)});
-        assert.equal(ruta.paradas.length,2);assert.equal(ruta.paradas[0].destinatario,'Tienda 1');
+        assert.equal(ruta.conductor.nombre,'Miguel');assert.equal(ruta.paradas.length,2);assert.equal(ruta.paradas[0].destinatario,'Tienda 1');
         assert.equal(ruta.paradas[0].contacto.telefono,'612345678');
         for(const p of ruta.paradas) assert.equal((await datos.detalleSolicitud(undefined,p.solicitudId)).rutaId,ruta.id);
     `);

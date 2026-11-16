@@ -15,3 +15,9 @@ API exclusiva de administración:
 - GET /api/rutas conserva los permisos existentes y permite al conductor ver el resumen de sus rutas asignadas.
 
 Pruebas: validaciones, permisos, revocación, orden, conservación del itinerario, recursos por fecha, conflictos concurrentes y rollback. La integración con MongoDB comprueba transacciones concurrentes y persistencia entre procesos. Verificación visual local con dos solicitudes ficticias: selección, reordenación, guardado, estados planificados y consulta del itinerario.
+
+## Corrección de guardado y nombres de conductor
+
+Guardar planificación incorpora al final la solicitud que quede seleccionada, aunque no se haya pulsado Añadir parada. Los errores se muestran también junto al botón y reciben el foco. Las solicitudes sin dirección muestran Datos de entrega pendientes; el servidor identifica la solicitud incompleta al rechazar su planificación.
+
+Administración puede completar Nombre del conductor en el catálogo de recursos. Ese nombre se utiliza en el selector y se conserva en el itinerario al planificar. Los registros antiguos muestran Nombre pendiente hasta completarlo; el nombre no se deduce del correo. La cuenta vinculada sigue identificándose por correo al gestionar el recurso. Se mantienen compatibles los recursos existentes y las rutas anteriores.
