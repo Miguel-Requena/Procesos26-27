@@ -10,17 +10,20 @@ function validar(entrada) {
     if (entrada.sede !== "Yecla") throw error("Las rutas salen de la base de Yecla", 400);
     return { fecha, sede: "Yecla", vehiculoId, conductorRecursoId, solicitudes };
 }
+function entregaCompleta(s) {
+    return [s?.destinatario,s?.destino,s?.localidadEntrega,s?.codigoPostalEntrega,s?.contactoEntrega?.telefono].every(v=>typeof v === "string" && Boolean(v.trim()));
+}
 function construir(entrada, vehiculo, conductor, cuenta, solicitudes, responsableId) {
     if (!vehiculo?.activo || !vehiculo.disponible || vehiculo.tipo !== "vehiculos" || vehiculo.sede !== entrada.sede || !conductor?.activo || !conductor.disponible || conductor.tipo !== "conductores" || conductor.sede !== entrada.sede || !cuenta?.activo || cuenta.rol !== "conductor") throw error("El vehículo o el conductor ya no están disponibles en Yecla. Actualiza los recursos.");
     if (solicitudes.some(s => !s || s.estado !== "aceptada")) throw error("Todas las solicitudes deben seguir aceptadas y sin planificar");
-    const incompleta = solicitudes.find(s => !s.destinatario || !s.destino || !s.localidadEntrega || !s.codigoPostalEntrega || !s.contactoEntrega?.telefono);
+    const incompleta = solicitudes.find(s => !entregaCompleta(s));
     if (incompleta) throw error(`La solicitud ${incompleta.referencia || incompleta.id} no tiene los datos de entrega completos. Usa una solicitud con destinatario, dirección, localidad, código postal y contacto de entrega.`);
     const id = randomUUID(), creadaEn = new Date().toISOString();
     return { id, referencia: `RT-${id.slice(0,8).toUpperCase()}`, fecha: entrada.fecha, sede: entrada.sede, origen: entrada.sede,
         destino: solicitudes.at(-1).localidadEntrega, estado: "planificada", activa: true, creadaEn, responsableId,
         vehiculoId: vehiculo.id, conductorRecursoId: conductor.id, conductorId: cuenta.id,
         vehiculo: { matricula: vehiculo.matricula, tipo: vehiculo.tipoVehiculo, capacidad: vehiculo.capacidad, unidadCapacidad: vehiculo.unidadCapacidad },
-        conductor: { nombre: conductor.nombre || [cuenta.nombre,cuenta.primerApellido].filter(Boolean).join(" "), email: cuenta.email },
+        conductor: { nombre: [cuenta.nombre,cuenta.primerApellido].filter(Boolean).join(" ") || conductor.nombre || "", email: cuenta.email },
         paradas: solicitudes.map((s,i) => ({ orden: i+1, solicitudId: s.id, referencia: s.referencia, destinatario: s.destinatario,
             direccion: s.destino, localidad: s.localidadEntrega, codigoPostal: s.codigoPostalEntrega, contacto: s.contactoEntrega,
             mobiliario: s.mobiliario, observaciones: s.observaciones })) };
@@ -29,4 +32,4 @@ function planificada(solicitud, ruta) {
     return { ...solicitud, estado: "planificada", rutaId: ruta.id, revision: (solicitud.revision || 0)+1,
         historial: [...(solicitud.historial || []), { accion: "planificar", estadoAnterior: "aceptada", estado: "planificada", fecha: ruta.creadaEn, responsable: "Administración", responsableId: ruta.responsableId }] };
 }
-module.exports = { validar, construir, planificada, error };
+module.exports = { entregaCompleta, validar, construir, planificada, error };

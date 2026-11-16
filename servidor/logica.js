@@ -244,7 +244,7 @@ async function gestionarRecursos(tipo, actor, entrada, id, asignables = false) {
     const registros = await datos.listarRecursos(tipo);
     const cuentas = tipo === "conductores" ? await datos.listar() : [];
     const habilitado = r => r.activo && r.disponible && (tipo !== "conductores" || cuentas.some(u=>u.id===r.usuarioId && u.activo && u.rol==="conductor"));
-    if (entrada === undefined) return registros.filter(r=>!asignables || habilitado(r)).map(r=>({...r,...(tipo === "conductores" ? {nombre:r.nombre || nombreCuenta(cuentas.find(u=>u.id===r.usuarioId))} : {}),asignable:habilitado(r)}));
+    if (entrada === undefined) return registros.filter(r=>!asignables || habilitado(r)).map(r=>({...r,...(tipo === "conductores" ? {nombre:nombreCuenta(cuentas.find(u=>u.id===r.usuarioId)) || r.nombre || ""} : {}),asignable:habilitado(r)}));
     if (!entrada || typeof entrada!=="object" || Array.isArray(entrada)) throw errorAcceso("Datos inválidos",400);
     const anterior = id === undefined ? undefined : registros.find(r=>r.id===id);
     if (id !== undefined && !anterior) throw errorAcceso("Recurso no encontrado",404);
@@ -260,7 +260,7 @@ async function gestionarRecursos(tipo, actor, entrada, id, asignables = false) {
         registro.capacidad=entrada.capacidad; registro.unidadCapacidad=texto("unidadCapacidad",20); registro.clave=registro.matricula;
     } else {
         if(!Number.isSafeInteger(entrada.usuarioId) || !(cuentas.some(u=>u.id===entrada.usuarioId && u.activo && u.rol==="conductor") || (anterior?.usuarioId===entrada.usuarioId && entrada.activo===false))) throw errorAcceso("Selecciona una cuenta activa con rol conductor",400);
-        registro.nombre=entrada.nombre === undefined ? (anterior?.nombre || nombreCuenta(cuentas.find(u=>u.id===entrada.usuarioId))) : texto("nombre");
+        registro.nombre=nombreCuenta(cuentas.find(u=>u.id===entrada.usuarioId)) || (entrada.nombre === undefined ? (anterior?.nombre || "") : texto("nombre"));
         registro.usuarioId=entrada.usuarioId; registro.clave=String(registro.usuarioId);
     }
     registro.historial=[...(anterior?.historial || []),{fecha:new Date().toISOString(),responsableId:actor.id,accion:anterior ? "actualizacion" : "alta",activo:registro.activo,disponible:registro.disponible}];

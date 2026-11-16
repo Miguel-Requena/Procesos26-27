@@ -164,7 +164,7 @@ function listarSolicitudesAdministracion(filtros) {
     }
     return db.prepare(`SELECT id,referencia,origen,destino,fecha,estado FROM transportes WHERE ${clausulas.join(" AND ")} ORDER BY fecha,id`).all(...valores).map(fila => {
         const registro = detalleSolicitud(undefined, fila.id);
-        return { ...fila, localidadEntrega: registro.localidadEntrega, codigoPostalEntrega: registro.codigoPostalEntrega, motivoRechazo: registro.motivoRechazo, revision: registro.revision || 0 };
+        return { ...fila, entregaCompleta: require("./rutas").entregaCompleta(registro), localidadEntrega: registro.localidadEntrega, codigoPostalEntrega: registro.codigoPostalEntrega, motivoRechazo: registro.motivoRechazo, revision: registro.revision || 0 };
     });
 }
 function revisarSolicitud(id, cambio, responsableId, fecha) {

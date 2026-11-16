@@ -33,6 +33,9 @@ test("P22 MongoDB: transacciones, conflictos simultáneos, rollback e itinerario
             const {solicitud:s}=await logica.crearSolicitud({fabricante:'Fábrica',origen:'Industria 1',fecha:'2099-12-01',destinatario:'Tienda '+i,destino:'Entrega '+i,localidadEntrega:'Rubí',codigoPostalEntrega:'08191',contactoEntrega:{nombre:'Ana',telefono:'612345678'},contactoRecogida:{nombre:'Eva',telefono:'623456789'},mobiliario:[{descripcion:'Sofá',cantidad:2,unidad:'bultos'}]},prefijo+'-s'+i,cliente);
             solicitudes.push(await logica.revisarSolicitud(s.id,{accion:'aceptar',revision:0},admin));
         }
+        const resumenes=await logica.consultarSolicitudesAdministracion({estado:'aceptada'},admin);
+        assert.equal(resumenes.find(s=>s.id===solicitudes[0].id).entregaCompleta,true);
+        assert.equal(resumenes.find(s=>s.id===solicitudes[0].id).contactoEntrega,undefined);
         const entrada={fecha:'2099-12-15',sede:'Yecla',vehiculoId:v1.id,conductorRecursoId:r1.id,solicitudes:[solicitudes[1].id,solicitudes[0].id]};
         const intentos=await Promise.allSettled([
             logica.planificarRuta(entrada,admin),
