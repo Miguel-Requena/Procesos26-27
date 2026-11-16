@@ -34,7 +34,7 @@ test("tokens caducados, sustituidos y de cuentas eliminadas no dan acceso", asyn
 });
 test("Google no vincula por email, exige correo verificado y conserva la identidad estable", async () => {
     await assert.rejects(logica.entrarGoogle({ sub: "1", email: "google@example.com", email_verified: false }));
-    const perfil = { sub: "1", email: "google@example.com", email_verified: true };
+    const perfil = { sub: "1", email: "google@example.com", email_verified: true, given_name:"Ana", family_name:"García" };
     const usuario = await logica.entrarGoogle(perfil);
     assert.equal(usuario.rol, "cliente");
     assert.equal((await logica.entrarGoogle({ ...perfil, email: "cambio@example.com" })).id, usuario.id);
@@ -61,7 +61,7 @@ test("OAuth completo: PKCE, cookie, intercambio de código y rechazo de repetici
             assert.ok(opciones.body.get("code_verifier"));
             return { ok: true, json: async () => ({ access_token: "acceso-prueba" }) };
         }
-        if (String(url) === "https://openidconnect.googleapis.com/v1/userinfo") return { ok: true, json: async () => ({ sub: "google-prueba", email: "oauth@example.com", email_verified: true }) };
+        if (String(url) === "https://openidconnect.googleapis.com/v1/userinfo") return { ok: true, json: async () => ({ sub: "google-prueba", email: "oauth@example.com", email_verified: true, given_name:"Ana", family_name:"García" }) };
         return real(url, opciones);
     };
     try {

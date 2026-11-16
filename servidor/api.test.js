@@ -86,7 +86,7 @@ test("eliminar una cuenta invalida su acceso a las rutas protegidas", async () =
 test("registro público y login fallido devuelven JSON sin claves ni cookies de sesión", async () => {
     const res = await fetch(`${base}/api/registro`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "ana@example.com", clave: "secreto", confirmado: true, activo: true, rol: "administrador" })
+        body: JSON.stringify({ email: "ana@example.com", clave: "secreto", nombre:"Ana", primerApellido:"García", confirmado: true, activo: true, rol: "administrador" })
     });
     assert.equal(res.status, 201);
     const usuario = (await res.json()).usuario;
@@ -111,7 +111,7 @@ test("registro público y login fallido devuelven JSON sin claves ni cookies de 
 test("el servidor impide escalar roles y aplicar operaciones administrativas a usuarios normales", async () => {
     const registro = await fetch(`${base}/api/registro`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "roles@example.com", clave: "clave-prueba", rol: "administrador" })
+        body: JSON.stringify({ email: "roles@example.com", clave: "clave-prueba", nombre:"Ana", primerApellido:"García", rol: "administrador" })
     });
     assert.equal((await registro.json()).usuario.rol, "cliente");
     await require("./datos").configurarCuentaPrueba(1);

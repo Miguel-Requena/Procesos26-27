@@ -107,7 +107,7 @@ function instalar(app) {
             await datos.guardarIntentoOAuth(hash(state), { tipo: "acceso", verifier }, ahora + 600000);
             res.cookie("oauth_state", state, { ...opciones, maxAge: 600000 });
             const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-            url.search = new URLSearchParams({ client_id: process.env.GOOGLE_CLIENT_ID, redirect_uri: `${urlPublica()}/api/oauth/google/callback`, response_type: "code", scope: "openid email", state, code_challenge: createHash("sha256").update(verifier).digest("base64url"), code_challenge_method: "S256" }).toString();
+            url.search = new URLSearchParams({ client_id: process.env.GOOGLE_CLIENT_ID, redirect_uri: `${urlPublica()}/api/oauth/google/callback`, response_type: "code", scope: "openid email profile", state, code_challenge: createHash("sha256").update(verifier).digest("base64url"), code_challenge_method: "S256" }).toString();
             res.redirect(url.href);
         } catch (error) { next(error); }
     });

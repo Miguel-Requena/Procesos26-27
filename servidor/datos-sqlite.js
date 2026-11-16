@@ -39,6 +39,9 @@ if (!db.prepare("SELECT sql FROM sqlite_master WHERE name='usuarios'").get().sql
         ALTER TABLE usuarios_perfiles RENAME TO usuarios;
         COMMIT;`);
 }
+for (const campo of ["nombre", "primerApellido"]) {
+    if (!db.prepare("PRAGMA table_info(usuarios)").all().some(columna=>columna.name===campo)) db.exec(`ALTER TABLE usuarios ADD COLUMN ${campo} TEXT NOT NULL DEFAULT ''`);
+}
 function convertir(fila) {
     return fila ? { ...fila, confirmado: Boolean(fila.confirmado), eliminado: Boolean(fila.eliminado),
         activo: fila.confirmado === 1 && fila.eliminado === 0 } : undefined;
@@ -46,9 +49,9 @@ function convertir(fila) {
 function buscarPorEmail(email) { return convertir(db.prepare("SELECT * FROM usuarios WHERE email = ?").get(email)); }
 function buscarPorId(id) { return convertir(db.prepare("SELECT * FROM usuarios WHERE id = ?").get(Number(id))); }
 function listar() { return db.prepare("SELECT * FROM usuarios ORDER BY id").all().map(convertir); }
-function crear(email, claveHash, confirmado = false) {
+function crear(email, claveHash, confirmado = false, identidad = {}) {
     try {
-        const resultado = db.prepare("INSERT INTO usuarios (email, clave, activo, confirmado) VALUES (?, ?, ?, ?)").run(email, claveHash, Number(confirmado), Number(confirmado));
+        const resultado = db.prepare("INSERT INTO usuarios (email, clave, activo, confirmado, nombre, primerApellido) VALUES (?, ?, ?, ?, ?, ?)").run(email, claveHash, Number(confirmado), Number(confirmado), identidad.nombre || "", identidad.primerApellido || "");
         return buscarPorId(resultado.lastInsertRowid);
     } catch (error) {
         if (error.errcode === 2067) throw new Error("Ya existe un usuario con ese email");
