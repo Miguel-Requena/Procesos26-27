@@ -8,7 +8,7 @@ async function escenario() {
     const conductor = await ayudas.registrarConfirmado("conductor@example.com","clave-prueba","conductor");
     const conductor2 = await ayudas.registrarConfirmado("conductor2@example.com","clave-prueba","conductor");
     const crearVehiculo = matricula => logica.gestionarRecursos("vehiculos",admin,{matricula,tipoVehiculo:"Tráiler",capacidad:80,unidadCapacidad:"m³",sede:"Yecla",activo:true,disponible:true});
-    const crearConductor = usuarioId => logica.gestionarRecursos("conductores",admin,{usuarioId,sede:"Yecla",activo:true,disponible:true});
+    const crearConductor = usuarioId => logica.gestionarRecursos("conductores",admin,{usuarioId,nombre:"Miguel",sede:"Yecla",activo:true,disponible:true});
     const vehiculo = await crearVehiculo("1234ABC"), vehiculo2 = await crearVehiculo("5678DEF");
     const recurso = await crearConductor(conductor.id), recurso2 = await crearConductor(conductor2.id);
     const solicitudes = [];
@@ -21,7 +21,7 @@ async function escenario() {
 }
 test("P22: ruta con orden, recursos guardados e historial consistente; conserva fotos de los datos",async()=>{
     const e=await escenario(),ruta=await logica.planificarRuta({...e.entrada,estado:"finalizada",conductorId:999},e.admin);
-    assert.equal(ruta.estado,"planificada"); assert.equal(ruta.sede,"Yecla"); assert.equal(ruta.conductorId,e.conductor.id);
+    assert.equal(ruta.conductor.nombre,"Miguel");assert.equal(ruta.estado,"planificada"); assert.equal(ruta.sede,"Yecla"); assert.equal(ruta.conductorId,e.conductor.id);
     assert.deepEqual(ruta.paradas.map(p=>p.solicitudId),e.entrada.solicitudes);
     assert.deepEqual(ruta.paradas.map(p=>p.orden),[1,2]);assert.equal(ruta.vehiculo.matricula,"1234ABC");
     for (const id of e.entrada.solicitudes) {
@@ -32,7 +32,9 @@ test("P22: ruta con orden, recursos guardados e historial consistente; conserva 
     const propias=await logica.consultarTransportes("rutas",e.conductor);assert.equal(propias.length,1);
     assert.equal((await logica.consultarTransportes("rutas",e.conductor2)).length,0);
     await logica.gestionarRecursos("vehiculos",e.admin,{...e.vehiculo,matricula:"9999ZZZ",activo:false},e.vehiculo.id);
+    await logica.gestionarRecursos("conductores",e.admin,{...e.recurso,nombre:"Nombre actualizado"},e.recurso.id);
     const detalle=await logica.consultarRutaAdministracion(ruta.id,e.admin);
+    assert.equal(detalle.conductor.nombre,"Miguel");
     assert.equal(detalle.vehiculo.matricula,"1234ABC");assert.equal(detalle.paradas[0].contacto.telefono,"612345678");
     assert.equal((await logica.consultarTransportes("solicitudes",e.cliente)).filter(s=>s.estado==="planificada").length,2);
 });

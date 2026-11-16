@@ -13,13 +13,14 @@ function validar(entrada) {
 function construir(entrada, vehiculo, conductor, cuenta, solicitudes, responsableId) {
     if (!vehiculo?.activo || !vehiculo.disponible || vehiculo.tipo !== "vehiculos" || vehiculo.sede !== entrada.sede || !conductor?.activo || !conductor.disponible || conductor.tipo !== "conductores" || conductor.sede !== entrada.sede || !cuenta?.activo || cuenta.rol !== "conductor") throw error("El vehículo o el conductor ya no están disponibles en Yecla. Actualiza los recursos.");
     if (solicitudes.some(s => !s || s.estado !== "aceptada")) throw error("Todas las solicitudes deben seguir aceptadas y sin planificar");
-    if (solicitudes.some(s => !s.destinatario || !s.destino || !s.localidadEntrega || !s.codigoPostalEntrega || !s.contactoEntrega?.telefono)) throw error("Hay solicitudes antiguas sin datos de entrega completos. Revísalas antes de planificar.");
+    const incompleta = solicitudes.find(s => !s.destinatario || !s.destino || !s.localidadEntrega || !s.codigoPostalEntrega || !s.contactoEntrega?.telefono);
+    if (incompleta) throw error(`La solicitud ${incompleta.referencia || incompleta.id} no tiene los datos de entrega completos. Usa una solicitud con destinatario, dirección, localidad, código postal y contacto de entrega.`);
     const id = randomUUID(), creadaEn = new Date().toISOString();
     return { id, referencia: `RT-${id.slice(0,8).toUpperCase()}`, fecha: entrada.fecha, sede: entrada.sede, origen: entrada.sede,
         destino: solicitudes.at(-1).localidadEntrega, estado: "planificada", activa: true, creadaEn, responsableId,
         vehiculoId: vehiculo.id, conductorRecursoId: conductor.id, conductorId: cuenta.id,
         vehiculo: { matricula: vehiculo.matricula, tipo: vehiculo.tipoVehiculo, capacidad: vehiculo.capacidad, unidadCapacidad: vehiculo.unidadCapacidad },
-        conductor: { email: cuenta.email },
+        conductor: { nombre: conductor.nombre || "", email: cuenta.email },
         paradas: solicitudes.map((s,i) => ({ orden: i+1, solicitudId: s.id, referencia: s.referencia, destinatario: s.destinatario,
             direccion: s.destino, localidad: s.localidadEntrega, codigoPostal: s.codigoPostalEntrega, contacto: s.contactoEntrega,
             mobiliario: s.mobiliario, observaciones: s.observaciones })) };

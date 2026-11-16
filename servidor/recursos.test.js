@@ -49,3 +49,15 @@ test("P21: endpoints autentican y guardan el catálogo administrativo",async()=>
   const lista=await fetch(base+"/administracion/vehiculos?asignables=true",{headers});assert.deepEqual((await lista.json()).vehiculos,[]);
  } finally {await new Promise(resolve=>server.close(resolve));}
 });
+
+test("El nombre del conductor se valida, se conserva y admite recursos antiguos sin nombre",async()=>{
+ const admin=await ayudas.registrarConfirmado("admin@example.com","clave-prueba","administrador");
+ const conductor=await ayudas.registrarConfirmado("conductor@example.com","clave-prueba","conductor");
+ const entrada={usuarioId:conductor.id,sede:"Yecla",activo:true,disponible:true};
+ for(const nombre of ["", " ", 12, "a".repeat(101)]) await assert.rejects(logica.gestionarRecursos("conductores",admin,{...entrada,nombre}),{estado:400});
+ const antiguo=await logica.gestionarRecursos("conductores",admin,entrada);assert.equal(antiguo.nombre,"");
+ const actualizado=await logica.gestionarRecursos("conductores",admin,{...antiguo,nombre:" Miguel "},antiguo.id);assert.equal(actualizado.nombre,"Miguel");
+ const {nombre,...sinNombre}=actualizado;
+ const conservado=await logica.gestionarRecursos("conductores",admin,{...sinNombre,disponible:false},actualizado.id);assert.equal(conservado.nombre,"Miguel");
+ assert.equal((await logica.gestionarRecursos("conductores",admin))[0].nombre,"Miguel");
+});
