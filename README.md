@@ -3,9 +3,8 @@
 Aplicación web para gestionar solicitudes de transporte de mobiliario, vehículos, conductores y planificación de rutas. Desarrollada con Node.js 24, Express, JavaScript, bcrypt y MongoDB Atlas.
 
 - **Aplicación:** [Transdrakkar · Área privada](https://procesos26-27-gseerr4ika-no.a.run.app).
-- **Repositorio:** [Miguel-Requena/Procesos26-27](https://github.com/Miguel-Requena/Procesos26-27).
 
-Estado documentado: **17 de noviembre de 2026**. P15–P19, P21 y P22 están implementados e integrados. La aplicación está desplegada en Google Cloud Run.
+La aplicación está desplegada en Google Cloud Run.
 
 ## Funcionalidades y perfiles
 
