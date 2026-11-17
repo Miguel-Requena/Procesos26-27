@@ -1,72 +1,72 @@
-# P24 · Validación del flujo — T34 y T35
+# P24 · Validación del flujo completo — T34/T35
 
-Numeración según las capturas de DoneTonic: T34 prepara datos ficticios y ejecuta solicitud → aceptación → ruta → entrega → consulta cliente con persistencia; T35 automatiza negativos y documenta modelo, API, demostración, CI y limitaciones. Los criterios CA24 del documento de Sprint 2 son propuestas de revisión.
+T34 prepara cuentas, vehículo y solicitudes ficticias y recorre solicitud → aceptación → ruta → incidencia/entrega → consulta del cliente, comprobando persistencia. T35 automatiza permisos, fechas, duplicados y transiciones inválidas, y documenta modelo, API, demostración y evidencias. Numeración según DoneTonic: P24, T34 y T35. Los criterios CA24 del documento de Sprint 2 son propuestas; el acuerdo sobre estados P23 se confirmó con el usuario el 17/11/2026.
 
-**P24 y T34 no están terminados:** la entrega e incidencia dependen de P23. T35 cubre las reglas actuales; deberá ampliarse con las transiciones operativas cuando existan. No se han modificado estados en DoneTonic ni datos de producción.
+## Resultado del incremento
 
-## Entorno y reproducción
+P23 incorpora el tramo que faltaba y se elimina el TODO de P24. El recorrido completo se ejecuta en `servidor/flujo-p24.test.js`, con incidencia y entrega, visibilidad por perfil y otra instancia HTTP que recupera sesión y datos completados de la misma BD. P15–P19 y P21–P24 tienen implementación y comprobaciones; la aceptación académica y el cierre del tablero corresponden al responsable. No se han cambiado estados en DoneTonic.
 
-Base revisada: `bf150d5`; rama `codex/p24-validacion-flujo`. La versión exacta validada en CI corresponde al SHA de la ejecución del PR. Ejecución local del 17/11/2026: Windows, Node.js 24.21.0, npm 11.19.0, SQLite temporal, HTTP local y correo simulado.
+Base de este cambio: `a5e7e51`, rama `codex/p23-entregas-cierre-p24`. La versión exacta y el resultado remoto se consultan en el SHA y ejecución CI del PR. Entorno local del 17/11/2026: Windows, Node.js 24.21.0, npm 11.19.0, SQLite temporal, HTTP loopback y correo simulado. Regresión local: **85 casos, 83 superados, 0 fallos, 2 omitidos de MongoDB, 0 TODO**. Las omisiones locales no acreditan MongoDB; CI ejecuta las dos integraciones con replica set real, prueba el contenedor y conserva el informe JUnit `resultados-pruebas` descargable.
 
-Desde `servidor`:
+## Modelo y contrato
+
+Cuenta → solicitud mediante `clienteId`; cuenta → recurso conductor mediante `usuarioId`; ruta → conductor mediante `conductorId` y → vehículo mediante `vehiculoId`. Cada parada conserva solicitud, orden, dirección, contacto, mercancía y estado. La ruta añade revisión y operaciones idempotentes. Cada solicitud conserva internamente ruta, revisión e historial; al cliente solo se devuelve su ámbito y los motivos de sus incidencias.
+
+Estados: `pendiente_recogida → aceptada → planificada → en_transito → completada`, con alternativa `en_transito → incidencia → completada`. La ruta se completa cuando todas sus paradas están entregadas, liberando reservas de vehículo y conductor. Incidencias abiertas mantienen la ruta activa. Las pendientes permiten cancelación o rechazo con motivo. Ver [P23: estados, API y permisos](P23-entregas.md).
+
+| Operación | API | Esperado y observado |
+|---|---|---|
+| Alta y reintento | POST `/api/solicitudes`, `Idempotency-Key` | 201; reintento 200, mismo ID; datos distintos 409 |
+| Recursos | POST `/api/administracion/vehiculos` y `/conductores` | 201, recursos asignables |
+| Aceptación | POST `/api/administracion/solicitudes/:id/revision` | 200, historial coherente |
+| Planificar | POST `/api/administracion/rutas` | 201, guardado atómico |
+| Pendiente o conflicto de reserva | POST rutas | 409, sin cambios parciales |
+| Fecha pasada/imposible, paradas duplicadas | POST rutas | 400, sin ruta parcial |
+| Ruta propia/ajena | GET `/api/conductor/rutas/:id` | 200/404; cliente y administrador 403 |
+| Inicio, incidencia, resolución | POST `/api/conductor/rutas/:id/actualizaciones` | 200, estados e historial actualizados |
+| Sin sesión, rol falsificado, solicitud ajena | APIs protegidas | 401/403/404 según ámbito |
+| Acción desconocida/incidencia sin motivo | POST actualización | 400 |
+| Revisión obsoleta/transición inválida | POST actualización | 409, sin sobrescritura |
+| Respuesta perdida y reintento | POST actualización | Misma clave, sin duplicar evento |
+| Escrituras incompatibles | HTTP y transacción MongoDB | Un ganador y un conflicto |
+| Última entrega | POST actualización | Ruta completada e inactiva; recursos reutilizables |
+| Consulta cliente/administración | GET solicitud/ruta administrativa | Estado, motivo e historial persistidos |
+| Persistencia entre procesos | Nuevas instancias SQLite y MongoDB | Recuperan estados completados y paradas |
+| Cancelar pendiente/repetir/planificada | POST cancelación | 200/409/409, sin duplicar historial |
+
+`entregas-interfaz.test.js` verifica fallo de red y respuesta tardía tras cerrar sesión. Las suites de solicitudes, revisión y rutas amplían validaciones, recursos revocados, concurrencia y rollback. MongoDB comprueba que un fallo de inicio no cambia parcialmente ruta ni otra solicitud y se reabre en otro proceso tras completar las paradas.
+
+## Reproducir las pruebas
+
+Desde la raíz: `npm test`. Para las nuevas pruebas, desde `servidor`:
 
 ```powershell
-node --require ./entorno-pruebas.cjs --test flujo-p24.test.js
+node --require ./entorno-pruebas.cjs --test flujo-p24.test.js entregas-interfaz.test.js
 ```
 
-Regresión desde la raíz: `npm test`. Las pruebas nuevas entran automáticamente en este comando y en CI. GitHub Actions conserva el informe JUnit `resultados-pruebas`, incluidos fallos, omisiones y pendientes. No confundir resultados locales con resultados remotos.
+Los datos usan `example.com`, confirmación simulada, teléfonos ficticios y fechas de diciembre de 2099; cada proceso crea su BD temporal. No se carga `.env` ni se utilizan cuentas de producción. MongoDB local requiere `MONGODB_TEST_URL` con host local, base `pruebas_*` y replica set. En CI esa configuración ya existe.
 
-El escenario crea administrador, cliente, otro cliente, conductor y otro conductor con correos `example.com`, contraseña exclusiva de pruebas y confirmación simulada. Prepara camión `2424PBI`, recurso de conductor de Yecla y solicitudes completas con mercancía, dirección y contactos ficticios. Utiliza fechas de diciembre de 2099. Cada proceso usa una BD temporal desechable; no carga `.env` ni necesita cuentas reales.
+## Demostración visual reproducible
 
-## Modelo y estados
+Desde la raíz ejecutar `node servidor/demo-p24.cjs` y abrir `http://127.0.0.1:3087`. Crea una BD temporal con administrador, cliente, conductor, camión y ruta con dos solicitudes completas. Cuentas de demostración: `admin-p24@example.com`, `cliente-p24@example.com` y `conductor-p24@example.com`; contraseña exclusiva de esta demo desechable: `clave-prueba`. No son accesos de la web pública. Detener el proceso al terminar.
 
-Cuenta → solicitud por `clienteId`; cuenta → recurso conductor por `usuarioId`; ruta → conductor por `conductorId` y → vehículo por `vehiculoId`. Las paradas guardan `solicitudId`, orden, mercancía, dirección y contacto. La solicitud conserva internamente `rutaId`, revisión e historial. La respuesta del cliente incluye estado e historial, sin revisión ni identificadores internos de responsables o ruta.
+1. Como conductor, abrir «Ver ruta y entregas» y comprobar las dos paradas, direcciones, contactos y mercancía.
+2. Pulsar «Iniciar ruta». Intentar una incidencia vacía: exige motivo. Registrar un motivo ficticio en la primera parada.
+3. Resolverla como entregada. La ruta sigue en tránsito mientras la segunda parada esté pendiente.
+4. Entregar la segunda parada. La ruta figura completada y avisa de la liberación de recursos.
+5. Cerrar sesión, entrar como cliente y abrir ambas solicitudes: completadas; el historial conserva tránsito, incidencia, motivo y resolución.
+6. Administración puede ver seguimiento en el itinerario y detalle de solicitud; puede planificar otra ruta con esos recursos en esa misma fecha.
 
-Flujo actual: `pendiente_recogida → aceptada → planificada`. Una pendiente admite cancelación o rechazo administrativo con motivo. Revisar exige la revisión vigente; cancelar de nuevo devuelve 409 sin repetir eventos. Entregas, incidencias y liberación de reservas por finalización siguen pendientes de P23.
+Se ejecutaron visualmente los pasos 1–5 el 17/11/2026 en navegador local. Referencias: ruta `RT-A9FB0C14`, solicitudes `TD-72044AED` y `TD-CE5FD95A`. Esperado y observado coinciden: dos entregas completadas y motivo conservado. Consulta administrativa, liberación de recursos y persistencia se comprueban automáticamente. La demo parte de datos aceptados/planificados; alta y aceptación se recorren por HTTP en T34. No se presentan como alta visual manual.
 
-## Evidencias automatizadas
+![Cliente: historial de incidencia resuelta y entrega](evidencias/P24-cliente-entrega.jpg)
 
-`servidor/flujo-p24.test.js` ejecuta por HTTP las operaciones con sesiones reales locales; solo el alta inicial y confirmación de cuentas usan el ayudante de pruebas.
+## Trazabilidad y revisión
 
-| Caso | API | Esperado y observado en la ejecución focalizada |
-|---|---|---|
-| Alta completa y reintento idéntico | POST `/api/solicitudes` con `Idempotency-Key` | 201; reintento 200 y mismo ID |
-| Datos distintos con misma clave | POST solicitudes | 409 |
-| Recursos ficticios | POST `/api/administracion/vehiculos` y `/conductores` | 201 |
-| Aceptación | POST `/api/administracion/solicitudes/:id/revision` | 200; historial coherente |
-| Planificar pendiente | POST `/api/administracion/rutas` | 409 |
-| Planificar aceptada / repetir | POST rutas administrativas | 201 / 409; una sola ruta |
-| Fecha pasada, imposible o paradas duplicadas | POST rutas administrativas | 400; sin ruta parcial, solicitud sigue aceptada |
-| Resumen asignado y ruta ajena | GET `/api/rutas` y `/api/rutas/:id` | Solo conductor asignado; ajena 404 |
-| Estado del cliente | GET `/api/solicitudes/:id` | Planificada e historial pendiente → aceptada → planificada |
-| Persistencia entre procesos | Nueva instancia HTTP, misma BD y cookie | Detalle del cliente e itinerario idénticos; sesión persistida |
-| Sin sesión / solicitud ajena | Alta / detalle y cancelación | 401 / 404 |
-| Rol administrador enviado por cliente | POST revisión | 403 |
-| Acción desconocida / revisión obsoleta | POST revisión | 400 / 409 |
-| Cancelación planificada | POST `/api/solicitudes/:id/cancelacion` | 409 |
-| Cancelación pendiente y repetición | POST cancelación | 200 / 409; un solo evento |
-| Entrega e incidencia → consulta cliente | Requiere P23 | TODO explícito; no ejecutado ni superado |
+- T34 / CA24-01: recorrido completo por perfiles con incidencia y entrega; RF-10 a RF-17.
+- CA24-03: persistencia entre procesos SQLite y MongoDB; datos desechables en pruebas aisladas.
+- T35 / CA24-02: permisos, fechas, duplicados, conflictos y transiciones inválidas.
+- CA24-04: versión, entorno, entradas, esperado/observado, CI JUnit y capturas.
+- CA24-05: README, modelo, API, demostración, seguimiento de memoria y documentos P23/P24 actualizados.
 
-Resultado focalizado: 3 casos, **2 superados, 0 fallos y 1 TODO**. El TODO representa una dependencia pendiente; el comando termina correctamente sin acreditar el flujo completo.
-
-Regresión local del 17/11/2026: **83 casos, 80 superados, 0 fallos, 2 omitidos (MongoDB) y 1 TODO (P23)**. No equivale a un resultado de CI con MongoDB.
-
-La persistencia arranca otra instancia HTTP en otro proceso con la misma BD y sesión, sin caché compartida. La primera instancia permanece abierta; no se acredita con ello un reinicio de Cloud Run. `mongodb.test.js` y `rutas-mongodb.test.js` comprueban el adaptador de producción, persistencia y transacciones; requieren `MONGODB_TEST_URL` local, base `pruebas_*` y replica set, y se omiten si falta esa variable. CI los ejecuta con MongoDB real. `rutas.test.js` amplía conflictos de camión/conductor, concurrencia y rollback; las suites de solicitudes y revisión amplían permisos, validaciones y transiciones.
-
-## Demostración manual para revisión
-
-1. En entorno de prueba MongoDB replica set, entrar como cliente confirmado y crear solicitud con recogida, destinatario, dirección, localidad, código postal, contactos y mercancía completos. Anotar referencia.
-2. Como administrador, aceptar esa referencia; comprobar vehículo y conductor habilitados y disponibles en Yecla.
-3. Planificar en fecha futura libre; revisar orden, contactos, dirección, matrícula y conductor en el itinerario.
-4. Como conductor asignado, comprobar el resumen. Otro conductor no debe verlo.
-5. Como cliente propietario, comprobar estado e historial. Otro cliente no debe acceder por ID.
-6. Reiniciar la aplicación conservando MongoDB y repetir consultas. Registrar versión, entorno, referencia, esperado, observado y evidencia.
-7. Tras P23, registrar entrega e incidencia con las transiciones acordadas y consultar el resultado como cliente; comprobar reservas conforme al ciclo de vida implementado.
-
-Esta demostración manual y su reinicio MongoDB no se han ejecutado en este cambio. No usar la solicitud antigua incompleta TD-32996F85. No publicar claves, cookies, datos personales ni URI de Atlas. Correo real, consentimiento Google y revisión visual se comprueban por separado.
-
-## Trazabilidad y limitaciones
-
-T34 → CA24-01 parcial y bloqueado por P23; CA24-03 con persistencia local automatizada y MongoDB según CI. T35 → CA24-02 para reglas actuales, CA24-04 con resultados y límites, CA24-05 con documentación y memoria. El recorrido cubre RF-10 a RF-16; RF-17 sigue pendiente.
-
-No se ha observado un defecto funcional nuevo en el tramo validado. Faltan entrega/incidencias y sus negativos, demostración visual, reinicio manual MongoDB y aceptación humana. No hay mapas, optimización, edición/cancelación de rutas ni conversión de bultos a capacidad del camión. Un resultado omitido o pendiente no se considera superado.
+No se detectaron defectos funcionales pendientes en este recorrido. Límites: no mapas, optimización, firma/fotos/geolocalización, cancelación/corrección administrativa de rutas, conversión de bultos a capacidad ni edición de solicitudes antiguas incompletas. Las rutas anteriores con itinerario completo se pueden ejecutar; sin él muestran aviso. No se modificaron datos operativos reales para demostrar el cierre. Correo/Google se simulan y no acreditan recepción/consentimiento real; tampoco se acredita aquí un reinicio manual de Cloud Run. La aceptación final no cambia automáticamente DoneTonic ni Overleaf.

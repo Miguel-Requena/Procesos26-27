@@ -11,3 +11,4 @@
 servidor/*.test.js
 servidor/entorno-pruebas.cjs
 servidor/ayudas-pruebas.cjs
+servidor/demo-p24.cjs

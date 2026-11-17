@@ -66,4 +66,44 @@ test("P22 MongoDB: transacciones, conflictos simultáneos, rollback e itinerario
         assert.equal(ruta.paradas[0].contacto.telefono,'612345678');
         for(const p of ruta.paradas) assert.equal((await datos.detalleSolicitud(undefined,p.solicitudId)).rutaId,ruta.id);
     `);
+    ejecutar(`
+        const ruta=await datos.detalleRuta(${JSON.stringify(rutaId)}),conductor=await datos.buscarPorId(ruta.conductorId);
+        const admin=await datos.buscarPorId(ruta.responsableId);
+        const inicio={accion:'iniciar',revision:0,clave:'mongo-p23-inicio-00001'};
+        const segunda=ruta.paradas[1].solicitudId;
+        await db.collection('solicitudes').updateOne({id:segunda},{$set:{estado:'aceptada'}});
+        await assert.rejects(logica.consultarRutaConductor(ruta.id,conductor,inicio),{estado:409});
+        assert.equal((await datos.detalleRuta(ruta.id)).estado,'planificada');
+        assert.equal((await datos.detalleSolicitud(undefined,ruta.paradas[0].solicitudId)).estado,'planificada');
+        await db.collection('solicitudes').updateOne({id:segunda},{$set:{estado:'planificada'}});
+        const simultaneos=await Promise.all([logica.consultarRutaConductor(ruta.id,conductor,inicio),logica.consultarRutaConductor(ruta.id,conductor,inicio)]);
+        assert.equal(simultaneos[0].revision,1);assert.equal(simultaneos[1].revision,1);
+        const id=ruta.paradas[0].solicitudId;
+        const resultados=await Promise.allSettled([
+            logica.consultarRutaConductor(ruta.id,conductor,{accion:'entregar',revision:1,solicitudId:id,clave:'mongo-p23-entrega-0001'}),
+            logica.consultarRutaConductor(ruta.id,conductor,{accion:'incidencia',revision:1,solicitudId:id,motivo:'Ausente ficticio',clave:'mongo-p23-incidencia-001'})]);
+        assert.equal(resultados.filter(r=>r.status==='fulfilled').length,1);
+        assert.equal(resultados.find(r=>r.status==='rejected').reason.estado,409);
+        let actual=await logica.consultarRutaConductor(ruta.id,conductor);
+        assert.equal(actual.activa,true); // Queda al menos otra parada.
+        for(const p of actual.paradas) {
+            if(p.estado==='completada') continue;
+            actual=await logica.consultarRutaConductor(ruta.id,conductor,{accion:'entregar',revision:actual.revision,solicitudId:p.solicitudId,clave:'mongo-p23-fin-'+p.solicitudId});
+        }
+        assert.equal(actual.estado,'completada');assert.equal(actual.activa,false);
+        for(const p of actual.paradas) {
+            const s=await datos.detalleSolicitud(undefined,p.solicitudId);
+            const cliente=await datos.buscarPorId(s.clienteId);
+            assert.equal((await logica.consultarTransportes('solicitudes',cliente,s.id)).estado,'completada');
+            assert.equal(s.historial.filter(h=>h.accion==='iniciar').length,1);
+        }
+        const aceptada=await db.collection('solicitudes').findOne({estado:'aceptada',clienteId:(await datos.detalleSolicitud(undefined,id)).clienteId});
+        const reutilizada=await logica.planificarRuta({fecha:ruta.fecha,sede:'Yecla',vehiculoId:ruta.vehiculoId,conductorRecursoId:ruta.conductorRecursoId,solicitudes:[aceptada.id]},admin);
+        assert.equal(reutilizada.estado,'planificada');
+    `);
+    ejecutar(`
+        const ruta=await datos.detalleRuta(${JSON.stringify(rutaId)});
+        assert.equal(ruta.estado,'completada'); assert.equal(ruta.activa,false);
+        for(const p of ruta.paradas) assert.equal((await datos.detalleSolicitud(undefined,p.solicitudId)).estado,'completada');
+    `);
 });

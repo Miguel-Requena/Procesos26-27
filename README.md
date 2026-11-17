@@ -12,9 +12,9 @@ La aplicación está desplegada en Google Cloud Run.
 | --- | --- |
 | Cliente | Crear solicitudes de recogida con entrega completa, consultar sus solicitudes y su historial, cancelar las que siguen pendientes y consultar el motivo de un rechazo. |
 | Administrador | Revisar solicitudes, filtrar por estado y fecha solicitada, aceptar o rechazar, habilitar perfiles de conductor, gestionar vehículos y conductores y planificar rutas con itinerario ordenado. |
-| Conductor | Acceder a su panel y consultar el resumen de las rutas que tiene asignadas. |
+| Conductor | Consultar sus rutas y paradas, iniciar el recorrido y registrar entregas o incidencias con motivo. |
 
-El servidor valida sesión, rol y propiedad en cada operación. El registro no permite elegir roles ni concederse permisos administrativos. La consulta del itinerario completo desde el panel de conductor y la actualización de entregas corresponden a **P23**, todavía pendiente. La validación y documentación del flujo completo corresponde a **P24**.
+El servidor valida sesión, rol y propiedad en cada operación. El registro no permite elegir roles ni concederse permisos administrativos. **P23** permite consultar el itinerario y actualizar entregas. **P24** valida y documenta el recorrido completo, incluidas incidencias, persistencia y casos negativos.
 
 ### P15–P16: identidad visual, perfiles y permisos
 
@@ -62,6 +62,14 @@ MongoDB utiliza transacciones e índices únicos; las pruebas con SQLite utiliza
 
 P22 no incluye mapas, optimización automática, modificación/cancelación de rutas ni finalización de entregas. La capacidad declarada del camión se muestra para la elección administrativa, pero no se convierte automáticamente la mercancía expresada en bultos, cajas o unidades a kg o m³.
 
+### P23–P24: ejecución y validación del transporte
+
+El conductor abre **Ver ruta y entregas**, también en rutas anteriores con itinerario completo. Ve paradas ordenadas, direcciones, contactos y mercancía. **Iniciar ruta** pasa las solicitudes a en tránsito; cada parada permite **Marcar entregada** o **Registrar incidencia** con motivo obligatorio. Una incidencia se puede resolver como entregada. El cliente ve su estado e historial y administración puede revisar el seguimiento.
+
+Cuando todas las paradas están entregadas, la ruta se completa y libera vehículo y conductor para esa fecha. Las actualizaciones son atómicas y controlan revisión, asignación y claves de operación para evitar duplicados al reintentar tras un fallo de red. La interfaz confirma éxito solo tras respuesta del servidor.
+
+P24 recorre el flujo completo con datos ficticios, pruebas HTTP, persistencia entre procesos, negativos y evidencias visuales. Para una demostración local desechable: `node servidor/demo-p24.cjs`; ver cuentas, pasos y resultados en [P24](documentacion/P24-validacion-flujo.md). La revisión y cierre del tablero corresponden al responsable.
+
 ## Registro, confirmación y Google
 
 Crear cuenta pide **nombre, primer apellido, correo y contraseña**. Nombre y primer apellido son obligatorios, admiten hasta 100 caracteres y se validan también en servidor. El registro crea una cuenta de **cliente** pendiente de confirmación, con contraseña almacenada mediante bcrypt. Las cuentas antiguas sin nombre conservan su acceso.
@@ -77,7 +85,7 @@ Si el correo ya existe, se solicita la contraseña de esa misma cuenta para vinc
 | Componente | Responsabilidad |
 | --- | --- |
 | `cliente/index.html`, `estilos.css`, fuentes e imágenes | Estructura e identidad visual. |
-| `cliente/presentacion.js`, `cliente/rutas.js` | Interfaz, formularios y planificación. |
+| `cliente/presentacion.js`, `cliente/rutas.js`, `cliente/entregas.js` | Interfaz, formularios y planificación. |
 | `cliente/rest.js` | Peticiones HTTP a la API. |
 | `servidor/api.js`, `externos.js` | Endpoints y acceso a proveedores externos. |
 | `servidor/logica.js`, `solicitudes.js`, `rutas.js` | Reglas de acceso, validación y negocio. |
@@ -149,6 +157,8 @@ Las rutas privadas requieren sesión y comprueban el perfil en servidor. Los det
 | `GET /api/oauth/google`, `GET /api/oauth/google/callback` | Acceso y vinculación con Google. |
 | `POST /api/login`, `POST /api/logout`, `GET /api/sesion` | Inicio, cierre y consulta de sesión. |
 | `GET /api/panel/:rol` | Panel del perfil de la sesión. |
+| `GET /api/conductor/rutas/:id` | Itinerario completo del conductor asignado. |
+| `POST /api/conductor/rutas/:id/actualizaciones` | Iniciar, entregar o registrar incidencia; revisión y clave de operación. |
 | `GET /api/usuarios`, `GET /api/usuarios/:id/activo` | Listado de cuentas y estado; administración. |
 | `PATCH /api/usuarios/:id/perfil` | Habilitar conductor o volver a cliente; administración. |
 | `DELETE /api/usuarios/:id` | Baja lógica por el titular o administración. |
@@ -195,7 +205,8 @@ El flujo del repositorio es: crear una rama `codex/` antes de editar, realizar e
 - [P19: revisión administrativa](documentacion/P19-revision-administrativa.md).
 - [P21: catálogo de vehículos y conductores](documentacion/P21-recursos.md).
 - [P22: planificación e itinerarios](documentacion/P22-rutas.md).
-- [P24: validación del flujo, evidencias y dependencia de P23](documentacion/P24-validacion-flujo.md).
+- [P23: itinerario del conductor, entregas e incidencias](documentacion/P23-entregas.md).
+- [P24: validación del flujo completo y evidencias](documentacion/P24-validacion-flujo.md).
 - [Registro con nombre y primer apellido](documentacion/REGISTRO-IDENTIDAD.md).
 - [Guía de despliegue y servicios](DESPLIEGUE-GOOGLE-CLOUD.md).
 

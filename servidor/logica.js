@@ -273,6 +273,15 @@ async function planificarRuta(entrada, actor) {
     await exigirAdministrador(actor);
     return datos.planificarRuta(require("./rutas").validar(entrada),actor.id);
 }
+async function consultarRutaConductor(id, actor, entrada) {
+    const usuario=await usuarioAutorizado(actor);
+    if (usuario.rol !== "conductor") throw errorAcceso("Solo el conductor asignado puede acceder al itinerario operativo",403);
+    if (typeof id !== "string" || !/^[a-zA-Z0-9_-]{1,80}$/.test(id)) throw errorAcceso("Ruta no encontrada",404);
+    const contrato=require("./rutas");
+    const ruta=entrada === undefined ? await datos.detalleRuta(id) : await datos.actualizarRuta(id,contrato.validarActualizacion(entrada),usuario.id);
+    if (!ruta || ruta.conductorId !== usuario.id) throw errorAcceso("Ruta no encontrada",404);
+    return contrato.publicaConductor(ruta);
+}
 async function consultarRutaAdministracion(id, actor) {
     await exigirAdministrador(actor);
     if(typeof id!=="string" || !/^[a-zA-Z0-9_-]{1,80}$/.test(id)) throw errorAcceso("Ruta no encontrada",404);
@@ -280,7 +289,7 @@ async function consultarRutaAdministracion(id, actor) {
     if(!ruta) throw errorAcceso("Ruta no encontrada",404);
     return ruta;
 }
-module.exports = { validarIdentidad, planificarRuta, consultarRutaAdministracion, gestionarRecursos, consultarSolicitudesAdministracion, revisarSolicitud,
+module.exports = { consultarRutaConductor, validarIdentidad, planificarRuta, consultarRutaAdministracion, gestionarRecursos, consultarSolicitudesAdministracion, revisarSolicitud,
     cancelarSolicitud,
     crearSolicitud,
     cambiarPerfilEquipo, consultarTransportes,
