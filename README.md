@@ -195,6 +195,7 @@ El flujo del repositorio es: crear una rama `codex/` antes de editar, realizar e
 - [P19: revisión administrativa](documentacion/P19-revision-administrativa.md).
 - [P21: catálogo de vehículos y conductores](documentacion/P21-recursos.md).
 - [P22: planificación e itinerarios](documentacion/P22-rutas.md).
+- [P24: validación del flujo, evidencias y dependencia de P23](documentacion/P24-validacion-flujo.md).
 - [Registro con nombre y primer apellido](documentacion/REGISTRO-IDENTIDAD.md).
 - [Guía de despliegue y servicios](DESPLIEGUE-GOOGLE-CLOUD.md).
 
