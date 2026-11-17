@@ -1,6 +1,16 @@
 # Seguimiento de la memoria y diagramas — TransDrakkar
 
-Actualizado: 5 de noviembre de 2026.
+Actualizado: 17 de noviembre de 2026.
+
+## Actualización de Overleaf al cierre del Sprint 2
+
+Se ha leído y respaldado el contenido vigente de Overleaf antes de editar. Se actualizan introducción, propuesta, descripción, manual por perfiles, pruebas, despliegue, conclusiones, requisitos, desarrollo y uso de IA; el título pasa a TransDrakkar. Se conserva la revisión histórica del Sprint 1. Las notas inferiores de sesiones anteriores conservan su contexto y no sustituyen este estado actual.
+
+El autor confirma que P18 no figura en el backlog de cierre. Se documentan los ocho PBI de las capturas: P15, P16, P17, P19, P21, P22, P23 y P24, con 50 de estimación visible y 26,8 horas registradas. No se interpreta la unidad de estimación como horas sin confirmación. Se incorpora la captura adicional de P15/P16. Consulta y cancelación siguen implementadas y documentadas, sin asignar P18 al sprint.
+
+En `figs` de Overleaf se incorporan las cuatro capturas originales de DoneTonic y un diagrama nuevo de estados del transporte. Las diferencias entre 50 de la tabla, 57 del avance y 9 de Trabajo Total en el burnup se explican sin inventar su causa. El backlog grande se recorta solo en la presentación LaTeX para facilitar la lectura; el archivo de la captura se conserva íntegro.
+
+Se identifican el PR 42, el cierre 885b380 y la ejecución CI 44078563639 con 85 casos sin fallos ni omisiones, distinguiendo pruebas locales, MongoDB real, revisión visual y límites de los proveedores simulados. Fuentes actualizadas, figuras y generador del diagrama se conservan en `diagramas/memoria-sprint2/`. Los respaldos originales y PDF completo son locales y se excluyen de Git. El PDF contiene elementos personales de la plantilla; no se publica como parte del repositorio.
 
 ## P23 y cierre técnico P24 — 17 de noviembre de 2026
 
@@ -10,7 +20,7 @@ Se implementa RF-17: itinerario propio, inicio, entrega, incidencia con motivo y
 
 Se añaden pruebas integradas HTTP con datos ficticios para T34/T35: alta, aceptación, recursos, planificación, consulta por perfiles y persistencia entre procesos, además de negativos de permisos, fechas, duplicados y transiciones actuales. El [informe P24](documentacion/P24-validacion-flujo.md) recoge modelo, API, reproducción, demostración y límites. La entrega e incidencia y sus transiciones requieren P23: T34 y P24 no pueden darse por terminados. No se han actualizado DoneTonic ni la memoria de Overleaf. Los criterios CA24 del documento siguen siendo propuestas de revisión.
 
-## Punto donde nos hemos quedado
+## Punto anterior al cierre (registro histórico del 5 de noviembre)
 
 El último tema tratado ha sido identificar los requisitos funcionales (RF) del Sprint 2 a partir de las capturas de todos sus PBI. Se propuso una relación RF–PBI en el chat, pero **todavía no se ha incorporado a Overleaf**. El siguiente paso, si se solicita continuar, es revisar esa propuesta y añadir los requisitos del Sprint 2 a la memoria con su trazabilidad a los PBI.
 
