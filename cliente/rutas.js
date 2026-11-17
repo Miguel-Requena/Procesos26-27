@@ -74,6 +74,7 @@
                 direccion.textContent = `${p.referencia} · ${p.destinatario} · ${p.direccion}, ${p.codigoPostal} ${p.localidad}`;
                 contacto.textContent = `${p.contacto.nombre} · ${p.contacto.telefono}`; li.append(direccion,contacto);
                 for (const m of p.mobiliario || []) { const mercancia = document.createElement("p"); mercancia.textContent = `${m.cantidad} ${m.unidad} · ${m.descripcion}`; li.append(mercancia); }
+                const seguimiento = document.createElement("p"); seguimiento.textContent = `Estado: ${p.estado || "planificada"}${p.motivoIncidencia ? " · Incidencia registrada: " + p.motivoIncidencia : ""}`; li.append(seguimiento);
                 if (p.observaciones) { const nota = document.createElement("p"); nota.textContent = p.observaciones; li.append(nota); }
                 orden.append(li);
             }
@@ -130,6 +131,7 @@
         } finally { guardando = false; controles(); paradas(); }
     });
     window.rutasPanel = { actualizar(rol) {
+        window.entregasPanel?.actualizar(rol);
         administracion = rol === "administrador"; seccion.hidden = !administracion;
         if (administracion) cargar(true);
         else { ++version; ++versionDetalle; elegidas = []; solicitudes = []; rutas = []; vehiculos = []; conductores = []; form.reset(); lista.replaceChildren(); document.getElementById("lista-rutas-planificadas").replaceChildren(); if (dialog.open) dialog.close(); }

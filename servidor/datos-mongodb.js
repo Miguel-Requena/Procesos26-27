@@ -243,6 +243,30 @@ async function planificarRuta(entrada, responsableId) {
         } finally { await session.endSession(); }
     });
 }
+async function actualizarRuta(id, entrada, conductorId) {
+    return ejecutar(async()=>{
+        const session = client.startSession(), contrato = require("./rutas");
+        try {
+            return await session.withTransaction(async()=>{
+                const opciones={session};
+                const cuenta=convertir(await usuarios.findOne({id:conductorId},opciones));
+                if (!cuenta?.activo || cuenta.rol !== "conductor") throw contrato.error("No tienes permiso para actualizar entregas",403);
+                const anterior=await db.collection("rutas").findOne({id,conductorId},opciones);
+                const solicitudes=anterior ? await db.collection("solicitudes").find({id:{$in:anterior.paradas.map(p=>p.solicitudId)}},opciones).toArray() : [];
+                const resultado=contrato.actualizar(anterior,(anterior?.paradas || []).map(p=>solicitudes.find(s=>s.id===p.solicitudId)),entrada,conductorId);
+                if (!resultado.repetida) {
+                    await usuarios.updateOne({id:conductorId},{$inc:{versionPlanificacion:1}},opciones);
+                    const { _id, ...ruta }=resultado.ruta;
+                    await db.collection("rutas").replaceOne({id,conductorId},ruta,opciones);
+                    for (const s of resultado.solicitudes) {
+                        await db.collection("solicitudes").updateOne({id:s.id,rutaId:id},{$set:{estado:s.estado,revision:s.revision,historial:s.historial}},opciones);
+                    }
+                }
+                const {_id,...publica}=resultado.ruta; return publica;
+            },{readConcern:{level:"snapshot"},writeConcern:{w:"majority"},maxCommitTimeMS:15000});
+        } finally { await session.endSession(); }
+    });
+}
 async function limpiar() { throw new Error("No se permite limpiar la base MongoDB de la aplicación"); }
 async function cerrar() { await client.close(); }
-module.exports = { detalleRuta, planificarRuta, listarRecursos, guardarRecurso, listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };
+module.exports = { actualizarRuta, detalleRuta, planificarRuta, listarRecursos, guardarRecurso, listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar };

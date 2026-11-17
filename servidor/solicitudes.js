@@ -52,7 +52,7 @@ function publica(registro, administracion = false) {
 }
 module.exports = { validarSolicitud, hoyMadrid, huella, comprobarReintento, publica };
 
-const estados = ["pendiente", "pendiente_recogida", "aceptada", "rechazada", "planificada", "asignada", "en_transito", "en_curso", "completada", "cancelada"];
+const estados = ["pendiente", "pendiente_recogida", "aceptada", "rechazada", "planificada", "asignada", "en_transito", "incidencia", "en_curso", "completada", "cancelada"];
 function filtrosAdministracion(entrada) {
     if (Object.keys(entrada).some(k => !["estado", "desde", "hasta"].includes(k))) throw invalido("Filtro no válido.");
     const salida = {};

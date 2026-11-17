@@ -56,18 +56,31 @@ async function escenario() {
     return { cliente, otro, admin, conductor, ajeno, solicitud, ruta, clave };
 }
 
-test("P24 T34: solicitud → aceptación → ruta → consulta por perfiles y persistencia tras reiniciar proceso", async () => {
+test("P24 T34: solicitud → aceptación → ruta → incidencia → entrega → consulta y persistencia", async () => {
     const e = await escenario();
     await pedir(`/administracion/solicitudes/${e.solicitud.id}/revision`, e.admin.cookie, { accion: "aceptar", revision: 0 });
     const { ruta } = await pedir("/administracion/rutas", e.admin.cookie, e.ruta, 201);
     const { rutas } = await pedir("/rutas", e.conductor.cookie);
     assert.deepEqual(rutas.map(r => r.id), [ruta.id]);
     assert.deepEqual((await pedir("/rutas", e.ajeno.cookie)).rutas, []);
-    const { registro } = await pedir(`/solicitudes/${e.solicitud.id}`, e.cliente.cookie);
+    let { registro } = await pedir(`/solicitudes/${e.solicitud.id}`, e.cliente.cookie);
     assert.equal(registro.estado, "planificada");
     assert.equal((await datos.detalleSolicitud(e.cliente.usuario.id, registro.id)).rutaId, ruta.id);
     assert.deepEqual(registro.historial.map(h => h.estado), ["pendiente_recogida", "aceptada", "planificada"]);
+    const actualizar = (accion,revision,extra={})=>pedir(`/conductor/rutas/${ruta.id}/actualizaciones`,e.conductor.cookie,{accion,revision,clave:`p24-operacion-${accion}-00001`,...extra});
+    const {ruta: operativa}=await pedir(`/conductor/rutas/${ruta.id}`,e.conductor.cookie);
+    assert.equal(operativa.conductorId,undefined); assert.equal(operativa.operaciones,undefined);
+    await actualizar("iniciar",0);
+    await actualizar("incidencia",1,{solicitudId:registro.id,motivo:"Destinatario ausente ficticio"});
+    const incidencia=(await pedir(`/solicitudes/${registro.id}`,e.cliente.cookie)).registro;
+    assert.equal(incidencia.estado,"incidencia"); assert.equal(incidencia.historial.at(-1).motivo,"Destinatario ausente ficticio");
+    await actualizar("entregar",2,{solicitudId:registro.id});
+    await actualizar("entregar",2,{solicitudId:registro.id}); // Reintento tras perder la respuesta.
+    registro=(await pedir(`/solicitudes/${registro.id}`,e.cliente.cookie)).registro;
+    assert.equal(registro.estado,"completada");
+    assert.deepEqual(registro.historial.map(h=>h.estado),["pendiente_recogida","aceptada","planificada","en_transito","incidencia","completada"]);
     const { ruta: itinerario } = await pedir(`/administracion/rutas/${ruta.id}`, e.admin.cookie);
+    assert.equal(itinerario.estado,"completada"); assert.equal(itinerario.activa,false);
     assert.equal(itinerario.paradas[0].solicitudId, registro.id);
     assert.equal(itinerario.paradas[0].contacto.telefono, contenido().contactoEntrega.telefono);
     // Otro proceso abre la misma BD y arranca una nueva instancia HTTP. Sin el preload que crea una BD nueva.
@@ -124,4 +137,42 @@ test("P24 T35: permisos, rol falsificado, fechas, duplicados y transiciones inv�
     assert.equal(cancelada.historial.filter(h => h.estado === "cancelada").length, 1);
 });
 
-test.todo("P24 T34 / CA24-01: entrega e incidencia del conductor → consulta del resultado por cliente; requiere P23");
+test("P23 T36/T37: autorización, transiciones, concurrencia y liberación de reservas",async()=>{
+    const e=await escenario(),id=e.solicitud.id;
+    await pedir(`/administracion/solicitudes/${id}/revision`,e.admin.cookie,{accion:"aceptar",revision:0});
+    const {ruta}=await pedir("/administracion/rutas",e.admin.cookie,e.ruta,201);
+    const url=`/conductor/rutas/${ruta.id}`, operacion={accion:"iniciar",revision:0,clave:"p23-inicio-ruta-00001"};
+    await pedir(url,undefined,undefined,401);
+    for(const actor of [e.cliente,e.admin]) {
+        await pedir(url,actor.cookie,undefined,403);
+        await pedir(url+"/actualizaciones",actor.cookie,operacion,403);
+    }
+    await pedir(url,e.ajeno.cookie,undefined,404);
+    await pedir(url+"/actualizaciones",e.ajeno.cookie,operacion,404);
+    const cambio=(entrada,estado=200)=>pedir(url+"/actualizaciones",e.conductor.cookie,entrada,estado);
+    await cambio({...operacion,accion:"entregar",solicitudId:id},409);
+    await cambio({...operacion,accion:"inventada"},400);
+    await cambio({...operacion,accion:"incidencia",solicitudId:id,motivo:" "},400);
+    await cambio(operacion);
+    await cambio(operacion); // Mismo evento, aunque la revisión haya avanzado.
+    await cambio({...operacion,accion:"entregar",solicitudId:id},409);
+    await cambio({...operacion,clave:"p23-otro-inicio-00002"},409);
+    await cambio({accion:"entregar",solicitudId:"ajena",revision:1,clave:"p23-parada-ajena-0001"},409);
+    const concurrentes=await Promise.all([
+        fetch(base+url+"/actualizaciones",{method:"POST",headers:{cookie:e.conductor.cookie,"Content-Type":"application/json"},body:JSON.stringify({accion:"entregar",revision:1,solicitudId:id,clave:"p23-concurrente-entrega-01"})}),
+        fetch(base+url+"/actualizaciones",{method:"POST",headers:{cookie:e.conductor.cookie,"Content-Type":"application/json"},body:JSON.stringify({accion:"incidencia",revision:1,solicitudId:id,motivo:"Ausente",clave:"p23-concurrente-incidencia-01"})})
+    ]);
+    assert.deepEqual(concurrentes.map(r=>r.status).sort(),[200,409]);
+    let actual=(await pedir(url,e.conductor.cookie)).ruta;
+    if(actual.estado !== "completada") {
+        await cambio({accion:"entregar",revision:actual.revision,solicitudId:id,clave:"p23-resolver-incidencia-01"});
+    }
+    actual=(await pedir(url,e.conductor.cookie)).ruta;
+    assert.equal(actual.activa,false);
+    assert.equal((await pedir(`/solicitudes/${id}`,e.cliente.cookie)).registro.historial.filter(h=>h.accion==="iniciar").length,1);
+    const {solicitud:nueva}=await pedir("/solicitudes",e.cliente.cookie,contenido(),201,{"Idempotency-Key":"p23-liberacion-reserva-0001"});
+    await pedir(`/administracion/solicitudes/${nueva.id}/revision`,e.admin.cookie,{accion:"aceptar",revision:0});
+    await pedir("/administracion/rutas",e.admin.cookie,{...e.ruta,solicitudes:[nueva.id]},201);
+    await datos.asignarRol(e.conductor.usuario.id,"cliente");
+    await pedir(url,e.conductor.cookie,undefined,403);
+});

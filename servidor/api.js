@@ -139,6 +139,14 @@ for (const tipo of ["solicitudes", "rutas"]) {
     });
 }
 
+app.get("/api/conductor/rutas/:id", exigirSesion, async(req,res)=>{
+    try {res.json({ruta:await logica.consultarRutaConductor(req.params.id,req.usuario)});}
+    catch(error) {res.status(error.estado || 500).json({error:error.estado ? error.message : "No se pudo consultar el itinerario"});}
+});
+app.post("/api/conductor/rutas/:id/actualizaciones", exigirSesion, async(req,res)=>{
+    try {res.json({ruta:await logica.consultarRutaConductor(req.params.id,req.usuario,req.body ?? null)});}
+    catch(error) {res.status(error.estado || 500).json({error:error.estado ? error.message : "No se pudo actualizar la entrega"});}
+});
 app.post("/api/solicitudes/:id/cancelacion", exigirSesion, async (req, res) => {
     try { res.json({ solicitud: await logica.cancelarSolicitud(req.params.id, req.usuario) }); }
     catch (error) { res.status(error.estado || 500).json({ error: error.estado ? error.message : "No se pudo cancelar la solicitud" }); }

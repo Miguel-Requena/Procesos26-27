@@ -2,7 +2,11 @@
 
 Actualizado: 5 de noviembre de 2026.
 
-## Validación P24 — 17 de noviembre de 2026
+## P23 y cierre técnico P24 — 17 de noviembre de 2026
+
+Se implementa RF-17: itinerario propio, inicio, entrega, incidencia con motivo y resolución. El usuario confirma los estados y liberación al completar todas las paradas. T34 ya recorre el flujo completo y T35 añade concurrencia, reintentos y errores de red; se elimina el TODO previo. Documentos P23/P24 recogen pruebas, modelo, API y evidencias visuales con datos ficticios. La aceptación final del Sprint 2 corresponde al responsable; no se modifica DoneTonic ni Overleaf.
+
+## Registro histórico P24 antes de P23 — 17 de noviembre de 2026
 
 Se añaden pruebas integradas HTTP con datos ficticios para T34/T35: alta, aceptación, recursos, planificación, consulta por perfiles y persistencia entre procesos, además de negativos de permisos, fechas, duplicados y transiciones actuales. El [informe P24](documentacion/P24-validacion-flujo.md) recoge modelo, API, reproducción, demostración y límites. La entrega e incidencia y sus transiciones requieren P23: T34 y P24 no pueden darse por terminados. No se han actualizado DoneTonic ni la memoria de Overleaf. Los criterios CA24 del documento siguen siendo propuestas de revisión.
 

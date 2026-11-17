@@ -6,13 +6,13 @@ La fecha no puede ser anterior a hoy en Madrid. Una ruta contiene entre 1 y 100 
 
 Una solicitud solo puede estar en una ruta activa. Un vehículo y una cuenta de conductor solo pueden reservarse una vez por fecha. Crear la ruta y pasar todas sus solicitudes de aceptada a planificada es una operación atómica. Si falla una validación o hay conflicto, no cambia ninguna solicitud ni se guarda la ruta parcial. Cada solicitud conserva historial y aumenta su revisión.
 
-MongoDB usa transacciones con lectura snapshot y escritura majority, índices únicos para reservas de vehículo, conductor y solicitudes en rutas activas. Las escrituras de coordinación en los recursos y la cuenta detectan cambios concurrentes de disponibilidad. Requiere un replica set, como MongoDB Atlas; CI configura un replica set local desechable. SQLite aplica una transacción inmediata y tablas de reservas con restricciones únicas. No existe modificación o cancelación de rutas en P22; la liberación de reservas al finalizar o cancelar se implementará con ese ciclo de vida.
+MongoDB usa transacciones con lectura snapshot y escritura majority, índices únicos para reservas de vehículo, conductor y solicitudes en rutas activas. Las escrituras de coordinación en los recursos y la cuenta detectan cambios concurrentes de disponibilidad. Requiere un replica set, como MongoDB Atlas; CI configura un replica set local desechable. SQLite aplica una transacción inmediata y tablas de reservas con restricciones únicas. No existe modificación o cancelación de rutas en P22; P23 incorpora la liberación al completar todas las entregas. La cancelación de rutas sigue fuera de alcance.
 
 API exclusiva de administración:
 
 - POST /api/administracion/rutas: fecha, sede Yecla, vehiculoId, conductorRecursoId y solicitudes (identificadores en orden).
 - GET /api/administracion/rutas/:id: itinerario completo.
-- GET /api/rutas conserva los permisos existentes y permite al conductor ver el resumen de sus rutas asignadas.
+- GET /api/rutas conserva los permisos existentes y permite al conductor ver el resumen de sus rutas asignadas. P23 añade GET /api/conductor/rutas/:id para su itinerario completo y actualizaciones operativas.
 
 Pruebas: validaciones, permisos, revocación, orden, conservación del itinerario, recursos por fecha, conflictos concurrentes y rollback. La integración con MongoDB comprueba transacciones concurrentes y persistencia entre procesos. Verificación visual local con dos solicitudes ficticias: selección, reordenación, guardado, estados planificados y consulta del itinerario.
 

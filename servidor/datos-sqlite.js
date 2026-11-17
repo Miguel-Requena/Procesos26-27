@@ -258,6 +258,29 @@ function planificarRuta(entrada, responsableId) {
         throw error;
     }
 }
+function actualizarRuta(id, entrada, conductorId) {
+    db.exec("BEGIN IMMEDIATE");
+    try {
+        const contrato = require("./rutas"), cuenta = buscarPorId(conductorId);
+        if (!cuenta?.activo || cuenta.rol !== "conductor") throw contrato.error("No tienes permiso para actualizar entregas",403);
+        const anterior = detalleRuta(id);
+        const resultado = contrato.actualizar(anterior,(anterior?.paradas || []).map(p=>detalleSolicitud(undefined,p.solicitudId)),entrada,conductorId);
+        if (!resultado.repetida) {
+            db.prepare("UPDATE rutas_planificadas SET contenido=? WHERE id=?").run(JSON.stringify(resultado.ruta),id);
+            db.prepare("UPDATE transportes SET estado=? WHERE tipo='rutas' AND id=?").run(resultado.ruta.estado,id);
+            for (const s of resultado.solicitudes) {
+                db.prepare("UPDATE transportes SET estado=? WHERE tipo='solicitudes' AND id=?").run(s.estado,s.id);
+                db.prepare("UPDATE solicitudes_detalles SET contenido=? WHERE id=?").run(JSON.stringify(s),s.id);
+                db.prepare("INSERT INTO historial_solicitudes VALUES (?,?) ON CONFLICT(id) DO UPDATE SET contenido=excluded.contenido").run(s.id,JSON.stringify({historial:s.historial,revision:s.revision}));
+            }
+            if (!resultado.ruta.activa) {
+                db.prepare("DELETE FROM reservas_rutas WHERE rutaId=?").run(id);
+                db.prepare("DELETE FROM paradas_rutas WHERE rutaId=?").run(id);
+            }
+        }
+        db.exec("COMMIT"); return resultado.ruta;
+    } catch(error) { db.exec("ROLLBACK"); throw error; }
+}
 function limpiar() {
     if (process.env.NODE_ENV !== "test") throw new Error("Solo se puede limpiar la base de datos durante las pruebas");
     db.exec("DELETE FROM reservas_rutas; DELETE FROM paradas_rutas; DELETE FROM rutas_planificadas; DELETE FROM recursos; DELETE FROM historial_solicitudes; DELETE FROM intentos_oauth; DELETE FROM solicitudes_detalles; DELETE FROM transportes; DELETE FROM confirmaciones; DELETE FROM identidades; DELETE FROM sesiones; DELETE FROM usuarios; DELETE FROM sqlite_sequence WHERE name = 'usuarios';");
@@ -269,5 +292,5 @@ function configurarCuentaPrueba(id, confirmado = true, rol = "cliente") {
     return buscarPorId(id);
 }
 function cerrar() { db.close(); }
-module.exports = { detalleRuta, planificarRuta, listarRecursos, guardarRecurso, listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
+module.exports = { actualizarRuta, detalleRuta, planificarRuta, listarRecursos, guardarRecurso, listarSolicitudesAdministracion, revisarSolicitud, detalleSolicitud, cancelarSolicitud, guardarIntentoOAuth, leerIntentoOAuth, buscarSolicitudEnvio, crearSolicitud, crearSesion, buscarSesion, eliminarSesion, asignarPerfilEquipo, consultarTransportes, asignarRol, guardarConfirmacion, confirmar, buscarGoogle, vincularGoogle, buscarPorEmail, buscarPorId, listar, crear, desactivar, limpiar, cerrar,
     ...(process.env.NODE_ENV === "test" ? { configurarCuentaPrueba, configurarTransportePrueba } : {}) };

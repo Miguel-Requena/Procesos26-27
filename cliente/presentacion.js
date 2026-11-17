@@ -48,7 +48,7 @@ document.getElementById("camion-panel").append(camionPanel);
 function grupoEstado(valor) {
     const texto = String(valor || "").toLowerCase();
     if (["completada", "completado", "entregado", "entregada", "finalizada", "finalizado"].includes(texto)) return "completado";
-    if (["pendiente", "pendiente_recogida", "asignada", "asignado"].includes(texto)) return "pendiente";
+    if (["pendiente", "pendiente_recogida", "asignada", "asignado", "planificada"].includes(texto)) return "pendiente";
     if (["en_curso", "en_transito", "en_reparto"].includes(texto)) return "en-curso";
     if (["cancelada", "rechazada"].includes(texto)) return "cancelada";
     if (texto === "aceptada") return "completado";
@@ -60,6 +60,8 @@ function resumenEntrega(registro) {
 function etiquetaEstado(valor) {
     if (!valor) return "Sin estado";
     if (valor === "pendiente_recogida") return "Pendiente de recogida";
+    if (valor === "en_transito") return "En tránsito";
+    if (valor === "incidencia") return "Con incidencia";
     const texto = String(valor).replaceAll("_", " ");
     return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
@@ -172,6 +174,11 @@ async function cargarDatosPanel() {
                 insignia.className = `insignia-estado estado-${grupoEstado(registro.estado)}`;
                 insignia.textContent = etiquetaEstado(registro.estado);
                 ficha.append(nombre, insignia, detalle, datos);
+                if (tipos[i] === "rutas" && rol === "conductor") {
+                    const ver = document.createElement("button");
+                    ver.type = "button"; ver.className = "boton-secundario"; ver.textContent = "Ver ruta y entregas →";
+                    ver.addEventListener("click",()=>window.entregasPanel.abrir(registro.id)); ficha.append(ver);
+                }
                 if (tipos[i] === "solicitudes" && ["cliente", "administrador"].includes(rol)) {
                     detalle.textContent = `${registro.origen || "Origen pendiente"} → ${resumenEntrega(registro)}`;
                     const ver = document.createElement("button");
