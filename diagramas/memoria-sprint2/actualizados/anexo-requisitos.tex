@@ -1,0 +1,51 @@
+\chapter{Requisitos}
+\label{anexo:requisitos}
+Este anexo amplía los requisitos de la aplicación TransDrakkar y conserva los identificadores RF-01 a RF-07 del capítulo de descripción. La revisión se refiere al repositorio disponible al cierre del Sprint 2, a 17 de noviembre de 2026. Los requisitos expresan el comportamiento esperado; su inclusión no supone que todos estén terminados o validados en producción.
+
+\section{Actores y alcance}
+El visitante puede registrarse y solicitar acceso. El cliente solicita recogidas de mobiliario y consulta su información. El conductor accede a las rutas que le corresponden. El administrador supervisa las cuentas y las operaciones de transporte. La identidad del usuario y su perfil se obtienen de la sesión en el servidor, sin confiar en roles o propietarios enviados por el navegador.
+
+\section{Requisitos funcionales del acceso}
+\begin{description}
+\item[RF-01. Registro.] Crear una cuenta mediante nombre, primer apellido, correo y contraseña, normalizando el correo y rechazando duplicados. El alta pública asigna el perfil cliente y no permite escoger permisos de administración.
+\item[RF-02. Confirmación.] Confirmar el correo mediante un enlace de un solo uso y permitir su reenvío. El código contempla caducidad e invalidación del token anterior. La recepción real requiere configurar y comprobar el proveedor de correo.
+\item[RF-03. Sesión.] Iniciar y cerrar sesión y recuperar el acceso al recargar mientras siga vigente. La revisión actual utiliza sesiones de ocho horas almacenadas en la capa de datos, de modo que un reinicio del proceso no elimina una sesión vigente conservada en MongoDB.
+\item[RF-04. Google.] Acceder con una cuenta de Google cuyo correo esté verificado. La integración no vincula automáticamente una cuenta local por coincidencia de correo. Su validación real depende de las credenciales y configuración del proveedor.
+\item[RF-05. Permisos de cuentas.] Distinguir las capacidades ordinarias y administrativas. Administración puede listar cuentas y consultar su estado; RF-09 concreta los tres perfiles del Sprint 2.
+\item[RF-06. Eliminación.] Permitir eliminar la propia cuenta y, a administración, eliminar otras cuentas. Una cuenta eliminada pierde el acceso.
+\item[RF-07. Información de errores.] Mostrar mensajes comprensibles ante datos inválidos, falta de autorización, fallos de red y servicios externos, sin revelar secretos ni detalles internos de los proveedores.
+\end{description}
+
+\section{Requisitos del Sprint 2 y trazabilidad}
+Los identificadores siguientes desarrollan los títulos de los PBI disponibles. Son una especificación de trabajo de su alcance, sin atribuirles criterios de aceptación que no constan en las capturas. Se incluye RF-08 como requisito de interfaz para conservar una numeración continua.
+\begin{description}
+\item[RF-08. Identidad visual (P15).] Mostrar el acceso con el nombre y la identidad de TransDrakkar y una presentación coherente de sus formularios.
+\item[RF-09. Perfiles (P16).] Proporcionar paneles de cliente, conductor y administrador con autorización en el servidor. Administración puede habilitar o retirar el perfil conductor en las cuentas admitidas; el alta pública no concede ese perfil.
+\item[RF-10. Solicitud de recogida (P17).] Permitir al cliente crear una solicitud de recogida en fábrica con fabricante, dirección y contacto de recogida, fecha, mercancía, destinatario, dirección y contacto de entrega y observaciones opcionales. El servidor asigna propietario, referencia y estado inicial. Los reintentos de un mismo envío deben evitar duplicados mediante una clave de idempotencia. La organización posterior de los camiones se realiza desde la base de Yecla.
+\item[RF-11. Consulta propia (P18).] Consultar las solicitudes del cliente y su estado, preservando el aislamiento entre propietarios. El detalle muestra recogida, entrega, mercancía e historial de estados y motivos.
+\item[RF-12. Cancelación propia (P18).] Permitir cancelar solicitudes propias conforme a las condiciones del proceso. Solo se admite cancelar mientras esté pendiente; el reintento posterior devuelve conflicto y no duplica el historial.
+\item[RF-13. Revisión administrativa (P19).] Consultar y filtrar solicitudes desde administración; aceptar o rechazar pendientes con motivo obligatorio en el rechazo y control de revisión.
+\item[RF-14. Vehículos (P21).] Gestionar vehículos con matrícula única normalizada, tipo, capacidad y unidad, sede, actividad y disponibilidad; conservar su historial al desactivarlos.
+\item[RF-15. Conductores (P21).] Gestionar conductores vinculados a cuentas activas habilitadas, con sede y disponibilidad, sin duplicar la cuenta en el catálogo. Esta capacidad operativa amplía la mera habilitación del perfil de acceso.
+\item[RF-16. Planificación (P22).] Planificar rutas y asignarles vehículo y conductor. Las rutas salen de Yecla y agrupan de 1 a 100 solicitudes aceptadas con entrega completa. Se ordenan las paradas y se impiden reservas activas incompatibles por solicitud o por vehículo/conductor y fecha. No se deduce capacidad de carga desde bultos ni se editan rutas en este alcance.
+\item[RF-17. Ejecución de rutas (P23).] Permitir al conductor consultar solo su itinerario, iniciar la ruta, entregar paradas o registrar incidencias con motivo y resolverlas como entregadas. La última entrega completa la ruta y libera reservas. Revisiones y claves de operación controlan concurrencia y reintentos.
+\end{description}
+La consulta y cancelación se conservan como RF-11/RF-12 por su trazabilidad previa a P18; el autor indica que P18 no figura en el backlog de cierre del Sprint 2, por lo que no se cuenta entre sus ocho PBI.
+
+P24 corresponde a validar y documentar el flujo de transporte completo. Es una actividad de calidad y entrega que verifica varios requisitos, sin introducir por sí sola una función independiente.
+
+\section{Requisitos no funcionales}
+\begin{description}
+\item[RNF-01. Seguridad.] Almacenar contraseñas mediante bcrypt, verificar sesión y permisos en el servidor y mantener credenciales fuera del repositorio. Las cookies de sesión utilizan HttpOnly y se configuran como Secure en producción.
+\item[RNF-02. Aislamiento.] Filtrar solicitudes por cliente y rutas por conductor a partir de la sesión. Los identificadores ajenos no deben permitir consultar información de otros usuarios.
+\item[RNF-03. Persistencia e integridad.] Conservar cuentas, sesiones, solicitudes, recursos, rutas e historial en MongoDB, con transacciones para planificación y ejecución. La creación de solicitudes debe validar los datos y evitar duplicados por reintento; reutilizar una clave con distinto contenido debe producir un conflicto.
+\item[RNF-04. Mantenibilidad.] Separar presentación, comunicación, API, lógica y datos. Reservar SQLite para pruebas aisladas y mantener adaptadores con contratos compatibles.
+\item[RNF-05. Verificabilidad.] Disponer de pruebas automatizadas de reglas, API, autorización y persistencia. Distinguir pruebas con proveedores simulados de comprobaciones reales en el entorno publicado.
+\item[RNF-06. Usabilidad.] Mantener una interfaz adaptable, mostrar el resultado de las operaciones y conservar los datos del formulario de recogida cuando se produce un error recuperable.
+\item[RNF-07. Operación.] Comprobar la conexión a la base mediante la ruta de salud y registrar actividad sin contraseñas ni tokens. No se fijan objetivos numéricos de rendimiento o disponibilidad sin medidas que los sustenten.
+\end{description}
+
+\section{Estado de implementación y validación}
+La revisión de cierre \texttt{885b380}, integrada mediante el PR 42, incorpora RF-08 a RF-17 junto con la base de acceso. P23 completa el itinerario y actualización operativa; P24 valida el flujo desde solicitud hasta entrega y consulta por el cliente. Las capturas de DoneTonic aportadas por el autor muestran el Sprint 2 al 100\% y pendiente cero. El anexo de desarrollo conserva su discrepancia de estimación respecto de la tabla de PBI.
+
+La ejecución CI \texttt{44078563639} supera 85 casos sin fallos ni omisiones, con MongoDB real y contenedor. Las pruebas cubren reglas, API, permisos, rollback, reintentos, concurrencia, reservas y persistencia entre procesos; la revisión visual con datos ficticios completa la evidencia de uso. La disponibilidad desplegada de la interfaz y la protección de la API se comprobaron por HTTP. Las pruebas de proveedores simulados no acreditan recepción real de correo o consentimiento Google.
