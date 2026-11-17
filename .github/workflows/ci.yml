@@ -40,7 +40,14 @@ jobs:
           docker logs mongodb
           exit 1
       - name: Ejecutar pruebas
-        run: npm test
+        run: npm test -- --test-reporter=spec --test-reporter=junit --test-reporter-destination=stdout --test-reporter-destination=resultados-pruebas.xml
+      - name: Conservar evidencias de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-pruebas
+          path: servidor/resultados-pruebas.xml
+          if-no-files-found: warn
       - name: Comprobar contenedor de Cloud Run con MongoDB real
         run: |
           docker build -t procesos26-27-ci ..

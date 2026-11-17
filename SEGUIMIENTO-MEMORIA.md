@@ -2,6 +2,10 @@
 
 Actualizado: 5 de noviembre de 2026.
 
+## Validación P24 — 17 de noviembre de 2026
+
+Se añaden pruebas integradas HTTP con datos ficticios para T34/T35: alta, aceptación, recursos, planificación, consulta por perfiles y persistencia entre procesos, además de negativos de permisos, fechas, duplicados y transiciones actuales. El [informe P24](documentacion/P24-validacion-flujo.md) recoge modelo, API, reproducción, demostración y límites. La entrega e incidencia y sus transiciones requieren P23: T34 y P24 no pueden darse por terminados. No se han actualizado DoneTonic ni la memoria de Overleaf. Los criterios CA24 del documento siguen siendo propuestas de revisión.
+
 ## Punto donde nos hemos quedado
 
 El último tema tratado ha sido identificar los requisitos funcionales (RF) del Sprint 2 a partir de las capturas de todos sus PBI. Se propuso una relación RF–PBI en el chat, pero **todavía no se ha incorporado a Overleaf**. El siguiente paso, si se solicita continuar, es revisar esa propuesta y añadir los requisitos del Sprint 2 a la memoria con su trazabilidad a los PBI.
