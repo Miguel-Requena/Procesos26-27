@@ -48,7 +48,7 @@ Se conservan ocho PBI y 50 unidades visibles, sin interpretar las estimaciones c
 
 **Alternativas y consecuencias:** Forzar una equivalencia con los valores 57 o 9 de gráficos sin conocer su configuración inventaría información. Las discrepancias se explican en la memoria.
 
-**Evidencia:** `diagramas/memoria-sprint2/LEEME.md`.
+**Evidencia:** [alcance y trazabilidad vigentes](ESPECIFICACION-SPRINT-2.md#alcance-y-trazabilidad) y anexo de desarrollo de la memoria en Overleaf. Las copias históricas de sus fuentes se conservan en Git, revisión `5e536e2`; ya no forman parte del árbol de trabajo.
 
 ## D7 Reintentos
 
