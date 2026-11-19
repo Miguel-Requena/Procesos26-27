@@ -205,7 +205,7 @@ Las dos pruebas de integración MongoDB se omiten si falta `MONGODB_TEST_URL`. S
 
 Google Cloud Run sirve cliente y servidor, MongoDB Atlas conserva los datos y Secret Manager almacena los secretos. Cloud Build compila y despliega automáticamente los commits integrados en `main` según [`cloudbuild.yaml`](cloudbuild.yaml). La configuración y los pasos de verificación están en [DESPLIEGUE-GOOGLE-CLOUD.md](DESPLIEGUE-GOOGLE-CLOUD.md).
 
-[`entrega.txt`](entrega.txt) contiene los enlaces públicos de la aplicación y el repositorio. Las cuentas y contraseñas de evaluación se entregan en un TXT privado, excluido de Git; no se publican en este README. Las cuentas de prueba con correos de ejemplo sirven para acceder con contraseña, pero no representan buzones de correo reales.
+Los enlaces públicos de entrega son la [aplicación](https://procesos26-27-gseerr4ika-no.a.run.app) y el [repositorio](https://github.com/Miguel-Requena/Procesos26-27). Las cuentas y contraseñas de evaluación se entregan en un TXT privado, excluido de Git; no se publican en este README. Las cuentas de prueba con correos de ejemplo sirven para acceder con contraseña, pero no representan buzones de correo reales.
 
 El flujo del repositorio es: crear una rama `codex/` antes de editar, realizar el cambio, verificarlo, abrir una pull request y esperar CI correcto antes de integrarla en `main`. No se hacen commits directamente en `main`. Las instrucciones están en [AGENTS.md](AGENTS.md).
 

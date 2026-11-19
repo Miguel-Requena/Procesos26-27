@@ -71,7 +71,7 @@ La contraseña de conexión de Atlas es independiente de las contraseñas de la 
 - Logs incluyen actividad sin contraseñas, hashes ni conexiones.
 - Un commit integrado dispara automáticamente una nueva revisión desde `main`.
 
-Solo después actualiza la URL en `entrega.txt` y README. No se copian cuentas de
+Solo después actualiza la URL de la aplicación y los enlaces de entrega del README. No se copian cuentas de
 Neon automáticamente. Mantén el despliegue antiguo mientras verificas el nuevo.
 
 ## Hito 4
@@ -107,7 +107,7 @@ Referencias oficiales: [Google OAuth](https://developers.google.com/identity/pro
 - Comprobar caducidad, reenvío y errores de proveedor con feedback claro.
 - Entrar con Google y cancelar consentimiento; probar un email ya existente.
 - Verificar que eliminar una cuenta impide ambos tipos de acceso.
-- Verificar roles, persistencia, CI y acceso del revisor; revisar entrega.txt.
+- Verificar roles, persistencia, CI y acceso del revisor; revisar los enlaces de entrega del README.
 
 Sesiones y state OAuth persisten en Atlas; los tokens de sesión y las claves de
 los intentos OAuth se almacenan como SHA-256. El state y las pruebas de vinculación

@@ -2,11 +2,17 @@
 
 Actualizado: 19 de noviembre de 2026.
 
+## Limpieza de copias locales
+
+El 19/11/2026 se retiró del árbol de trabajo la carpeta `diagramas/`, incluidas las copias de la memoria. Se conserva el registro de su traslado a Overleaf el 17/11 y su historial en Git (revisión `5e536e2`). Las rutas y listados de archivos de las secciones históricas inferiores describen aquel momento; no deben interpretarse como archivos disponibles actualmente. Esta limpieza no verifica el contenido actual de Overleaf ni borra archivos de ese servicio.
+
+La documentación técnica vigente permanece en `documentacion/` y el README. Los archivos de fuentes y sus licencias en `cliente/fuentes/` sí son recursos de la aplicación y deben conservarse.
+
 ## Estado vigente e historial
 
 La documentación actual se consulta desde el README y `documentacion/REQUISITOS-SPRINT-2.md`, `DECISIONES-DISENO.md`, `ESPECIFICACION-SPRINT-2.md` y `GUIA-EVALUACION.md`. El Word se regenera desde la especificación vigente mediante `crear_especificacion_sprint2.py`.
 
-Las secciones inferiores anteriores al cierre son **registro histórico**, no tareas pendientes actuales. En particular, las frases sobre RF aún no incorporados, sesiones en memoria, MiApp o ausencia de actualización integral corresponden al estado de esas sesiones. El cierre del 17/11 y las fuentes de `diagramas/memoria-sprint2/actualizados/` prevalecen sobre ellas. P18 no se cuenta en los ocho PBI de cierre. El borrador Word del 5/11 queda sustituido por la versión 1.0.
+Las secciones inferiores anteriores al cierre son **registro histórico**, no tareas pendientes actuales. En particular, las frases sobre RF aún no incorporados, sesiones en memoria, MiApp o ausencia de actualización integral corresponden al estado de esas sesiones. El cierre del 17/11 y las fuentes trasladadas a Overleaf prevalecen sobre ellas; las copias locales de entonces se recuperan desde el historial Git. P18 no se cuenta en los ocho PBI de cierre. El borrador Word del 5/11 queda sustituido por la versión 1.0.
 
 La revisión del 19/11 añade sondeo automático de listados entre perfiles. No afirma haber modificado la sesión actual de Overleaf ni haber repetido pruebas reales de Google o correo. Los resultados de comprobaciones nuevas se registran en `documentacion/REVISION-19-11-2026.md`.
 
@@ -19,7 +25,7 @@ El autor confirma que P18 no figura en el backlog de cierre. Se documentan los o
 
 En `figs` de Overleaf se incorporan las cuatro capturas originales de DoneTonic y un diagrama nuevo de estados del transporte. Las diferencias entre 50 de la tabla, 57 del avance y 9 de Trabajo Total en el burnup se explican sin inventar su causa. El backlog grande se recorta solo en la presentación LaTeX para facilitar la lectura; el archivo de la captura se conserva íntegro.
 
-Se identifican el PR 42, el cierre 885b380 y la ejecución CI 44078563639 con 85 casos sin fallos ni omisiones, distinguiendo pruebas locales, MongoDB real, revisión visual y límites de los proveedores simulados. Fuentes actualizadas, figuras y generador del diagrama se conservan en `diagramas/memoria-sprint2/`. Los respaldos originales y PDF completo son locales y se excluyen de Git. El PDF contiene elementos personales de la plantilla; no se publica como parte del repositorio.
+Se identifican el PR 42, el cierre 885b380 y la ejecución CI 44078563639 con 85 casos sin fallos ni omisiones, distinguiendo pruebas locales, MongoDB real, revisión visual y límites de los proveedores simulados. Fuentes actualizadas, figuras y generador del diagrama se conservaron en `diagramas/memoria-sprint2/` hasta la limpieza del 19/11; siguen en el historial Git. Los respaldos originales y PDF completo son locales y se excluyen de Git. El PDF contiene elementos personales de la plantilla; no se publica como parte del repositorio.
 
 ## P23 y cierre técnico P24 — 17 de noviembre de 2026
 
@@ -149,7 +155,7 @@ El usuario marcó todo como hecho y dejó de ver el Sprint 1. Se indicó «Mostr
 
 Se sugirió consultar los PBI desde la tarjeta desplegada del sprint o exportar el backlog incluyendo todos los sprints. No se accedió a su sesión de DoneTonic ni se reabrió el sprint. No está comprobado que se pueda abrir el tablero cerrado directamente; no prometerlo. El usuario acabó aportando capturas de los PBI para completar la tabla.
 
-## Archivos locales útiles
+## Archivos locales históricos retirados
 
 En `diagramas/`:
 
