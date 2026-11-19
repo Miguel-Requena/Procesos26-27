@@ -16,6 +16,9 @@ function interfaz(responder) {
         const entrada=JSON.parse(opciones.body);envios.push(entrada);
         return responder(entrada,envios.length,ruta);
     }}};
+    const contextoRest = {window:{}, setTimeout, clearTimeout};
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname,"../cliente/rest.js"),"utf8"),contextoRest);
+    Object.assign(window.api, Object.fromEntries(Object.entries(contextoRest.window.api).filter(([nombre])=>["listarRecursos","guardarRecurso","detalleRutaAdministracion","planificarRuta","detalleRutaConductor","actualizarEntrega"].includes(nombre))));
     vm.runInNewContext(fs.readFileSync(path.join(__dirname,"../cliente/entregas.js"),"utf8"),{window,document:{body,createElement:t=>new Elemento(t)},crypto:require("node:crypto"),cargarDatosPanel:async()=>{}});
     const todos=n=>[n,...n.children.flatMap(todos)];
     const boton=texto=>todos(body).find(e=>e.tag==="button"&&e.textContent===texto);

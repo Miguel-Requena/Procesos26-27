@@ -1,5 +1,20 @@
 // Esta capa solo se ocupa de HTTP. No conoce elementos de la interfaz.
 window.api = {
+    // Sondeo secuencial: nunca solapa consultas ni entrega respuestas tras detenerlo.
+    observar(consultar, recibir, { intervalo = 5000, disponible = () => true, fallo = () => {} } = {}) {
+        let activo = true, temporizador;
+        async function consultarAhora() {
+            try {
+                if (activo && disponible()) {
+                    const datos = await consultar();
+                    if (activo && disponible()) await recibir(datos);
+                }
+            } catch (error) { if (activo) fallo(error); }
+            finally { if (activo) temporizador = setTimeout(consultarAhora, intervalo); }
+        }
+        temporizador = setTimeout(consultarAhora, intervalo);
+        return () => { activo = false; clearTimeout(temporizador); };
+    },
     async peticion(ruta, opciones = {}) {
         let respuesta;
         try {
@@ -23,6 +38,12 @@ window.api = {
     },
     crearSolicitud(datos, claveEnvio) { return this.peticion("/solicitudes", { method: "POST", headers: { "Idempotency-Key": claveEnvio }, body: JSON.stringify(datos) }); },
     listarUsuarios() { return this.peticion("/usuarios"); },
+    listarRecursos(tipo, asignables = false) { return this.peticion(`/administracion/${tipo}${asignables ? '?asignables=true' : ''}`); },
+    guardarRecurso(tipo, id, entrada) { return this.peticion(`/administracion/${tipo}${id ? '/' + encodeURIComponent(id) : ''}`, { method: id ? 'PUT' : 'POST', body: JSON.stringify(entrada) }); },
+    detalleRutaAdministracion(id) { return this.peticion(`/administracion/rutas/${encodeURIComponent(id)}`); },
+    planificarRuta(entrada) { return this.peticion('/administracion/rutas', { method: 'POST', body: JSON.stringify(entrada) }); },
+    detalleRutaConductor(id) { return this.peticion(`/conductor/rutas/${encodeURIComponent(id)}`); },
+    actualizarEntrega(id, entrada) { return this.peticion(`/conductor/rutas/${encodeURIComponent(id)}/actualizaciones`, { method: 'POST', body: JSON.stringify(entrada) }); },
     cambiarPerfil(id, rol) { return this.peticion(`/usuarios/${encodeURIComponent(id)}/perfil`, { method: "PATCH", body: JSON.stringify({ rol }) }); },
     consultarTransportes(tipo) { return this.peticion(`/${tipo}`); },
     detalleSolicitud(id) { return this.peticion(`/solicitudes/${encodeURIComponent(id)}`); },

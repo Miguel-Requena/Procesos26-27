@@ -57,7 +57,7 @@
         for(const b of contenido.querySelectorAll("button, textarea")) b.disabled=true;
         mensaje.replaceChildren(); mensaje.textContent="Guardando; espera la confirmación del servidor…";
         try {
-            const respuesta=await window.api.peticion(`/conductor/rutas/${encodeURIComponent(id)}/actualizaciones`,{method:"POST",body:JSON.stringify(pendiente)});
+            const respuesta=await window.api.actualizarEntrega(id, pendiente);
             if (vista !== version || !conductor) return;
             ruta=respuesta.ruta; pendiente=undefined; pintar(); mensaje.textContent="Actualización confirmada y guardada.";
             await cargarDatosPanel();
@@ -74,7 +74,7 @@
         contenido.replaceChildren(); mensaje.replaceChildren(); mensaje.textContent="Cargando itinerario…";
         if(!dialog.open) dialog.showModal();
         try {
-            const respuesta=await window.api.peticion(`/conductor/rutas/${encodeURIComponent(id)}`);
+            const respuesta=await window.api.detalleRutaConductor(id);
             if(vista !== version || !conductor) return;
             ruta=respuesta.ruta; pintar(); mensaje.textContent="";
         } catch(error) {if(vista===version) mensaje.textContent=error.message;}

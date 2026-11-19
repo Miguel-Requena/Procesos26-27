@@ -1,6 +1,15 @@
 # Seguimiento de la memoria y diagramas — TransDrakkar
 
-Actualizado: 17 de noviembre de 2026.
+Actualizado: 19 de noviembre de 2026.
+
+## Estado vigente e historial
+
+La documentación actual se consulta desde el README y `documentacion/REQUISITOS-SPRINT-2.md`, `DECISIONES-DISENO.md`, `ESPECIFICACION-SPRINT-2.md` y `GUIA-EVALUACION.md`. El Word se regenera desde la especificación vigente mediante `crear_especificacion_sprint2.py`.
+
+Las secciones inferiores anteriores al cierre son **registro histórico**, no tareas pendientes actuales. En particular, las frases sobre RF aún no incorporados, sesiones en memoria, MiApp o ausencia de actualización integral corresponden al estado de esas sesiones. El cierre del 17/11 y las fuentes de `diagramas/memoria-sprint2/actualizados/` prevalecen sobre ellas. P18 no se cuenta en los ocho PBI de cierre. El borrador Word del 5/11 queda sustituido por la versión 1.0.
+
+La revisión del 19/11 añade sondeo automático de listados entre perfiles. No afirma haber modificado la sesión actual de Overleaf ni haber repetido pruebas reales de Google o correo. Los resultados de comprobaciones nuevas se registran en `documentacion/REVISION-19-11-2026.md`.
+
 
 ## Actualización de Overleaf al cierre del Sprint 2
 
