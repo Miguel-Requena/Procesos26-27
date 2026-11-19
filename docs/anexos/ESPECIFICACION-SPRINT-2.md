@@ -8,7 +8,7 @@ El incremento conecta cliente, administración y conductor: solicitud de transpo
 
 El backlog de cierre contiene P15, P16, P17, P19, P21, P22, P23 y P24: ocho PBI y 50 unidades de estimación visible. P18 no forma parte de ese backlog según la aclaración del autor. Consulta y cancelación siguen implementadas como RF-11/RF-12 por su trazabilidad previa. P24 es validación y documentación, no un RF independiente. Las unidades no se identifican automáticamente con horas. Las diferencias respecto de gráficos de DoneTonic se conservan explicadas en la memoria.
 
-La lista de referencia para identificadores, estado y evidencias es REQUISITOS-SPRINT-2.md. Las decisiones D1 a D10 y sus alternativas están en DECISIONES-DISENO.md. GUIA-EVALUACION.md propone cinco RF y las pruebas manuales que debe ejecutar el revisor.
+La lista de referencia para identificadores, estado y evidencias está en docs/requisitos.md. Las decisiones D1 a D10 y sus alternativas están en docs/decisiones.md. La guía docs/anexos/GUIA-EVALUACION.md propone cinco RF y las pruebas manuales que debe ejecutar el revisor.
 
 ## Actores y permisos
 

@@ -1,10 +1,10 @@
 # Guía de evaluación del Sprint 2
 
-Usar la URL del [README](../README.md) y las cuentas de cliente, administración y conductor entregadas por canal privado. No usar datos personales reales. Registrar fecha, versión desplegada, entradas, resultado esperado/observado y evidencia. Esta guía propone pasos; no presenta como ejecutadas las pruebas que haga el evaluador.
+Usar la URL del [README](../../README.md) y las cuentas de cliente, administración y conductor entregadas por canal privado. No usar datos personales reales. Registrar fecha, versión desplegada, entradas, resultado esperado/observado y evidencia. Esta guía propone pasos; no presenta como ejecutadas las pruebas que haga el evaluador.
 
 ## Documentación y cinco requisitos
 
-La [lista de RF](REQUISITOS-SPRINT-2.md) responde a la pregunta 4; las [decisiones](DECISIONES-DISENO.md) permiten revisar motivos y alternativas. Los informes P18 a P24 amplían modelo y contratos. Revisar tres PR del Sprint 2 con cambios de código y comprobar en al menos dos cambios de README o documentación.
+La [lista de RF](../requisitos.md) responde a la pregunta 4; las [decisiones](../decisiones.md) permiten revisar motivos y alternativas. Los informes P18 a P24 amplían modelo y contratos. Revisar tres PR del Sprint 2 con cambios de código y comprobar en al menos dos cambios de README o documentación.
 
 ### RF-10
 

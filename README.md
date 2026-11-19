@@ -6,15 +6,17 @@ Aplicación web para gestionar solicitudes de transporte de mobiliario, vehícul
 
 La aplicación está desplegada en Google Cloud Run.
 
+## Documentación
+
+Consulta el [índice de TransDrakkar](docs/index.md) para navegar por los requisitos, la arquitectura, las decisiones y los sprints.
+
 ## Evaluar el Sprint 2
 
-- [Requisitos, estado y evidencias](documentacion/REQUISITOS-SPRINT-2.md).
-- [Decisiones justificadas y alternativas](documentacion/DECISIONES-DISENO.md).
-- [Guía de evaluación con cinco RF](documentacion/GUIA-EVALUACION.md).
-- [Especificación vigente](documentacion/ESPECIFICACION-SPRINT-2.md) y [versión Word](documentacion/Especificacion-Sprint-2-TransDrakkar.docx).
-- [Resultado de la revisión del 19/11](documentacion/REVISION-19-11-2026.md).
-
-El panel actualiza automáticamente listados y métricas cada cinco segundos cuando está visible y no hay edición ni diálogos abiertos. No hace falta recargar para ver una revisión administrativa o una ruta asignada por otro usuario. Las consultas son secuenciales; ante un fallo de red se conserva la última vista y se reintenta. Los detalles y selectores de planificación conservan borradores y sus botones de actualización. El [registro histórico de memoria](SEGUIMIENTO-MEMORIA.md) no sustituye estas referencias actuales.
+- [Requisitos, estado y evidencias](docs/requisitos.md).
+- [Decisiones justificadas y alternativas](docs/decisiones.md).
+- [Guía de evaluación con cinco RF](docs/anexos/GUIA-EVALUACION.md).
+- [Especificación vigente](docs/anexos/ESPECIFICACION-SPRINT-2.md) y [versión Word](docs/anexos/Especificacion-Sprint-2-TransDrakkar.docx).
+- [Resultado de la revisión del 19/11](docs/anexos/REVISION-19-11-2026.md).
 
 ## Funcionalidades y perfiles
 
@@ -24,61 +26,9 @@ El panel actualiza automáticamente listados y métricas cada cinco segundos cua
 | Administrador | Revisar solicitudes, filtrar por estado y fecha solicitada, aceptar o rechazar, habilitar perfiles de conductor, gestionar vehículos y conductores y planificar rutas con itinerario ordenado. |
 | Conductor | Consultar sus rutas y paradas, iniciar el recorrido y registrar entregas o incidencias con motivo. |
 
-El servidor valida sesión, rol y propiedad en cada operación. El registro no permite elegir roles ni concederse permisos administrativos. **P23** permite consultar el itinerario y actualizar entregas. **P24** valida y documenta el recorrido completo, incluidas incidencias, persistencia y casos negativos.
+El transporte sigue el recorrido **fábrica en Yecla → base de Yecla → dirección del destinatario**. El servidor comprueba la sesión, el perfil y la propiedad de los datos en cada operación. Los paneles actualizan automáticamente los listados mientras están visibles y conservan los borradores durante la edición.
 
-### P15–P16: identidad visual, perfiles y permisos
-
-La interfaz utiliza la identidad de Transdrakkar y dispone de paneles separados para cliente, conductor y administración. Las antiguas cuentas con rol `usuario` se migran a `cliente`; los administradores se conservan.
-
-Administración puede habilitar como conductores las cuentas confirmadas de cliente y devolverlas al perfil cliente desde «Perfiles del equipo». Las cuentas pendientes, eliminadas o de administración no se modifican desde esa acción. Cambiar el HTML o enviar otro rol en una petición no concede acceso.
-
-### P17–P19: solicitudes, cancelación y revisión
-
-El flujo logístico es **fábrica en Yecla → base de Yecla → dirección de entrega del destinatario**.
-
-El cliente indica fabricante, dirección de recogida, fecha solicitada, contacto de recogida, mercancía y observaciones. También debe completar destinatario, dirección de entrega, localidad, código postal de cinco dígitos y contacto de entrega. El servidor fija `localidadRecogida` y `baseConsolidacion` en `Yecla`. Rubí/Barcelona, Palma y Castellón son zonas de las rutas de salida y no sustituyen la dirección indicada por el cliente.
-
-- **P17:** alta validada e idempotente mediante `Idempotency-Key`, para evitar duplicados al reenviar el mismo formulario. La fecha solicitada no puede ser anterior a hoy en Madrid.
-- **P18:** listado y detalle de las solicitudes propias; cancelación con confirmación únicamente mientras están pendientes. Cancelar conserva los datos y el historial.
-- **P19:** listado administrativo con filtros por estado y rango de fecha solicitada; aceptación o rechazo de pendientes. Rechazar exige un motivo visible al cliente. Se guardan fecha, responsable y estados anterior y resultante, y se controla la revisión para evitar sobrescrituras concurrentes.
-
-La revisión administrativa no cambia la base ni la dirección de entrega. La antigua acción `asignar_sede` ya no se admite; sus eventos históricos se conservan.
-
-Las solicitudes antiguas mantienen los datos que tenían: los campos ausentes se muestran como pendientes y no se rellenan automáticamente. Si faltan datos de entrega, no se pueden planificar. Aparecen deshabilitadas en el selector y se identifican sus referencias con un aviso. Para probar la planificación, debe utilizarse una solicitud con entrega completa creada desde la cuenta de cliente.
-
-### P21: vehículos y conductores disponibles
-
-Administración dispone de un catálogo reutilizable de camiones y conductores:
-
-- Vehículos con matrícula única, tipo, capacidad declarada con unidad, sede y estados activo/disponible. Las matrículas se normalizan a mayúsculas sin espacios ni guiones y se recuperan desde un desplegable.
-- Conductores vinculados a una cuenta activa con rol conductor, sin duplicar la misma cuenta en el catálogo. Tienen sede y estados activo/disponible.
-- El nombre del conductor se obtiene del nombre y primer apellido de su cuenta: no se vuelve a pedir en el formulario del recurso. Los nombres antiguos guardados se conservan como alternativa para las cuentas sin identidad; si no existe ninguno, aparece «Nombre pendiente».
-- La desactivación conserva el recurso, el historial y las asignaciones anteriores. Los cambios usan revisión para detectar actualizaciones simultáneas.
-
-Solo son asignables los recursos activos y disponibles. Un cambio de rol o la baja de la cuenta del conductor impide asignarlo a nuevas rutas. Registrar una cuenta con rol conductor y añadirla al catálogo de recursos son pasos distintos.
-
-### P22: planificación de rutas
-
-Desde «Planificar rutas», administración elige una fecha de salida desde hoy, un vehículo y un conductor disponibles en **Yecla** y entre 1 y 100 solicitudes aceptadas distintas. Las paradas se pueden subir, bajar o quitar antes de guardar. La solicitud que quede seleccionada también se incorpora al final al guardar, aunque no se haya pulsado «Añadir parada».
-
-El servidor aplica estas reglas:
-
-- Un vehículo y una cuenta de conductor no pueden asignarse a dos rutas activas en la misma fecha.
-- Una solicitud no puede estar simultáneamente en dos rutas activas y debe seguir aceptada y tener los datos de entrega completos.
-- Crear la ruta y cambiar todas sus solicitudes a `planificada` es una operación atómica: si hay conflicto o error, no se guarda una planificación parcial.
-- El itinerario conserva el orden, las direcciones, los contactos, la mercancía y los recursos tal como estaban al planificar. Se puede consultar desde administración.
-
-MongoDB utiliza transacciones e índices únicos; las pruebas con SQLite utilizan una transacción y reservas con restricciones únicas. Los errores se muestran también junto al botón de guardar.
-
-P22 no incluye mapas, optimización automática, modificación/cancelación de rutas ni finalización de entregas. La capacidad declarada del camión se muestra para la elección administrativa, pero no se convierte automáticamente la mercancía expresada en bultos, cajas o unidades a kg o m³.
-
-### P23–P24: ejecución y validación del transporte
-
-El conductor abre **Ver ruta y entregas**, también en rutas anteriores con itinerario completo. Ve paradas ordenadas, direcciones, contactos y mercancía. **Iniciar ruta** pasa las solicitudes a en tránsito; cada parada permite **Marcar entregada** o **Registrar incidencia** con motivo obligatorio. Una incidencia se puede resolver como entregada. El cliente ve su estado e historial y administración puede revisar el seguimiento.
-
-Cuando todas las paradas están entregadas, la ruta se completa y libera vehículo y conductor para esa fecha. Las actualizaciones son atómicas y controlan revisión, asignación y claves de operación para evitar duplicados al reintentar tras un fallo de red. La interfaz confirma éxito solo tras respuesta del servidor.
-
-P24 recorre el flujo completo con datos ficticios, pruebas HTTP, persistencia entre procesos, negativos y evidencias visuales. Para una demostración local desechable: `node servidor/demo-p24.cjs`; ver cuentas, pasos y resultados en [P24](documentacion/P24-validacion-flujo.md). La revisión y cierre del tablero corresponden al responsable.
+Para reproducir el recorrido con datos ficticios, ejecuta `node servidor/demo-p24.cjs` y consulta la [guía de demostración](docs/anexos/P24-validacion-flujo.md).
 
 ## Registro, confirmación y Google
 
@@ -208,16 +158,3 @@ Google Cloud Run sirve cliente y servidor, MongoDB Atlas conserva los datos y Se
 Los enlaces públicos de entrega son la [aplicación](https://procesos26-27-gseerr4ika-no.a.run.app) y el [repositorio](https://github.com/Miguel-Requena/Procesos26-27). Las cuentas y contraseñas de evaluación se entregan en un TXT privado, excluido de Git; no se publican en este README. Las cuentas de prueba con correos de ejemplo sirven para acceder con contraseña, pero no representan buzones de correo reales.
 
 El flujo del repositorio es: crear una rama `codex/` antes de editar, realizar el cambio, verificarlo, abrir una pull request y esperar CI correcto antes de integrarla en `main`. No se hacen commits directamente en `main`. Las instrucciones están en [AGENTS.md](AGENTS.md).
-
-## Documentación relacionada
-
-- [P18: consulta y cancelación](documentacion/P18-consulta-cancelacion.md).
-- [P19: revisión administrativa](documentacion/P19-revision-administrativa.md).
-- [P21: catálogo de vehículos y conductores](documentacion/P21-recursos.md).
-- [P22: planificación e itinerarios](documentacion/P22-rutas.md).
-- [P23: itinerario del conductor, entregas e incidencias](documentacion/P23-entregas.md).
-- [P24: validación del flujo completo y evidencias](documentacion/P24-validacion-flujo.md).
-- [Registro con nombre y primer apellido](documentacion/REGISTRO-IDENTIDAD.md).
-- [Guía de despliegue y servicios](DESPLIEGUE-GOOGLE-CLOUD.md).
-
-Los documentos de cada PBI pueden conservar notas de validación de su implementación inicial. Este README describe el estado conjunto actual y las limitaciones que siguen pendientes.

@@ -6,15 +6,15 @@ Actualizado: 19 de noviembre de 2026.
 
 El 19/11/2026 se retiró del árbol de trabajo la carpeta `diagramas/`, incluidas las copias de la memoria. Se conserva el registro de su traslado a Overleaf el 17/11 y su historial en Git (revisión `5e536e2`). Las rutas y listados de archivos de las secciones históricas inferiores describen aquel momento; no deben interpretarse como archivos disponibles actualmente. Esta limpieza no verifica el contenido actual de Overleaf ni borra archivos de ese servicio.
 
-La documentación técnica vigente permanece en `documentacion/` y el README. Los archivos de fuentes y sus licencias en `cliente/fuentes/` sí son recursos de la aplicación y deben conservarse.
+La documentación técnica vigente permanece en `docs/` y el README. Los archivos de fuentes y sus licencias en `cliente/fuentes/` sí son recursos de la aplicación y deben conservarse.
 
 ## Estado vigente e historial
 
-La documentación actual se consulta desde el README y `documentacion/REQUISITOS-SPRINT-2.md`, `DECISIONES-DISENO.md`, `ESPECIFICACION-SPRINT-2.md` y `GUIA-EVALUACION.md`. El Word se regenera desde la especificación vigente mediante `crear_especificacion_sprint2.py`.
+La documentación actual se consulta desde el README y el [índice de documentación](docs/index.md). El Word se regenera desde la especificación vigente mediante `crear_especificacion_sprint2.py`.
 
 Las secciones inferiores anteriores al cierre son **registro histórico**, no tareas pendientes actuales. En particular, las frases sobre RF aún no incorporados, sesiones en memoria, MiApp o ausencia de actualización integral corresponden al estado de esas sesiones. El cierre del 17/11 y las fuentes trasladadas a Overleaf prevalecen sobre ellas; las copias locales de entonces se recuperan desde el historial Git. P18 no se cuenta en los ocho PBI de cierre. El borrador Word del 5/11 queda sustituido por la versión 1.0.
 
-La revisión del 19/11 añade sondeo automático de listados entre perfiles. No afirma haber modificado la sesión actual de Overleaf ni haber repetido pruebas reales de Google o correo. Los resultados de comprobaciones nuevas se registran en `documentacion/REVISION-19-11-2026.md`.
+La revisión del 19/11 añade sondeo automático de listados entre perfiles. No afirma haber modificado la sesión actual de Overleaf ni haber repetido pruebas reales de Google o correo. Los resultados de comprobaciones nuevas se registran en `docs/anexos/REVISION-19-11-2026.md`.
 
 
 ## Actualización de Overleaf al cierre del Sprint 2
@@ -33,7 +33,7 @@ Se implementa RF-17: itinerario propio, inicio, entrega, incidencia con motivo y
 
 ## Registro histórico P24 antes de P23 — 17 de noviembre de 2026
 
-Se añaden pruebas integradas HTTP con datos ficticios para T34/T35: alta, aceptación, recursos, planificación, consulta por perfiles y persistencia entre procesos, además de negativos de permisos, fechas, duplicados y transiciones actuales. El [informe P24](documentacion/P24-validacion-flujo.md) recoge modelo, API, reproducción, demostración y límites. La entrega e incidencia y sus transiciones requieren P23: T34 y P24 no pueden darse por terminados. No se han actualizado DoneTonic ni la memoria de Overleaf. Los criterios CA24 del documento siguen siendo propuestas de revisión.
+Se añaden pruebas integradas HTTP con datos ficticios para T34/T35: alta, aceptación, recursos, planificación, consulta por perfiles y persistencia entre procesos, además de negativos de permisos, fechas, duplicados y transiciones actuales. El [informe P24](docs/anexos/P24-validacion-flujo.md) recoge modelo, API, reproducción, demostración y límites. La entrega e incidencia y sus transiciones requieren P23: T34 y P24 no pueden darse por terminados. No se han actualizado DoneTonic ni la memoria de Overleaf. Los criterios CA24 del documento siguen siendo propuestas de revisión.
 
 ## Punto anterior al cierre (registro histórico del 5 de noviembre)
 
