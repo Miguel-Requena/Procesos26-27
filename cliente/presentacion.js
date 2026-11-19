@@ -49,7 +49,7 @@ function panelDisponible() {
     return Boolean(rolActual) && !document.hidden && !panelSesion.hidden &&
         !document.querySelector('dialog[open]') &&
         !document.activeElement?.matches('input, textarea, select') &&
-        !document.querySelector('button:disabled');
+        !Array.from(document.querySelectorAll('button:disabled')).some(boton => boton.getClientRects().length > 0);
 }
 function observarPanel() {
     detenerActualizacion();

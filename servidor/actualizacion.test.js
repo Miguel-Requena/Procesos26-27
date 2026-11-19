@@ -53,3 +53,17 @@ test('Presentación mantiene URLs y transporte fuera de los componentes', () => 
         assert.doesNotMatch(codigo, /\bfetch\s*\(|api\.peticion\(|\/administracion\/|\/conductor\/rutas\//);
     }
 });
+
+test('Disponibilidad del panel: los controles ocultos no bloquean el sondeo al volver a entrar', () => {
+    const codigo = fs.readFileSync(path.join(__dirname, '../cliente/presentacion.js'), 'utf8');
+    const funcion = codigo.match(/function panelDisponible\(\) \{[\s\S]*?\n\}/)[0];
+    let visible = false;
+    const contexto = { rolActual: 'cliente', panelSesion: { hidden: false }, document: {
+        hidden: false, activeElement: { matches: () => false }, querySelector: () => null,
+        querySelectorAll: () => [{ getClientRects: () => visible ? [{}] : [] }]
+    } };
+    vm.runInNewContext(funcion, contexto);
+    assert.equal(contexto.panelDisponible(), true);
+    visible = true; assert.equal(contexto.panelDisponible(), false);
+    visible = false; contexto.document.hidden = true; assert.equal(contexto.panelDisponible(), false);
+});
