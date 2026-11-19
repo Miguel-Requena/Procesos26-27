@@ -5,8 +5,8 @@ from docx.shared import Cm, Pt, RGBColor
 from docx.oxml.ns import qn
 
 raiz = Path(__file__).resolve().parent
-fuente = raiz / "documentacion/ESPECIFICACION-SPRINT-2.md"
-salida = raiz / "documentacion/Especificacion-Sprint-2-TransDrakkar.docx"
+fuente = raiz / "docs/anexos/ESPECIFICACION-SPRINT-2.md"
+salida = raiz / "docs/anexos/Especificacion-Sprint-2-TransDrakkar.docx"
 documento = Document()
 seccion = documento.sections[0]
 seccion.page_width, seccion.page_height = Cm(21), Cm(29.7)

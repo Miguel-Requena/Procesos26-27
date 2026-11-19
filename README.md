@@ -6,13 +6,17 @@ Aplicación web para gestionar solicitudes de transporte de mobiliario, vehícul
 
 La aplicación está desplegada en Google Cloud Run.
 
+## Documentación
+
+Consulta el [índice de TransDrakkar](docs/index.md) para navegar por los requisitos, la arquitectura, las decisiones y los sprints.
+
 ## Evaluar el Sprint 2
 
-- [Requisitos, estado y evidencias](documentacion/REQUISITOS-SPRINT-2.md).
-- [Decisiones justificadas y alternativas](documentacion/DECISIONES-DISENO.md).
-- [Guía de evaluación con cinco RF](documentacion/GUIA-EVALUACION.md).
-- [Especificación vigente](documentacion/ESPECIFICACION-SPRINT-2.md) y [versión Word](documentacion/Especificacion-Sprint-2-TransDrakkar.docx).
-- [Resultado de la revisión del 19/11](documentacion/REVISION-19-11-2026.md).
+- [Requisitos, estado y evidencias](docs/requisitos.md).
+- [Decisiones justificadas y alternativas](docs/decisiones.md).
+- [Guía de evaluación con cinco RF](docs/anexos/GUIA-EVALUACION.md).
+- [Especificación vigente](docs/anexos/ESPECIFICACION-SPRINT-2.md) y [versión Word](docs/anexos/Especificacion-Sprint-2-TransDrakkar.docx).
+- [Resultado de la revisión del 19/11](docs/anexos/REVISION-19-11-2026.md).
 
 El panel actualiza automáticamente listados y métricas cada cinco segundos cuando está visible y no hay edición ni diálogos abiertos. No hace falta recargar para ver una revisión administrativa o una ruta asignada por otro usuario. Las consultas son secuenciales; ante un fallo de red se conserva la última vista y se reintenta. Los detalles y selectores de planificación conservan borradores y sus botones de actualización. El [registro histórico de memoria](SEGUIMIENTO-MEMORIA.md) no sustituye estas referencias actuales.
 
@@ -78,7 +82,7 @@ El conductor abre **Ver ruta y entregas**, también en rutas anteriores con itin
 
 Cuando todas las paradas están entregadas, la ruta se completa y libera vehículo y conductor para esa fecha. Las actualizaciones son atómicas y controlan revisión, asignación y claves de operación para evitar duplicados al reintentar tras un fallo de red. La interfaz confirma éxito solo tras respuesta del servidor.
 
-P24 recorre el flujo completo con datos ficticios, pruebas HTTP, persistencia entre procesos, negativos y evidencias visuales. Para una demostración local desechable: `node servidor/demo-p24.cjs`; ver cuentas, pasos y resultados en [P24](documentacion/P24-validacion-flujo.md). La revisión y cierre del tablero corresponden al responsable.
+P24 recorre el flujo completo con datos ficticios, pruebas HTTP, persistencia entre procesos, negativos y evidencias visuales. Para una demostración local desechable: `node servidor/demo-p24.cjs`; ver cuentas, pasos y resultados en [P24](docs/anexos/P24-validacion-flujo.md). La revisión y cierre del tablero corresponden al responsable.
 
 ## Registro, confirmación y Google
 
@@ -211,13 +215,13 @@ El flujo del repositorio es: crear una rama `codex/` antes de editar, realizar e
 
 ## Documentación relacionada
 
-- [P18: consulta y cancelación](documentacion/P18-consulta-cancelacion.md).
-- [P19: revisión administrativa](documentacion/P19-revision-administrativa.md).
-- [P21: catálogo de vehículos y conductores](documentacion/P21-recursos.md).
-- [P22: planificación e itinerarios](documentacion/P22-rutas.md).
-- [P23: itinerario del conductor, entregas e incidencias](documentacion/P23-entregas.md).
-- [P24: validación del flujo completo y evidencias](documentacion/P24-validacion-flujo.md).
-- [Registro con nombre y primer apellido](documentacion/REGISTRO-IDENTIDAD.md).
+- [P18: consulta y cancelación](docs/anexos/P18-consulta-cancelacion.md).
+- [P19: revisión administrativa](docs/anexos/P19-revision-administrativa.md).
+- [P21: catálogo de vehículos y conductores](docs/anexos/P21-recursos.md).
+- [P22: planificación e itinerarios](docs/anexos/P22-rutas.md).
+- [P23: itinerario del conductor, entregas e incidencias](docs/anexos/P23-entregas.md).
+- [P24: validación del flujo completo y evidencias](docs/anexos/P24-validacion-flujo.md).
+- [Registro con nombre y primer apellido](docs/anexos/REGISTRO-IDENTIDAD.md).
 - [Guía de despliegue y servicios](DESPLIEGUE-GOOGLE-CLOUD.md).
 
 Los documentos de cada PBI pueden conservar notas de validación de su implementación inicial. Este README describe el estado conjunto actual y las limitaciones que siguen pendientes.
