@@ -6,6 +6,16 @@ Aplicación web para gestionar solicitudes de transporte de mobiliario, vehícul
 
 La aplicación está desplegada en Google Cloud Run.
 
+## Evaluar el Sprint 2
+
+- [Requisitos, estado y evidencias](documentacion/REQUISITOS-SPRINT-2.md).
+- [Decisiones justificadas y alternativas](documentacion/DECISIONES-DISENO.md).
+- [Guía de evaluación con cinco RF](documentacion/GUIA-EVALUACION.md).
+- [Especificación vigente](documentacion/ESPECIFICACION-SPRINT-2.md) y [versión Word](documentacion/Especificacion-Sprint-2-TransDrakkar.docx).
+- [Resultado de la revisión del 19/11](documentacion/REVISION-19-11-2026.md).
+
+El panel actualiza automáticamente listados y métricas cada cinco segundos cuando está visible y no hay edición ni diálogos abiertos. No hace falta recargar para ver una revisión administrativa o una ruta asignada por otro usuario. Las consultas son secuenciales; ante un fallo de red se conserva la última vista y se reintenta. Los detalles y selectores de planificación conservan borradores y sus botones de actualización. El [registro histórico de memoria](SEGUIMIENTO-MEMORIA.md) no sustituye estas referencias actuales.
+
 ## Funcionalidades y perfiles
 
 | Perfil | Funciones disponibles |

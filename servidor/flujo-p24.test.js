@@ -56,6 +56,27 @@ async function escenario() {
     return { cliente, otro, admin, conductor, ajeno, solicitud, ruta, clave };
 }
 
+test('Actualización entre cuentas: el sondeo del cliente recibe la revisión administrativa sin recargar', async () => {
+    const e = await escenario();
+    const vm = require('node:vm'), fs = require('node:fs'), path = require('node:path');
+    let siguiente;
+    const contexto = { window: {}, setTimeout(accion) { siguiente = accion; return 1; }, clearTimeout() { siguiente = undefined; },
+        fetch: (url, opciones) => fetch(base.replace(/\/api$/, '') + url, {
+            ...opciones, headers: { ...opciones.headers, cookie: e.cliente.cookie }
+        }) };
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../cliente/rest.js'), 'utf8'), contexto);
+    const estados = [];
+    const detener = contexto.window.api.observar(() => contexto.window.api.consultarTransportes('solicitudes'), respuesta => {
+        estados.push(respuesta.solicitudes.find(s => s.id === e.solicitud.id).estado);
+    });
+    try {
+        await siguiente();
+        await pedir(`/administracion/solicitudes/${e.solicitud.id}/revision`, e.admin.cookie, { accion: 'aceptar', revision: 0 });
+        await siguiente();
+        assert.deepEqual(estados, ['pendiente_recogida', 'aceptada']);
+    } finally { detener(); }
+});
+
 test("P24 T34: solicitud → aceptación → ruta → incidencia → entrega → consulta y persistencia", async () => {
     const e = await escenario();
     await pedir(`/administracion/solicitudes/${e.solicitud.id}/revision`, e.admin.cookie, { accion: "aceptar", revision: 0 });

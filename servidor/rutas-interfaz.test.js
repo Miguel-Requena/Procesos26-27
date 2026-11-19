@@ -32,6 +32,9 @@ function interfaz(errorGuardado, incompleta = false) {
             return {ruta:{referencia:"RT-1",fecha:"2099-12-15",sede:"Yecla",vehiculo:{matricula:"1234ABC"},conductor:{nombre:"Miguel"},paradas:[]}};
         }
     }};
+    const contextoRest = {window:{}, setTimeout, clearTimeout};
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname,"../cliente/rest.js"),"utf8"),contextoRest);
+    Object.assign(window.api, Object.fromEntries(Object.entries(contextoRest.window.api).filter(([nombre])=>["listarRecursos","guardarRecurso","detalleRutaAdministracion","planificarRuta","detalleRutaConductor","actualizarEntrega"].includes(nombre))));
     vm.runInNewContext(fs.readFileSync(path.join(__dirname,"../cliente/rutas.js"),"utf8"),{
         window,document:{getElementById:nodo,createElement:()=>new Elemento()},Intl,Date,cargarDatosPanel:async()=>{}
     });

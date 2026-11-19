@@ -64,7 +64,7 @@
         const carga = ++versionDetalle, vista = version, contenido = document.getElementById("contenido-itinerario");
         contenido.textContent = "Cargando itinerario…"; if (!dialog.open) dialog.showModal();
         try {
-            const { ruta } = await window.api.peticion(`/administracion/rutas/${encodeURIComponent(id)}`);
+            const { ruta } = await window.api.detalleRutaAdministracion(id);
             if (carga !== versionDetalle || vista !== version || !administracion) return;
             contenido.replaceChildren();
             const cabecera = document.createElement("p"); cabecera.textContent = `${ruta.referencia} · ${ruta.fecha} · Salida: ${ruta.sede} · ${ruta.vehiculo.matricula} · ${ruta.conductor.nombre || conductores.find(c=>c.id===ruta.conductorRecursoId)?.nombre || "Nombre pendiente"}`; contenido.append(cabecera);
@@ -88,7 +88,7 @@
         form.hidden = true; document.getElementById("lista-rutas-planificadas").replaceChildren();
         try {
             const [v,c,s,r] = await Promise.all([
-                window.api.peticion("/administracion/vehiculos?asignables=true"), window.api.peticion("/administracion/conductores?asignables=true"),
+                window.api.listarRecursos("vehiculos", true), window.api.listarRecursos("conductores", true),
                 window.api.listarSolicitudesAdministracion({estado:"aceptada"}), window.api.consultarTransportes("rutas")
             ]);
             if (carga !== version || !administracion) return;
@@ -120,7 +120,7 @@
         const vista = version, entrada = {fecha:form.elements.fecha.value,sede:"Yecla",vehiculoId:form.elements.vehiculoId.value,conductorRecursoId:form.elements.conductorRecursoId.value,solicitudes:[...elegidas]};
         guardando = true; controles(); informar("Guardando planificación…");
         try {
-            const {ruta} = await window.api.peticion("/administracion/rutas", {method:"POST",body:JSON.stringify(entrada)});
+            const {ruta} = await window.api.planificarRuta(entrada);
             if (vista !== version || !administracion) return;
             elegidas = []; await cargar(); informar("Ruta planificada. Sus solicitudes ya figuran como planificadas.");
             await cargarDatosPanel(); if (administracion) detalle(ruta.id);

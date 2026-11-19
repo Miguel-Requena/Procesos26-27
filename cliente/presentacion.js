@@ -43,6 +43,38 @@ let versionPanel = 0;
 let versionDatos = 0;
 let rolActual;
 let filtrosAdministracion = {};
+let detenerActualizacion = () => {};
+let huellaPanel;
+function panelDisponible() {
+    return Boolean(rolActual) && !document.hidden && !panelSesion.hidden &&
+        !document.querySelector('dialog[open]') &&
+        !document.activeElement?.matches('input, textarea, select') &&
+        !document.querySelector('button:disabled');
+}
+function observarPanel() {
+    detenerActualizacion();
+    const version = versionPanel;
+    detenerActualizacion = window.api.observar(async () => {
+        const tipos = rolActual === 'administrador' ? ['solicitudes', 'rutas'] : [rolActual === 'cliente' ? 'solicitudes' : 'rutas'];
+        return JSON.stringify(await Promise.all(tipos.map(tipo =>
+            rolActual === 'administrador' && tipo === 'solicitudes'
+                ? window.api.listarSolicitudesAdministracion(filtrosAdministracion)
+                : window.api.consultarTransportes(tipo))));
+    }, async huella => {
+        if (version !== versionPanel) return;
+        if (huella !== huellaPanel) {
+            const aplicada = await cargarDatosPanel(true);
+            if (aplicada && version === versionPanel) huellaPanel = huella;
+        }
+    }, { disponible: panelDisponible, fallo(error) {
+        if (version !== versionPanel) return;
+        if ([401, 403].includes(error.estado)) {
+            detenerActualizacion();
+            mostrarUsuario(null);
+            mensaje.textContent = 'Tu sesión o tus permisos han cambiado. Inicia sesión de nuevo.';
+        } else document.getElementById('estado-panel').textContent = 'Sin actualización automática. Se reintentará; puedes actualizar manualmente.';
+    }});
+}
 const camionPanel = document.querySelector(".camion-marca").cloneNode(true);
 document.getElementById("camion-panel").append(camionPanel);
 function grupoEstado(valor) {
@@ -74,12 +106,13 @@ function limpiarDatosPanel() {
     document.getElementById("cuentas-equipo").hidden = true;
     document.getElementById("estado-panel").textContent = "";
 }
-async function cargarDatosPanel() {
+async function cargarDatosPanel(automatica = false) {
+    automatica = automatica === true;
     const version = versionPanel, carga = ++versionDatos, rol = rolActual;
-    limpiarDatosPanel();
+    if (!automatica) limpiarDatosPanel();
     document.getElementById("recursos-equipo").hidden = rol !== "administrador";
-    window.rutasPanel?.actualizar(rol);
-    if (rol === "administrador") cargarRecursos();
+    if (!automatica) window.rutasPanel?.actualizar(rol);
+    if (rol === "administrador" && !automatica) cargarRecursos();
     if (!rol) return;
     const estadoPanel = document.getElementById("estado-panel");
     estadoPanel.textContent = "Cargando datos…";
@@ -89,7 +122,9 @@ async function cargarDatosPanel() {
             rol === "administrador" ? window.api.listarUsuarios() : null,
             ...tipos.map(tipo => rol === "administrador" && tipo === "solicitudes" ? window.api.listarSolicitudesAdministracion(filtrosAdministracion) : window.api.consultarTransportes(tipo))
         ]);
-        if (version !== versionPanel || carga !== versionDatos) return;
+        if (version !== versionPanel || carga !== versionDatos || (automatica && !panelDisponible())) return;
+        document.getElementById("lista-cuentas").replaceChildren();
+        document.getElementById("lista-transportes").replaceChildren();
         if (cuentas) {
             document.getElementById("cuentas-equipo").hidden = false;
             for (const cuenta of cuentas.usuarios) {
@@ -201,9 +236,10 @@ async function cargarDatosPanel() {
             document.getElementById("resumen-ayuda").textContent = Object.keys(filtrosAdministracion).length ? "Según los filtros de estado y fecha" : "Solicitudes de todos los clientes";
         }
         estadoPanel.textContent = "Datos actualizados.";
+        return true;
     } catch (error) {
         if (version !== versionPanel || carga !== versionDatos) return;
-        limpiarDatosPanel();
+        if (!automatica) limpiarDatosPanel();
         estadoPanel.textContent = error.message;
         if ([401, 403].includes(error.estado)) {
             mensaje.textContent = "Tu sesión o tus permisos han cambiado. Recarga la página para actualizar tu acceso.";
@@ -383,6 +419,8 @@ formularioRevision.addEventListener("submit", async evento => {
 
 document.getElementById("actualizar-panel").addEventListener("click", cargarDatosPanel);
 async function mostrarUsuario(usuario) {
+    detenerActualizacion();
+    huellaPanel = undefined;
     const version = ++versionPanel;
     rolActual = undefined;
     filtrosAdministracion = {};
@@ -437,6 +475,7 @@ async function mostrarUsuario(usuario) {
         document.getElementById("filtros-administracion").hidden = panel.rol !== "administrador";
         document.getElementById("acciones-cliente").hidden = panel.rol !== "cliente";
         await cargarDatosPanel();
+        if (version === versionPanel) observarPanel();
     } catch (error) {
         if (version !== versionPanel) return;
         formularios.hidden = false;
@@ -652,7 +691,7 @@ async function cargarRecursos() {
     const version=++versionRecursos,panel=versionPanel,estado=document.getElementById("estado-recursos"),contenedor=document.getElementById("formularios-recursos");
     estado.textContent="Cargando recursos…";contenedor.replaceChildren();
     try {
-        const [v,c,u]=await Promise.all([window.api.peticion("/administracion/vehiculos"),window.api.peticion("/administracion/conductores"),window.api.listarUsuarios()]);
+        const [v,c,u]=await Promise.all([window.api.listarRecursos("vehiculos"),window.api.listarRecursos("conductores"),window.api.listarUsuarios()]);
         if(version!==versionRecursos || panel!==versionPanel || rolActual!=="administrador") return;
         const opcion=(valor,texto)=>{const o=document.createElement("option");o.value=valor;o.textContent=texto;return o;};
         for(const [tipo,registros] of [["vehiculos",v.vehiculos],["conductores",c.conductores]]) {
@@ -697,7 +736,7 @@ async function cargarRecursos() {
                 if(anterior) entrada.revision=anterior.revision;
                 boton.disabled=true;
                 try {
-                    await window.api.peticion(`/administracion/${tipo}${id?"/"+encodeURIComponent(id):""}`,{method:id?"PUT":"POST",body:JSON.stringify(entrada)});
+                    await window.api.guardarRecurso(tipo, id, entrada);
                     if(panel===versionPanel) {await cargarRecursos();estado.textContent="Recurso guardado.";window.rutasPanel?.actualizar(rolActual);}
                 } catch(error) {if(panel===versionPanel) estado.textContent=error.message;}
                 finally {boton.disabled=false;}
