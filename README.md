@@ -12,10 +12,6 @@ Aplicación web para gestionar solicitudes de transporte de mobiliario, vehícul
 
 Para acceder como **cliente**, pulsa **Crear cuenta** y confirma tu correo. Las cuentas nuevas reciben automáticamente el perfil de cliente.
 
-Usa datos ficticios al crear solicitudes y registrar entregas.
-
-Las contraseñas de las cuentas de conductor y administrador se comparten por privado. Utiliza datos ficticios al crear solicitudes y registrar entregas.
-
 La aplicación está desplegada en Google Cloud Run.
 
 ## Documentación
