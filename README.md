@@ -3,6 +3,18 @@
 Aplicación web para gestionar solicitudes de transporte de mobiliario, vehículos, conductores y planificación de rutas. Desarrollada con Node.js 24, Express, JavaScript, bcrypt y MongoDB Atlas.
 
 - **Aplicación:** [Transdrakkar · Área privada](https://procesos26-27-gseerr4ika-no.a.run.app).
+## Cuentas de prueba para el Sprint 3
+
+| Perfil | Correo | Contraseña |
+| --- | --- | --- |
+| **Conductor** | `conductor@gmail.com` | `conductor` |
+| **Administrador** | `admin@gmail.com` | `admin1` |
+
+Para acceder como **cliente**, pulsa **Crear cuenta** y confirma tu correo. Las cuentas nuevas reciben automáticamente el perfil de cliente.
+
+Usa datos ficticios al crear solicitudes y registrar entregas.
+
+Las contraseñas de las cuentas de conductor y administrador se comparten por privado. Utiliza datos ficticios al crear solicitudes y registrar entregas.
 
 La aplicación está desplegada en Google Cloud Run.
 
